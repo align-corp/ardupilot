@@ -227,6 +227,16 @@ uint8_t crc8_sae(const uint8_t *data, uint16_t length)
     return	crc;
 }
 
+uint8_t crc_xor(const uint8_t *data, uint16_t len, uint8_t offset)
+{
+    uint8_t crc = 0;
+    for (uint16_t i=offset; i<len; i++) {
+        crc ^= data[i];
+    }
+    return crc;
+}
+
+
 /*
   xmodem CRC thanks to avr-liberty
   https://github.com/dreamiurg/avr-liberty

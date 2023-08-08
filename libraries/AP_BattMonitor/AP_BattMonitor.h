@@ -46,6 +46,7 @@ class AP_BattMonitor_Torqeedo;
 class AP_BattMonitor_FuelLevel_Analog;
 class AP_BattMonitor_EFI;
 class AP_BattMonitor_Scripting;
+class AP_BattMonitor_PCU;
 
 
 class AP_BattMonitor
@@ -72,6 +73,7 @@ class AP_BattMonitor
     friend class AP_BattMonitor_FuelLevel_Analog;
     friend class AP_BattMonitor_Synthetic_Current;
     friend class AP_BattMonitor_Scripting;
+    friend class AP_BattMonitor_PCU;
 
 public:
 
@@ -102,7 +104,7 @@ public:
         GENERATOR_ELEC                 = 17,
         GENERATOR_FUEL                 = 18,
         Rotoye                         = 19,
-        // 20 was MPPT_PacketDigital
+        ALIGN_PCU                      = 20,
         INA2XX                         = 21,
         LTC2946                        = 22,
         Torqeedo                       = 23,

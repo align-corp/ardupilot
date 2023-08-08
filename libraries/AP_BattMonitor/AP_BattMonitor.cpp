@@ -22,6 +22,7 @@
 #include "AP_BattMonitor_Synthetic_Current.h"
 #include "AP_BattMonitor_AD7091R5.h"
 #include "AP_BattMonitor_Scripting.h"
+#include "AP_BattMonitor_PCU.h"
 
 #include <AP_HAL/AP_HAL.h>
 
@@ -566,6 +567,11 @@ AP_BattMonitor::init()
                 drivers[instance] = new AP_BattMonitor_Scripting(*this, state[instance], _params[instance]);
                 break;
 #endif // AP_BATTERY_SCRIPTING_ENABLED
+#if AP_BATTERY_PCU_ENABLED
+            case Type::ALIGN_PCU:
+                drivers[instance] = new AP_BattMonitor_PCU(*this, state[instance], _params[instance]);
+                break;
+#endif
             case Type::NONE:
             default:
                 break;

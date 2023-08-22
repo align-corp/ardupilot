@@ -69,6 +69,9 @@ public:
 #if AP_PROXIMITY_LIGHTWARE_SF45B_ENABLED
         SF45B = 8,
 #endif
+#if AP_PROXIMITY_N10P_ENABLED
+        N10P = 9,
+#endif
 #if AP_PROXIMITY_SITL_ENABLED
         SITL    = 10,
 #endif

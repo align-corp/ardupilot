@@ -1,9 +1,10 @@
 #include "Copter.h"
 
-#define ARM_DELAY               20  // called at 10hz so 2 seconds
-#define DISARM_DELAY            20  // called at 10hz so 2 seconds
-#define AUTO_TRIM_DELAY         100 // called at 10hz so 10 seconds
-#define LOST_VEHICLE_DELAY      10  // called at 10hz so 1 second
+#define ARM_DELAY                   5  // (was 20) called at 10hz so 2 seconds
+#define DISARM_DELAY                5  // (was 20) called at 10hz so 2 seconds
+#define AUTO_TRIM_DELAY             100 // called at 10hz so 10 seconds
+#define LOST_VEHICLE_DELAY          10  // called at 10hz so 1 second
+#define AUTO_DISARM_HYSTERESIS_MS   7000 // wait 7 seconds after arm before triggering auto-disarm
 
 static uint32_t auto_disarm_begin;
 
@@ -32,51 +33,55 @@ void Copter::arm_motors_check()
         return;
     }
 
+    // arming rudder is now the DJI arming gestures: left stick right-down, right stick left-down
     int16_t yaw_in = channel_yaw->get_control_in();
+    int16_t roll_in = channel_roll->get_control_in();
+    int16_t pitch_in = channel_pitch->get_control_in();
 
-    // full right
-    if (yaw_in > 4000) {
+    // rudder full right (or left), roll full left (or right), pitch full down
+    if (pitch_in > 4000 && ((yaw_in > 4000 && roll_in < -4000) || (yaw_in < -4000 && roll_in > 4000))) {
+        // if disarmed: arm routine
+        if (!motors->armed()) {
+            // increase the arming counter to a maximum of 1 beyond the auto trim counter
+            if (arming_counter <= AUTO_TRIM_DELAY) {
+                arming_counter++;
+            }
 
-        // increase the arming counter to a maximum of 1 beyond the auto trim counter
-        if (arming_counter <= AUTO_TRIM_DELAY) {
-            arming_counter++;
-        }
+            // arm the motors and configure for flight
+            if (arming_counter == ARM_DELAY) {
+                // reset arming counter if arming fail
+                if (!arming.arm(AP_Arming::Method::RUDDER)) {
+                    arming_counter = 0;
+                }
+            }
 
-        // arm the motors and configure for flight
-        if (arming_counter == ARM_DELAY && !motors->armed()) {
-            // reset arming counter if arming fail
-            if (!arming.arm(AP_Arming::Method::RUDDER)) {
+            // arm the motors and configure for flight
+            if (arming_counter == AUTO_TRIM_DELAY && motors->armed() && flightmode->mode_number() == Mode::Number::STABILIZE) {
+                gcs().send_text(MAV_SEVERITY_INFO, "AutoTrim start");
+                auto_trim_counter = 250;
+                auto_trim_started = false;
+                // ensure auto-disarm doesn't trigger immediately
+                auto_disarm_begin = millis();
+            }
+
+        // else if armed: disarm routine
+        } else if (arming_rudder == AP_Arming::RudderArming::ARMDISARM) {
+            if (!flightmode->has_manual_throttle() && !ap.land_complete) {
                 arming_counter = 0;
+                return;
+            }
+
+            // increase the counter to a maximum of 1 beyond the disarm delay
+            if (arming_counter <= DISARM_DELAY) {
+                arming_counter++;
+            }
+
+            // disarm the motors
+            if (arming_counter == DISARM_DELAY) {
+                arming.disarm(AP_Arming::Method::RUDDER);
             }
         }
-
-        // arm the motors and configure for flight
-        if (arming_counter == AUTO_TRIM_DELAY && motors->armed() && flightmode->mode_number() == Mode::Number::STABILIZE) {
-            gcs().send_text(MAV_SEVERITY_INFO, "AutoTrim start");
-            auto_trim_counter = 250;
-            auto_trim_started = false;
-            // ensure auto-disarm doesn't trigger immediately
-            auto_disarm_begin = millis();
-        }
-
-    // full left and rudder disarming is enabled
-    } else if ((yaw_in < -4000) && (arming_rudder == AP_Arming::RudderArming::ARMDISARM)) {
-        if (!flightmode->has_manual_throttle() && !ap.land_complete) {
-            arming_counter = 0;
-            return;
-        }
-
-        // increase the counter to a maximum of 1 beyond the disarm delay
-        if (arming_counter <= DISARM_DELAY) {
-            arming_counter++;
-        }
-
-        // disarm the motors
-        if (arming_counter == DISARM_DELAY && motors->armed()) {
-            arming.disarm(AP_Arming::Method::RUDDER);
-        }
-
-    // Yaw is centered so reset arming counter
+    // Reset arming counter if stick gesture is released
     } else {
         arming_counter = 0;
     }
@@ -121,6 +126,11 @@ void Copter::auto_disarm_check()
         if (!thr_low || !ap.land_complete) {
             // reset timer
             auto_disarm_begin = tnow_ms;
+        }
+
+        // if we have just armed, wait AUTO_DISARM_HYSTERESIS_MS seconds to trigger auto disarm
+        if (tnow_ms - arm_time_ms < AUTO_DISARM_HYSTERESIS_MS) {
+            return;
         }
     }
 
@@ -193,8 +203,12 @@ void Copter::lost_vehicle_check()
         return;
     }
 
-    // ensure throttle is down, motors not armed, pitch and roll rc at max. Note: rc1=roll rc2=pitch
-    if (ap.throttle_zero && !motors->armed() && (channel_roll->get_control_in() > 4000) && (channel_pitch->get_control_in() > 4000)) {
+    int16_t yaw_in = channel_yaw->get_control_in();
+    int16_t roll_in = channel_roll->get_control_in();
+    int16_t pitch_in = channel_pitch->get_control_in();
+
+    // ensure throttle is down, motors not armed, pitch at max (opposite to arm/disarm gesture), roll and yaw at opposite side (like arm/disarm gesture)
+    if (ap.throttle_zero && !motors->armed() && (pitch_in < -4000 && ((yaw_in > 4000 && roll_in < -4000) || (yaw_in < -4000 && roll_in > 4000)))) {
         if (soundalarm_counter >= LOST_VEHICLE_DELAY) {
             if (AP_Notify::flags.vehicle_lost == false) {
                 AP_Notify::flags.vehicle_lost = true;

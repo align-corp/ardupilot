@@ -77,17 +77,9 @@ void Copter::update_land_detector()
                                     || (flightmode->mode_number() == Mode::Number::AUTOROTATE && motors->get_below_land_min_coll())
 #endif
                                     || ((!force_flying || landing) && motors->limit.throttle_lower && pos_control->get_vel_desired_cms().z < 0.0f);
-        bool throttle_mix_at_min = true;
 #else
-        // check that the average throttle output is near minimum (less than 12.5% hover throttle)
+        // check that the average throttle output is near minimum
         bool motor_at_lower_limit = motors->limit.throttle_lower;
-        bool throttle_mix_at_min = attitude_control->is_throttle_mix_min();
-        // set throttle_mix_at_min to true because throttle is never at mix min in airmode
-        // increase land_trigger_sec when using airmode
-        if (flightmode->has_manual_throttle() && air_mode == AirMode::AIRMODE_ENABLED) {
-            land_trigger_sec = LAND_AIRMODE_DETECTOR_TRIGGER_SEC;
-            throttle_mix_at_min = true;
-        }
 #endif
 
         uint8_t land_detector_scalar = 1;
@@ -114,7 +106,7 @@ void Copter::update_land_detector()
         const bool WoW_check = true;
 #endif
 
-        if (motor_at_lower_limit && throttle_mix_at_min && accel_stationary && descent_rate_low && rangefinder_check && WoW_check) {
+        if (motor_at_lower_limit && accel_stationary && descent_rate_low && rangefinder_check && WoW_check) {
             // landed criteria met - increment the counter and check if we've triggered
             if( land_detector_count < land_trigger_sec*scheduler.get_loop_rate_hz()) {
                 land_detector_count++;

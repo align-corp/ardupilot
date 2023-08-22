@@ -521,7 +521,7 @@ Vector2f Mode::get_pilot_desired_velocity(float vel_max) const
     return vel;
 }
 
-bool Mode::_TakeOff::triggered(const float target_climb_rate) const
+bool Mode::_TakeOff::triggered(const float target_climb_rate, float pitch_norm, float roll_norm) const
 {
     if (!copter.ap.land_complete) {
         // can't take off if we're already flying
@@ -534,6 +534,11 @@ bool Mode::_TakeOff::triggered(const float target_climb_rate) const
 
     if (copter.motors->get_spool_state() != AP_Motors::SpoolState::THROTTLE_UNLIMITED) {
         // hold aircraft on the ground until rotor speed runup has finished
+        return false;
+    }
+
+    // rc roll and pitcht input should be near zero
+    if (fabs(pitch_norm) > 0.1f || fabs(roll_norm) > 0.1f) {
         return false;
     }
 
@@ -981,7 +986,7 @@ Mode::AltHoldModeState Mode::get_alt_hold_state(float target_climb_rate_cms)
             return AltHold_Landed_Pre_Takeoff;
         }
 
-    } else if (takeoff.running() || takeoff.triggered(target_climb_rate_cms)) {
+    } else if (takeoff.running() || takeoff.triggered(target_climb_rate_cms, channel_pitch->norm_input(), channel_roll->norm_input())) {
         // the aircraft is currently landed or taking off, asking for a positive climb rate and in THROTTLE_UNLIMITED
         // the aircraft should progress through the take off procedure
         return AltHold_Takeoff;

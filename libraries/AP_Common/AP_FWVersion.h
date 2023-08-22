@@ -26,6 +26,10 @@ public:
     const uint8_t minor;
     const uint8_t patch;
     const uint8_t fw_type; /*FIRMWARE_VERSION_TYPE*/
+    const uint8_t middle_major; // Align version
+    const uint8_t middle_minor; // Align version
+    const uint8_t middle_patch; // Align version
+    const uint8_t middle_type; // Align version type
     const uint32_t os_sw_version;
     const char *fw_string;
     const char *fw_hash_str;

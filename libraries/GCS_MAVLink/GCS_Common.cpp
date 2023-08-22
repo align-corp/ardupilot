@@ -2728,6 +2728,10 @@ void GCS_MAVLINK::send_autopilot_version() const
                         version.minor << (8 * 2) | \
                         version.patch << (8 * 1) | \
                         (uint32_t)(version.fw_type) << (8 * 0);
+    middleware_sw_version = version.middle_major << (8 * 3) | \
+                            version.middle_minor << (8 * 2) | \
+                            version.middle_patch << (8 * 1) | \
+                            (uint32_t)(version.middle_type) << (8 * 0);
 
     if (version.fw_hash_str) {
         strncpy_noterm(flight_custom_version, version.fw_hash_str, ARRAY_SIZE(flight_custom_version));

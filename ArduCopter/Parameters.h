@@ -195,6 +195,10 @@ public:
 
         // 97: RSSI
         k_param_rssi = 97,
+
+        // 98: Loiter automatic landing
+        k_param_pilot_land_alt,
+        k_param_pilot_land_low_alt,
                 
         //
         // 100: Inertial Nav
@@ -401,6 +405,8 @@ public:
     AP_Float        throttle_filt;
     AP_Int16        throttle_behavior;
     AP_Float        pilot_takeoff_alt;
+    AP_Float        pilot_land_alt;
+    AP_Float        pilot_land_low_alt;
 
 #if MODE_RTL_ENABLED == ENABLED
     AP_Int32        rtl_altitude;

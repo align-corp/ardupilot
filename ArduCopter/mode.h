@@ -264,7 +264,7 @@ protected:
         void start(float alt_cm);
         void stop();
         void do_pilot_takeoff(float& pilot_climb_rate);
-        bool triggered(float target_climb_rate) const;
+        bool triggered(float target_climb_rate, float pitch_norm = 0.0f, float roll_norm = 0.0f) const;
 
         bool running() const { return _running; }
     private:
@@ -1249,6 +1249,16 @@ protected:
 #endif
 
 private:
+    void update_landing_state(AltHoldModeState alt_hold_state);
+    enum class LandingState {
+        ALTITUDE_HIGH,
+        ALTITUDE_LOW,
+        LANDING,
+    }; // state machine for landing
+
+    LandingState landing_state;
+    uint32_t landing_request_start_ms = 0;
+    AltHoldModeState loiter_state;
 
 #if AC_PRECLAND_ENABLED
     bool _precision_loiter_enabled;

@@ -28,6 +28,7 @@ public:
         SMART_RTL    = 12,
         GUIDED       = 15,
         INITIALISING = 16,
+        CRUISE       = 17,
     };
 
     // Constructor
@@ -663,6 +664,31 @@ public:
 protected:
 
     void _exit() override;
+};
+
+class ModeCruise : public Mode
+{
+public:
+
+    Number mode_number() const override { return Number::CRUISE; }
+    const char *name4() const override { return "CRUI"; }
+
+    // methods that affect movement of the vehicle in this mode
+    void update() override;
+
+    // attributes for mavlink system status reporting
+    bool has_manual_input() const override { return true; }
+    bool attitude_stabilized() const override { return false; }
+
+    // manual mode does not require position or velocity estimate
+    bool requires_position() const override { return false; }
+    bool requires_velocity() const override { return false; }
+
+protected:
+
+    bool _enter() override;
+    void _exit() override;
+    float _speed_input;
 };
 
 

@@ -522,6 +522,9 @@ Mode *Rover::mode_from_mode_num(const enum Mode::Number num)
     case Mode::Number::ACRO:
         ret = &mode_acro;
         break;
+    case Mode::Number::CRUISE:
+        ret = &mode_cruise;
+        break;
     case Mode::Number::STEERING:
         ret = &mode_steering;
         break;

@@ -106,6 +106,7 @@ public:
 #if MODE_DOCK_ENABLED == ENABLED
     friend class ModeDock;
 #endif
+    friend class ModeCruise;
 
     friend class RC_Channel_Rover;
     friend class RC_Channels_Rover;
@@ -262,6 +263,7 @@ private:
 #if MODE_DOCK_ENABLED == ENABLED
     ModeDock mode_dock;
 #endif
+    ModeCruise mode_cruise;
 
     // cruise throttle and speed learning
     typedef struct {

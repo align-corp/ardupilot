@@ -51,6 +51,13 @@ const AP_Param::GroupInfo AC_Sprayer::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("PUMP_MIN",   4, AC_Sprayer, _pump_min_pct, AC_SPRAYER_DEFAULT_PUMP_MIN),
 
+    // @Param: SPIN_DEL
+    // @DisplayName: Spinner delay
+    // @Description: Spinner's delay in PWM (a higher rate will disperse the spray over a wider area horizontally)
+    // @Units: ms
+    // @Range: 1000 2000
+    // @User: Standard
+    AP_GROUPINFO("SPIN_DEL",     5, AC_Sprayer, _spinner_delay_pwm, AC_SPRAYER_DEFAULT_SPINNER_DELAY_PWM),
     AP_GROUPEND
 };
 
@@ -74,6 +81,8 @@ AC_Sprayer::AC_Sprayer()
         _spinner_pwm.set_and_save(AC_SPRAYER_DEFAULT_SPINNER_PWM);
     }
 
+    _flags.stopping = false;
+
     // To-Do: ensure that the pump and spinner servo channels are enabled
 }
 
@@ -86,9 +95,21 @@ AC_Sprayer *AC_Sprayer::get_singleton()
     return _singleton;
 }
 
+// called by read_aux_all() at 10 Hz
 void AC_Sprayer::run(const bool activate)
 {
-    // return immediately if no change
+    if (_first) {
+        SRV_Channels::set_output_limit(SRV_Channel::k_sprayer_pump, SRV_Channel::Limit::MIN);
+        SRV_Channels::set_output_limit(SRV_Channel::k_sprayer_spinner, SRV_Channel::Limit::MIN);
+        _first = false;
+    }
+
+    // call the stop routine at 10 Hz until it finishes
+    if (_flags.stopping) {
+        stop_spraying();
+    }
+
+    // return immediately if no change, go over only if state changes
     if (_flags.running == activate) {
         return;
     }
@@ -96,8 +117,8 @@ void AC_Sprayer::run(const bool activate)
     // set flag indicate whether spraying is permitted:
     // do not allow running to be set to true if we are currently not enabled
     _flags.running = _enabled && activate;
+    _flags.stopping = false;
 
-    // turn off the pump and spinner servos if necessary
     if (!_flags.running) {
         stop_spraying();
     }
@@ -105,10 +126,28 @@ void AC_Sprayer::run(const bool activate)
 
 void AC_Sprayer::stop_spraying()
 {
-    SRV_Channels::set_output_limit(SRV_Channel::k_sprayer_pump, SRV_Channel::Limit::MIN);
-    SRV_Channels::set_output_limit(SRV_Channel::k_sprayer_spinner, SRV_Channel::Limit::MIN);
-
-    _flags.spraying = false;
+    // no delay, stop immediately
+    if (_spinner_delay_pwm == 0) {
+        _flags.stopping = false;
+        _flags.spraying = false;
+        SRV_Channels::set_output_limit(SRV_Channel::k_sprayer_pump, SRV_Channel::Limit::MIN);
+        SRV_Channels::set_output_limit(SRV_Channel::k_sprayer_spinner, SRV_Channel::Limit::MIN);
+        return;
+    }
+    SRV_Channel* chan = SRV_Channels::get_channel_for(SRV_Channel::k_sprayer_spinner);
+    if (!_flags.stopping) {
+        SRV_Channels::set_output_limit(SRV_Channel::k_sprayer_pump, SRV_Channel::Limit::MIN);
+        _spinner_pwm_stop = chan->get_output_pwm();
+        _flags.stopping = true;
+        _flags.spraying = false;
+    }
+    _spinner_pwm_stop -= _spinner_delay_pwm;
+    if (_spinner_pwm_stop <= chan->get_output_min()) {
+        SRV_Channels::set_output_limit(SRV_Channel::k_sprayer_spinner, SRV_Channel::Limit::MIN);
+        _flags.stopping = false;
+    } else {
+        SRV_Channels::set_output_pwm(SRV_Channel::k_sprayer_spinner, _spinner_pwm_stop);
+    }
 }
 
 /// update - adjust pwm of servo controlling pump speed according to the desired quantity and our horizontal speed

@@ -16,7 +16,7 @@
 
   Output is:
 
-    - current in Amps maps to in litres/hour
+    - current in Amps maps to in litres/minute
     - consumed mAh is in consumed millilitres
     - fixed 1.0v voltage
  */
@@ -118,8 +118,8 @@ void AP_BattMonitor_FuelFlow::read()
 
     _state.last_time_micros = now_us;
 
-    // map amps to litres/hour
-    _state.current_amps = litres_pec_sec * (60*60);
+    // map amps to litres/minute
+    _state.current_amps = litres_pec_sec * 60;
 
     // map consumed_mah to consumed millilitres
     _state.consumed_mah += litres * 1000;

@@ -763,6 +763,18 @@ bool AP_MotorsMatrix::setup_quad_matrix(motor_frame_type frame_type)
         };
         add_motors_raw(motors, ARRAY_SIZE(motors));
         break;
+    case MOTOR_FRAME_TYPE_ALIGN_M460:
+        add_motor_raw(AP_MOTORS_MOT_1, -1, 0.862, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 1);
+        add_motor_raw(AP_MOTORS_MOT_4, -0.927, -0.862, AP_MOTORS_MATRIX_YAW_FACTOR_CW, 2);
+        add_motor_raw(AP_MOTORS_MOT_2, 0.927, -0.862, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 3);
+        add_motor_raw(AP_MOTORS_MOT_3, 1, 0.862, AP_MOTORS_MATRIX_YAW_FACTOR_CW, 4);
+        break;
+    case MOTOR_FRAME_TYPE_ALIGN_M490:
+        add_motor_raw(AP_MOTORS_MOT_1, -1, 0.845, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 1);
+        add_motor_raw(AP_MOTORS_MOT_4, -0.94, -0.845, AP_MOTORS_MATRIX_YAW_FACTOR_CW, 2);
+        add_motor_raw(AP_MOTORS_MOT_2, 0.94, -0.845, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 3);
+        add_motor_raw(AP_MOTORS_MOT_3, 1, 0.845, AP_MOTORS_MATRIX_YAW_FACTOR_CW, 4);
+        break;
     default:
         // quad frame class does not support this frame type
         return false;

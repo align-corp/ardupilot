@@ -503,6 +503,25 @@ uint8_t crc_sum8_with_carry(const uint8_t *p, uint8_t len)
     return sum;
 }
 
+uint16_t crc_sum16(const uint8_t *p, uint8_t len, uint8_t offset)
+{
+    uint16_t sum = 0;
+    for (uint8_t i=offset; i<len; i++) {
+        sum += p[i];            
+    }
+    return sum;
+}
+
+void crc16_tcp(const uint8_t *data, uint16_t len, uint8_t offset, uint8_t &ck_a, uint8_t &ck_b)
+{
+    ck_a = 0;
+    ck_b = 0;
+    for (uint16_t i=offset; i<len; i++) {
+        ck_a = ck_a + data[i];
+        ck_b = ck_b + ck_a;
+    }
+}
+
 // CRC-16 (IBM/ANSI)
 // Polynomial : x16 + x15 + x2 + 1 (polynomial representation : 0x8005)
 // Initial Value : 0

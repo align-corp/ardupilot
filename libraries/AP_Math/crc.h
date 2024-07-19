@@ -41,6 +41,11 @@ uint16_t crc_crc16_ibm(uint16_t crc_accum, uint8_t *data_blk_ptr, uint16_t data_
 // the final sum.
 uint8_t crc_sum8_with_carry(const uint8_t *p, uint8_t len);
 
+uint16_t crc_sum16(const uint8_t *p, uint8_t len, uint8_t offset);
+
+// 8 bit fletcher algorithm, used in TCP standard (RFC 1145)
+void crc16_tcp(const uint8_t *data, uint16_t len, uint8_t offset, uint8_t &ck_a, uint8_t &ck_b);
+
 // Copyright (C) 2010 Swift Navigation Inc.
 // Contact: Fergus Noble <fergus@swift-nav.com>
 uint16_t crc16_ccitt(const uint8_t *buf, uint32_t len, uint16_t crc);

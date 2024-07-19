@@ -29,6 +29,10 @@
 #define HAL_MOUNT_SIYI_ENABLED AP_MOUNT_BACKEND_DEFAULT_ENABLED
 #endif
 
+#ifndef HAL_MOUNT_G3P_ENABLED
+#define HAL_MOUNT_G3P_ENABLED AP_MOUNT_BACKEND_DEFAULT_ENABLED
+#endif
+
 // solo gimbal is enabled explicitly in hwdefs on some Cubes:
 #ifndef HAL_SOLO_GIMBAL_ENABLED
 #define HAL_SOLO_GIMBAL_ENABLED 0

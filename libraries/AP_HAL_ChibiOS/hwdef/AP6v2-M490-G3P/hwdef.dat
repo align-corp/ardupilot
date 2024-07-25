@@ -1,0 +1,30 @@
+include ../AP6v2/hwdef.dat
+
+# define custom Align frame code
+define ALIGN_FRAME ALIGN_M490_G3P
+
+# decrease arming delay
+define ARMING_DELAY_SEC 0.5f
+
+# Telemetry on Serial 1
+define DEFAULT_SERIAL1_BAUD 115
+
+# Mavlink1 on Serial 2-3 for rangefinders
+undef DEFAULT_SERIAL2_PROTOCOL
+define DEFAULT_SERIAL2_PROTOCOL SerialProtocol_MAVLink
+define DEFAULT_SERIAL2_BAUD 115
+undef DEFAULT_SERIAL3_PROTOCOL
+define DEFAULT_SERIAL3_PROTOCOL SerialProtocol_MAVLink
+define DEFAULT_SERIAL3_BAUD 115
+
+# PCU on Serial 4
+undef DEFAULT_SERIAL4_PROTOCOL
+define DEFAULT_SERIAL4_PROTOCOL SerialProtocol_PCU
+define DEFAULT_SERIAL4_BAUD 115
+
+# G3P on Serial 5 and 7
+undef DEFAULT_SERIAL5_PROTOCOL
+undef DEFAULT_SERIAL7_PROTOCOL
+define DEFAULT_SERIAL5_PROTOCOL SerialProtocol_Gimbal
+define DEFAULT_SERIAL7_PROTOCOL SerialProtocol_Gimbal
+

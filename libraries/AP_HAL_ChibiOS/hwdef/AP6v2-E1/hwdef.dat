@@ -1,0 +1,26 @@
+include ../AP6v2/hwdef.dat
+
+# define custom Align frame code
+define ALIGN_FRAME ALIGN_E1
+
+# Telemetry on Serial 1
+define DEFAULT_SERIAL1_BAUD 115
+
+# Rangefinders on Serial2 (front) and Serial 3 (down)
+undef DEFAULT_SERIAL2_PROTOCOL
+define DEFAULT_SERIAL2_PROTOCOL SerialProtocol_Rangefinder
+define DEFAULT_SERIAL2_BAUD 921
+undef DEFAULT_SERIAL3_PROTOCOL
+define DEFAULT_SERIAL3_PROTOCOL SerialProtocol_Rangefinder
+define DEFAULT_SERIAL3_BAUD 921
+
+# PCU on Serial 4
+define AP_BATTERY_P2_ENABLED 1
+undef DEFAULT_SERIAL4_PROTOCOL
+define DEFAULT_SERIAL4_PROTOCOL SerialProtocol_PCU
+
+# Mavlink2 (slave transmitter) on Serial 5
+define DEFAULT_SERIAL5_BAUD 115
+
+# 3 notch filters
+define HAL_INS_NUM_HARMONIC_NOTCH_FILTERS 3

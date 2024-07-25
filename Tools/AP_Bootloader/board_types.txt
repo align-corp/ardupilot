@@ -102,6 +102,9 @@ AP_HW_MATEKF765_WING                  143
 AP_HW_JDMINIF405                      144
 AP_HW_KAKUTEF7_MINI                   145
 AP_HW_H757I_EVAL                      146
+AP_HW_ALIGN_AP3                       150
+AP_HW_ALIGN_AP6                       151
+AP_HW_ALIGN_AP6v2                     152
 AP_HW_F4BY                             20 # value due to previous release by vendor
 AP_HW_VRBRAIN_V51                    1151
 AP_HW_VRBRAIN_V52                    1152

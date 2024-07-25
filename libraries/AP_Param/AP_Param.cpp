@@ -2247,11 +2247,22 @@ bool AP_Param::parse_param_line(char *line, char **vname, float &value, bool &re
     *vname = pname;
 
     const char *flags_s = strtok_r(nullptr, ", =\t\r\n", &saveptr);
+
+#ifndef PARAM_READONLY
+    // default readonly routine: check @READONLY
     if (flags_s && strcmp(flags_s, "@READONLY") == 0) {
         read_only = true;
     } else {
         read_only = false;
     }
+#else
+    // custom readonly routine: check @RW
+    if (flags_s && strcmp(flags_s, "@RW") == 0) {
+        read_only = false;
+    } else {
+        read_only = true;
+    }
+#endif
 
     return true;
 }

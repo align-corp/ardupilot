@@ -58,9 +58,9 @@ const AP_FWVersion AP_FWVersion::fwver{
          .middle_patch = MIDDLE_PATCH,
          .middle_type = MIDDLE_TYPE,
 #endif
-#ifdef BUILD_DATE_YEAR
-    // encode build date in os_sw_version
-   .os_sw_version = (BUILD_DATE_YEAR*100*100) + (BUILD_DATE_MONTH*100) + BUILD_DATE_DAY,
+#ifdef ALIGN_FRAME
+    // encode align custom frame in os_sw_version
+   .os_sw_version = ALIGN_FRAME,
 #else
    .os_sw_version = 0,
 #endif

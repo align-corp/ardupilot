@@ -1007,6 +1007,16 @@ void ModeAuto::wp_run()
         return;
     }
 
+    // switch to loiter if pilot roll or pitch input is > 50%
+    if ((copter.g2.auto_options & (uint32_t)Options::PilotOverride) != 0) {
+        const float pilot_roll = channel_roll->norm_input();
+        const float pilot_pitch = channel_pitch->norm_input();
+        const bool pilot_override = fabsf(pilot_roll)>0.5 || fabsf(pilot_pitch)>0.5;
+        if (pilot_override) {
+            copter.set_mode(Mode::Number::LOITER, ModeReason::UNKNOWN);
+        }
+    }
+
     // set motors to full range
     motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
 

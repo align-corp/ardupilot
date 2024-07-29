@@ -528,6 +528,9 @@ bool AC_WPNav::advance_wp_target_along_track(float dt)
     target_accel *= sq(vel_scaler_dt);
     target_accel += accel_offset;
 
+    // add stick mixing value
+    target_pos.z += _altitude_stick_mix_cm;
+
     // convert final_target.z to altitude above the ekf origin
     target_pos.z += _pos_control.get_pos_offset_z_cm();
     target_vel.z += _pos_control.get_vel_offset_z_cms();

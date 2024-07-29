@@ -72,6 +72,10 @@ public:
     void set_speed_up(float speed_up_cms);
     void set_speed_down(float speed_down_cms);
 
+    /// altitude stick mixing. Warning: altitude speed set point must be constrained.
+    void set_alt_stick_mix(float speed_cms, float dt) {_altitude_stick_mix_cm += speed_cms * dt; }
+    void reset_alt_stick_mix() {_altitude_stick_mix_cm = 0.0f; }
+
     /// get default target horizontal velocity during wp navigation
     float get_default_speed_xy() const { return _wp_speed_cms; }
 
@@ -290,4 +294,7 @@ protected:
     AP_Int8     _rangefinder_use;       // parameter that specifies if the range finder should be used for terrain following commands
     bool        _rangefinder_healthy;   // true if rangefinder distance is healthy (i.e. between min and maximum)
     float       _rangefinder_terrain_offset_cm; // latest rangefinder based terrain offset (e.g. terrain's height above EKF origin)
+
+    // altitude stick mixing
+    float       _altitude_stick_mix_cm = 0;
 };

@@ -26,6 +26,10 @@ void Copter::landinggear_update()
         break;
 
     case RangeFinder::Status::OutOfRangeHigh:
+        // altitude is at least max rangefinder distance
+        height_cm = rangefinder.max_distance_cm_orient(ROTATION_PITCH_270);
+        break;
+        
     case RangeFinder::Status::Good:
         // use last good reading
         height_cm = rangefinder_state.alt_cm_filt.get();

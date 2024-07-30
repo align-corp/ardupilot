@@ -21,6 +21,8 @@
 #include "RGBLed.h"
 #include "AP_Notify.h"
 
+#include <RC_Channel/RC_Channel.h>
+
 extern const AP_HAL::HAL& hal;
 
 RGBLed::RGBLed(uint8_t led_off, uint8_t led_bright, uint8_t led_medium, uint8_t led_dim):
@@ -103,6 +105,24 @@ uint32_t RGBLed::get_colour_sequence(void) const
     if (AP_Notify::flags.initialising) {
         return sequence_initialising;
     }
+
+    // Check GNSS status only
+    if (!rc().has_had_rc_receiver() &&
+        !rc().has_had_rc_override() &&
+        !AP_Notify::flags.armed &&
+        AP_HAL::millis() < 120000) {
+            if (AP_Notify::flags.gps_status >= AP_GPS::GPS_OK_FIX_3D && AP_Notify::flags.gps_num_sats >= 8) {
+                return DEFINE_COLOUR_SEQUENCE_SOLID(GREEN);
+            } else if (AP_Notify::flags.gps_status >= AP_GPS::GPS_OK_FIX_3D) {
+                return DEFINE_COLOUR_SEQUENCE_SOLID(BLUE);
+            } else if (AP_Notify::flags.gps_status == AP_GPS::GPS_OK_FIX_2D ) {
+                return DEFINE_COLOUR_SEQUENCE_SOLID(WHITE);
+            } else if (AP_Notify::flags.gps_status == AP_GPS::NO_FIX) {
+                return DEFINE_COLOUR_SEQUENCE_SOLID(YELLOW);
+            } else {
+                return DEFINE_COLOUR_SEQUENCE_SOLID(RED);
+            }
+        }
 
     // save trim or any calibration pattern
     if (AP_Notify::flags.save_trim ||

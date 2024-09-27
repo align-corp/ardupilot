@@ -32,6 +32,7 @@ uint8_t crc_xor(const uint8_t *data, uint16_t len, uint8_t offset);
 uint16_t crc_xmodem_update(uint16_t crc, uint8_t data);
 uint16_t crc_xmodem(const uint8_t *data, uint16_t len);
 uint32_t crc_crc32(uint32_t crc, const uint8_t *buf, uint32_t size);
+uint32_t crc_crc32_mpeg2(uint32_t crc, const uint8_t *buf, uint32_t size);
 uint32_t crc32_small(uint32_t crc, const uint8_t *buf, uint32_t size);
 uint32_t crc_crc24(const uint8_t *bytes, uint16_t len);
 uint16_t crc_crc16_ibm(uint16_t crc_accum, uint8_t *data_blk_ptr, uint16_t data_blk_size);

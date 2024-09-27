@@ -48,6 +48,11 @@ class AP_BattMonitor_EFI;
 class AP_BattMonitor_Scripting;
 class AP_BattMonitor_PCU;
 
+class AP_BattMonitor_P2;
+class AP_BattMonitor_P2_3s;
+class AP_BattMonitor_P2_BEC;
+class AP_BattMonitor_P2_FuelFlow;
+
 
 class AP_BattMonitor
 {
@@ -74,6 +79,10 @@ class AP_BattMonitor
     friend class AP_BattMonitor_Synthetic_Current;
     friend class AP_BattMonitor_Scripting;
     friend class AP_BattMonitor_PCU;
+    friend class AP_BattMonitor_P2;
+    friend class AP_BattMonitor_P2_3s;
+    friend class AP_BattMonitor_P2_BEC;
+    friend class AP_BattMonitor_P2_FuelFlow;
 
 public:
 
@@ -114,6 +123,10 @@ public:
         EFI                            = 27,
         AD7091R5                       = 28,
         Scripting                      = 29,
+        ALIGN_P2                       = 30,
+        ALIGN_P2_3S                    = 31,
+        ALIGN_P2_BEC                   = 32,
+        ALIGN_P2_FLOW                  = 33,
     };
 
     FUNCTOR_TYPEDEF(battery_failsafe_handler_fn_t, void, const char *, const int8_t);
@@ -311,7 +324,29 @@ private:
 
     int8_t      _highest_failsafe_priority; // highest selected failsafe action level (used to restrict what actions we move into)
     bool        _has_triggered_failsafe;  // true after a battery failsafe has been triggered for the first time
-
+    
+#if AP_BATTERY_P2_ENABLED
+    // shared data for PCU P2 battery monitor
+    struct AP_BattMonitor_P2_parsed_data
+    {
+        uint16_t vbatt_3s = 0;
+        uint16_t vbatt_12s = 0;
+        uint16_t vbec1 = 0;
+        uint16_t vbec2 = 0;
+        uint16_t vbec_out = 0;
+        uint16_t vfcu = 0;
+        uint16_t ibatt_3s = 0;
+        uint16_t ibatt_12s = 0;
+        uint16_t ibec = 0;
+        int16_t motor_temp = 0;
+        bool fan_on = false;
+        bool fuel_level_full = false;
+        uint32_t flow_sensor_raw = 0;
+        uint32_t micros_batt = 0;
+        uint32_t micros_fuel = 0;
+    } pcu_shared_data;
+#endif
+    
 };
 
 namespace AP {

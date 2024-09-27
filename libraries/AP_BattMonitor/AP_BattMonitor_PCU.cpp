@@ -159,9 +159,6 @@ bool AP_BattMonitor_PCU::parse_message()
         return false;
     }
 
-    // flag to allow cases below to reset parser state
-    bool reset_parser = false;
-
     // true if a packet was successfully parsed
     bool parsed = false;
 
@@ -175,6 +172,9 @@ bool AP_BattMonitor_PCU::parse_message()
         }
 
         _msg_buff[_msg_buff_len++] = b;
+
+        // flag to allow cases below to reset parser state
+        bool reset_parser = false;
 
         // protect against overly long messages
         if (_msg_buff_len >= AP_BATT_PCU_PACKET_LENGTH) {

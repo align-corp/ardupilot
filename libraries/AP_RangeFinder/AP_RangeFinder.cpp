@@ -59,6 +59,7 @@
 #include "AP_RangeFinder_NRA24_CAN.h"
 #include "AP_RangeFinder_TOFSenseF_I2C.h"
 #include "AP_RangeFinder_JRE_Serial.h"
+#include "AP_RangeFinder_Align_RDR01.h"
 
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include <AP_Logger/AP_Logger.h>
@@ -581,6 +582,12 @@ void RangeFinder::detect_instance(uint8_t instance, uint8_t& serial_instance)
 #if AP_RANGEFINDER_JRE_SERIAL_ENABLED
     case Type::JRE_Serial:
         serial_create_fn = AP_RangeFinder_JRE_Serial::create;
+        break;
+#endif
+
+#if AP_RANGEFINDER_ALIGN_ENABLED
+    case Type::Align_RDR01:
+        serial_create_fn = AP_RangeFinder_Align_RDR01::create;
         break;
 #endif
 

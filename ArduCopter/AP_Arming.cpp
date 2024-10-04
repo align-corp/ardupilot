@@ -34,10 +34,13 @@ bool AP_Arming_Copter::run_pre_arm_checks(bool display_failure)
     // check if motor interlock aux switch is in use
     // if it is, switch needs to be in disabled position to arm
     // otherwise exit immediately.
-    if (copter.ap.using_interlock && copter.ap.motor_interlock_switch) {
-        check_failed(display_failure, "Motor Interlock Enabled");
-        passed = false;
-    }
+    // move the check to run_arm_checks() for Helicopters
+    #if FRAME_CONFIG != HELI_FRAME
+        if (copter.ap.using_interlock && copter.ap.motor_interlock_switch) {
+            check_failed(display_failure, "Motor Interlock Enabled");
+            passed = false;
+        }
+    #endif
 
     if (!disarm_switch_checks(display_failure)) {
         passed = false;
@@ -566,6 +569,16 @@ bool AP_Arming_Copter::alt_checks(bool display_failure)
 //  has side-effect that logging is started
 bool AP_Arming_Copter::arm_checks(AP_Arming::Method method)
 {
+    // check if motor interlock aux switch is in use
+    // if it is, switch needs to be in disabled position to arm
+    // otherwise exit immediately.
+    // move the check to run_arm_checks() if ARMING_CHECK_RC not set
+    #if FRAME_CONFIG == HELI_FRAME
+        if (copter.ap.using_interlock && copter.ap.motor_interlock_switch) {
+            check_failed(true, "Motor Interlock Enabled");
+            return false;
+        }
+    #endif
     const auto &ahrs = AP::ahrs();
 
     // always check if inertial nav has started and is ready

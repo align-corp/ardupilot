@@ -79,7 +79,7 @@ def create_embedded_h(filename, files, uncompressed=False):
     write_encode(out, '''// generated embedded files for AP_ROMFS\n\n''')
 
     # remove duplicates and sort
-    files = sorted(list(set(files)))
+    files = sorted(list(set(f for f in files if not f[0].endswith(".DS_Store"))))
     crc = {}
     for i in range(len(files)):
         (name, filename) = files[i]

@@ -573,6 +573,11 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] = {
     // @Path: ../Filter/HarmonicNotchFilter.cpp
     AP_SUBGROUPINFO(harmonic_notches[1].params, "_HNTC2_",  53, AP_InertialSensor, HarmonicNotchFilterParams),
 #endif
+#if HAL_INS_NUM_HARMONIC_NOTCH_FILTERS > 2
+    // @Group: _HNTC2_
+    // @Path: ../Filter/HarmonicNotchFilter.cpp
+    AP_SUBGROUPINFO(harmonic_notches[2].params, "_HNTC3_",  57, AP_InertialSensor, HarmonicNotchFilterParams),
+#endif
 
     // @Param: _GYRO_RATE
     // @DisplayName: Gyro rate for IMUs with Fast Sampling enabled

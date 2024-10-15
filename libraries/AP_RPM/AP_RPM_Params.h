@@ -33,6 +33,7 @@ public:
 #if AP_RPM_ESC_TELEM_OUTBOUND_ENABLED
     AP_Int8  esc_telem_outbound_index;
 #endif
+    AP_Int8  pull;
 
     static const struct AP_Param::GroupInfo var_info[];
 

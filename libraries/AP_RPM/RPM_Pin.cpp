@@ -58,6 +58,10 @@ void AP_RPM_Pin::update(void)
         last_pin = get_pin();
         if (last_pin > 0) {
             hal.gpio->pinMode(last_pin, HAL_GPIO_INPUT);
+            if (ap_rpm._params[state.instance].pull > -1) {
+                // set internal pullup or pulldown resistor
+                hal.gpio->write(last_pin, ap_rpm._params[state.instance].pull);
+            }
             if (hal.gpio->attach_interrupt(
                     last_pin,
                     FUNCTOR_BIND_MEMBER(&AP_RPM_Pin::irq_handler, void, uint8_t, bool, uint32_t),

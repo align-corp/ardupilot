@@ -78,6 +78,14 @@ const AP_Param::GroupInfo AP_RPM_Params::var_info[] = {
     AP_GROUPINFO("ESC_INDEX", 8, AP_RPM_Params, esc_telem_outbound_index, 0),
 #endif
 
+    // @Param: PULL
+    // @DisplayName: Set pullup or pulldown
+    // @Description: Turn ON MCU internal pullup or pulldown resistor
+    // @Increment: 1
+    // @Values: -1:Disabled,0:Pulldown,1:Pullup
+    // @User: Advanced
+    AP_GROUPINFO("PULL", 9, AP_RPM_Params, pull, -1),
+
     AP_GROUPEND
 };
 

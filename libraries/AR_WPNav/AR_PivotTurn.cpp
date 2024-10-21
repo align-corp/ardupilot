@@ -24,11 +24,11 @@
 
 extern const AP_HAL::HAL& hal;
 
-#define AR_PIVOT_TIMEOUT_MS     100 // pivot controller timesout and reset target if not called within this many milliseconds
-#define AR_PIVOT_ANGLE_DEFAULT  60  // default PIVOT_ANGLE parameter value
-#define AR_PIVOT_ANGLE_ACCURACY 5   // vehicle will pivot to within this many degrees of destination
-#define AR_PIVOT_RATE_DEFAULT   60  // default PIVOT_RATE parameter value
-#define AR_PIVOT_DELAY_DEFAULT  0   // default PIVOT_DELAY parameter value
+#define AR_PIVOT_TIMEOUT_MS             100 // pivot controller timesout and reset target if not called within this many milliseconds
+#define AR_PIVOT_ANGLE_DEFAULT          60  // default PIVOT_ANGLE parameter value
+#define AR_PIVOT_ANGLE_ACCURACY_DEFAULT 5   // vehicle will pivot to within this many degrees of destination
+#define AR_PIVOT_RATE_DEFAULT           60  // default PIVOT_RATE parameter value
+#define AR_PIVOT_DELAY_DEFAULT          0   // default PIVOT_DELAY parameter value
 
 const AP_Param::GroupInfo AR_PivotTurn::var_info[] = {
 
@@ -58,6 +58,16 @@ const AP_Param::GroupInfo AR_PivotTurn::var_info[] = {
     // @Increment: 0.1
     // @User: Standard
     AP_GROUPINFO("DELAY", 3, AR_PivotTurn, _delay, AR_PIVOT_DELAY_DEFAULT),
+    
+    // @Param: PIVOT_ACCURACY
+    // @Param: ACC
+    // @DisplayName: Accuracy of pivot turn
+    // @Description: Angle error to declare pivot turn complete 
+    // @Units: deg
+    // @Range: 1 10
+    // @Increment: 0.1
+    // @User: Standard
+    AP_GROUPINFO("ACC", 4, AR_PivotTurn, _accuracy, AR_PIVOT_ANGLE_ACCURACY_DEFAULT),
 
     AP_GROUPEND
 };
@@ -88,7 +98,7 @@ bool AR_PivotTurn::active() const
 void AR_PivotTurn::check_activation(float desired_heading_deg, bool force_active)
 {
     // check cases where we clearly cannot use pivot steering
-    if (!_enabled || (_angle <= AR_PIVOT_ANGLE_ACCURACY)) {
+    if (!_enabled || (_angle <= get_pivot_accuracy_deg())) {
         _active = false;
         return;
     }
@@ -106,7 +116,7 @@ void AR_PivotTurn::check_activation(float desired_heading_deg, bool force_active
     uint32_t now_ms = AP_HAL::millis();
 
     // if within 5 degrees of the target heading, set start time of pivot steering
-    if (_active && (yaw_error < AR_PIVOT_ANGLE_ACCURACY) && (_delay_start_ms == 0)) {
+    if (_active && (yaw_error < get_pivot_accuracy_deg()) && (_delay_start_ms == 0)) {
         _delay_start_ms = now_ms;
     }
 
@@ -123,7 +133,7 @@ void AR_PivotTurn::check_activation(float desired_heading_deg, bool force_active
 bool AR_PivotTurn::would_activate(float yaw_change_deg) const
 {
     // check cases where we clearly cannot use pivot steering
-    if (!_enabled || (_angle <= AR_PIVOT_ANGLE_ACCURACY)) {
+    if (!_enabled || (_angle <= get_pivot_accuracy_deg())) {
         return false;
     }
 
@@ -150,4 +160,10 @@ float AR_PivotTurn::get_turn_rate_rads(float desired_heading_deg, float dt)
 uint32_t AR_PivotTurn::get_delay_duration_ms() const
 {
     return constrain_float(_delay.get(), 0.0f, 60.0f) * 1000;
+}
+
+// return post-turn delay duration in milliseconds
+float AR_PivotTurn::get_pivot_accuracy_deg() const
+{
+    return constrain_float(_accuracy.get(), 0.0f, 20.0f);
 }

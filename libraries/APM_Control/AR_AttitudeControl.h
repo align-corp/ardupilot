@@ -37,7 +37,7 @@ public:
     // positive yaw is to the right
     // return value is normally in range -1.0 to +1.0 but can be higher or lower
     // also sets steering_limit_left and steering_limit_right flags
-    float get_steering_out_rate(float desired_rate, bool motor_limit_left, bool motor_limit_right, float dt);
+    float get_steering_out_rate(float desired_rate, bool motor_limit_left, bool motor_limit_right, float dt, bool limit_accel = true);
 
     // get latest desired turn rate in rad/sec recorded during calls to get_steering_out_rate.  For reporting purposes only
     float get_desired_turn_rate() const;

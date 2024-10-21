@@ -148,6 +148,7 @@ void AR_WPNav::update(float dt)
         _desired_lat_accel = 0.0f;
         _desired_turn_rate_rads = 0.0f;
         _cross_track_error = 0;
+        _limit_accel = true;
         return;
     }
 
@@ -517,10 +518,12 @@ void AR_WPNav::update_steering_and_speed(const Location &current_loc, float dt)
         _desired_heading_cd = _reversed ? wrap_360_cd(oa_wp_bearing_cd() + 18000) : oa_wp_bearing_cd();
         _desired_turn_rate_rads = is_zero(_desired_speed_limited) ? _pivot.get_turn_rate_rads(_desired_heading_cd * 0.01, dt) : 0;
         _desired_lat_accel = 0.0f;
+        _limit_accel = false;
     } else {
         _desired_speed_limited = _pos_control.get_desired_speed();
         _desired_turn_rate_rads = _pos_control.get_desired_turn_rate_rads();
         _desired_lat_accel = _pos_control.get_desired_lat_accel();
+        _limit_accel = true;
     }
 }
 

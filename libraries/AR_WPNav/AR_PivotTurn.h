@@ -58,11 +58,15 @@ private:
     // return pivot turn accuracy in degrees
     float get_pivot_accuracy_deg() const;
 
+    // return pre-turn delay duration in milliseconds
+    uint32_t get_delay_in_duration_ms() const;
+
     // parameters
     AP_Int16 _angle;                // minimum angle error (in degrees) that leads to pivot turn
     AP_Int16 _rate_max;             // maximum turn rate (in degrees) during pivot turn
     AP_Float _delay;                // waiting time (in seconds) after pivot turn completes
     AP_Float _accuracy;             // accuracy angle
+    AP_Float _delay_in;             // waiting time (in seconds) before pivot turn completes
 
     // references
     AR_AttitudeControl& _atc;       // rover attitude control library

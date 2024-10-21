@@ -35,6 +35,7 @@ public:
     // get navigation outputs for speed (in m/s) and turn rate (in rad/sec)
     float get_speed() const { return _desired_speed_limited; }
     float get_turn_rate_rads() const { return _desired_turn_rate_rads; }
+    bool get_limit_accel() { return _limit_accel; }
 
     // get desired lateral acceleration (for reporting purposes only because will be zero during pivot turns)
     float get_lat_accel() const { return _desired_lat_accel; }
@@ -184,6 +185,7 @@ protected:
     // main outputs from navigation library
     float _desired_speed_limited;   // desired speed (above) but accel/decel limited
     float _desired_turn_rate_rads;  // desired turn-rate in rad/sec (negative is counter clockwise, positive is clockwise)
+    bool _limit_accel = true;
     float _desired_lat_accel;       // desired lateral acceleration (for reporting only)
     float _desired_heading_cd;      // desired heading (back towards line between origin and destination)
     float _wp_bearing_cd;           // heading to waypoint in centi-degrees

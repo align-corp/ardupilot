@@ -69,6 +69,15 @@ const AP_Param::GroupInfo AR_PivotTurn::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("ACC", 4, AR_PivotTurn, _accuracy, AR_PIVOT_ANGLE_ACCURACY_DEFAULT),
 
+    // @Param: DEL_IN
+    // @DisplayName: Delay after pivot turn
+    // @Description: Waiting time after pivot turn
+    // @Units: s
+    // @Range: 0 60
+    // @Increment: 0.1
+    // @User: Standard
+    AP_GROUPINFO("DEL_IN", 5, AR_PivotTurn, _delay_in, AR_PIVOT_DELAY_DEFAULT),
+
     AP_GROUPEND
 };
 
@@ -166,4 +175,10 @@ uint32_t AR_PivotTurn::get_delay_duration_ms() const
 float AR_PivotTurn::get_pivot_accuracy_deg() const
 {
     return constrain_float(_accuracy.get(), 0.0f, 20.0f);
+}
+
+// return post-turn delay duration in milliseconds
+uint32_t AR_PivotTurn::get_delay_in_duration_ms() const
+{
+    return constrain_float(_delay_in.get(), 0.0f, 60.0f) * 1000;
 }

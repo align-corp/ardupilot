@@ -636,7 +636,7 @@ float AR_AttitudeControl::get_turn_rate_from_heading(float heading_rad, float ra
 // positive yaw is to the right
 // return value is normally in range -1.0 to +1.0 but can be higher or lower
 // also sets steering_limit_left and steering_limit_right flags
-float AR_AttitudeControl::get_steering_out_rate(float desired_rate, bool motor_limit_left, bool motor_limit_right, float dt)
+float AR_AttitudeControl::get_steering_out_rate(float desired_rate, bool motor_limit_left, bool motor_limit_right, float dt, bool limit_accel)
 {
     // sanity check dt
     dt = constrain_float(dt, 0.0f, 1.0f);
@@ -655,7 +655,7 @@ float AR_AttitudeControl::get_steering_out_rate(float desired_rate, bool motor_l
     _steer_turn_last_ms = now;
 
     // acceleration limit desired turn rate
-    if (is_positive(_steer_accel_max)) {
+    if (is_positive(_steer_accel_max) && limit_accel) {
         const float change_max = radians(_steer_accel_max) * dt;
         if (desired_rate <= _desired_turn_rate - change_max) {
             _steering_limit_left = true;

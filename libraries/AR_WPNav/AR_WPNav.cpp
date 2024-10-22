@@ -103,6 +103,7 @@ void AR_WPNav::init(float speed_max)
         _base_speed_max = speed_max;
     } else {
         _base_speed_max = _speed_max;
+        _using_wpnav_speed = true;
     }
     _base_speed_max = MAX(AR_WPNAV_SPEED_MIN, _base_speed_max);
     float atc_accel_max = MIN(_atc.get_accel_max(), _atc.get_decel_max());
@@ -611,6 +612,11 @@ bool AR_WPNav::set_origin_and_destination_to_stopping_point()
 // updates position controller limits and recalculate scurve path if required
 void AR_WPNav::update_speed_max()
 {
+    // update speed if user change parameter WPNAV_SPEED
+    if (_using_wpnav_speed) {
+        _base_speed_max = _speed_max;
+    }
+
     const float speed_max = MAX(_base_speed_max, _nudge_speed_max);
 
     // ignore calls that do not change the speed

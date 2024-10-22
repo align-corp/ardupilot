@@ -178,6 +178,7 @@ protected:
     } _nav_control_type;            // navigation controller that should be used to travel from _origin to _destination
 
     // speed_max handling
+    bool _using_wpnav_speed = false;// true if we're using WPNAV_SPEED
     float _base_speed_max;          // speed max (in m/s) derived from parameters or passed into init
     float _nudge_speed_max;         // "nudge" speed max (in m/s) normally from the pilot.  has no effect if less than _base_speed_max.  always positive.
     uint32_t _last_speed_update_ms; // system time that speed_max was last update.  used to ensure speed_max is not update too quickly

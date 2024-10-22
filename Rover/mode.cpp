@@ -471,7 +471,8 @@ void Mode::calc_steering_from_turn_rate(float turn_rate)
     const float steering_out = attitude_control.get_steering_out_rate(turn_rate,
                                                                       g2.motors.limit.steer_left,
                                                                       g2.motors.limit.steer_right,
-                                                                      rover.G_Dt);
+                                                                      rover.G_Dt,
+                                                                      g2.wp_nav.get_limit_accel());
     set_steering(steering_out * 4500.0f);
 }
 

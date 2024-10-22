@@ -522,8 +522,10 @@ void AR_WPNav::update_steering_and_speed(const Location &current_loc, float dt)
         _limit_accel = false;
     } else {
         _desired_speed_limited = _pos_control.get_desired_speed();
-        _desired_turn_rate_rads = _pos_control.get_desired_turn_rate_rads();
-        _desired_lat_accel = _pos_control.get_desired_lat_accel();
+        // do not adjust turn rate if speed is too low (mower has really bad dynamic at low speed)
+        bool do_not_turn = _desired_speed_limited < constrain_float(get_speed_max()*0.3f, 0.0f, 0.3f);
+        _desired_turn_rate_rads = do_not_turn ? 0.0f : _pos_control.get_desired_turn_rate_rads();
+        _desired_lat_accel = do_not_turn ? 0.0f : _pos_control.get_desired_lat_accel();
         _limit_accel = true;
     }
 }

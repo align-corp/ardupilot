@@ -45,10 +45,8 @@ private:
 
     // parser state and unpacked fields
     struct PACKED {
-        uint8_t message_id;
-        uint16_t min_dist;
-        uint8_t targets_found;
-        uint8_t target_index;
+        uint8_t message_id_1;
+        uint8_t message_id_2;
         ParseState state;
         uint8_t payload[MR72_PAYLOAD_LENGTH];
         uint8_t payload_index;

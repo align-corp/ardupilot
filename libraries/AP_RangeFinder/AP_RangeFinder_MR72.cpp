@@ -20,7 +20,7 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Math/AP_Math.h>
 
-#include <ctype.h>
+#define AP_RANGEFINDER_MR72_DEBUG
 
 #ifdef AP_RANGEFINDER_MR72_DEBUG
 #define debug(fmt, args ...)  do {hal.console->printf("%s:%d: " fmt "\n", __FUNCTION__, __LINE__, ## args); } while(0)
@@ -31,9 +31,9 @@
 extern const AP_HAL::HAL& hal;
 
 #define MR72_HEADER 0xAA
-#define MR72_TARGET_STATUS 0x0C
+#define MR72_TARGET_STATUS_1 0x0C
+#define MR72_TARGET_STATUS_2 0x07
 #define MR72_TARGET_INFO 0x0B
-#define MR72_TARGET_COMMON2 0x70
 #define MR72_END 0x55
 
 // distance returned in reading_m
@@ -53,9 +53,6 @@ bool AP_RangeFinder_MR72::get_reading(float &reading_m)
         return false;
     }
 
-    // flag to allow cases below to reset parser state
-    bool reset_parser = false;
-
     // process bytes received
     for (int16_t i = 0; i < nbytes; i++) {
         const int16_t b = uart->read();
@@ -65,6 +62,8 @@ bool AP_RangeFinder_MR72::get_reading(float &reading_m)
             continue;
         }
 
+        // flag to allow cases below to reset parser state
+        bool reset_parser = false;
 
         // process byte depending upon current state
         switch (_msg.state) {
@@ -77,7 +76,7 @@ bool AP_RangeFinder_MR72::get_reading(float &reading_m)
             }
             break;
 
-        case ParseState::WAITING_FOR_HEADER2:
+            case ParseState::WAITING_FOR_HEADER2:
             if (b == MR72_HEADER) {
                 _msg.state = ParseState::WAITING_FOR_MESSAGE_ID1;
             } else {
@@ -85,53 +84,45 @@ bool AP_RangeFinder_MR72::get_reading(float &reading_m)
             }
             break;
 
-        case ParseState::WAITING_FOR_MESSAGE_ID1:
-            _msg.message_id = b;
+            case ParseState::WAITING_FOR_MESSAGE_ID1:
+            _msg.message_id_1 = b;
             _msg.state = ParseState::WAITING_FOR_MESSAGE_ID2;
             break;
 
-        case ParseState::WAITING_FOR_MESSAGE_ID2:
-            if (b == MR72_TARGET_COMMON2) {
-                _msg.state = ParseState::WAITING_FOR_PAYLOAD;
-            } else {
-                reset_parser = true;
-            }
+            case ParseState::WAITING_FOR_MESSAGE_ID2:
+            _msg.message_id_2 = b;
+            _msg.state = ParseState::WAITING_FOR_PAYLOAD;
             break;
 
-        case ParseState::WAITING_FOR_PAYLOAD:
+            case ParseState::WAITING_FOR_PAYLOAD:
             _msg.payload[_msg.payload_index++] = b;
             if (_msg.payload_index == MR72_PAYLOAD_LENGTH) {
                 _msg.state = ParseState::WAITING_FOR_END1;
             }
             break;
 
-        case ParseState::WAITING_FOR_END1:
-            _msg.state = ParseState::WAITING_FOR_END2; 
+            case ParseState::WAITING_FOR_END1:
+            if (b == MR72_END) {
+                _msg.state = ParseState::WAITING_FOR_END2; 
+            } else {
+                reset_parser = true;
+            }
             break;
 
-        case ParseState::WAITING_FOR_END2:
-            // use TARGET_INFO to know how many targets were detected
-            if (_msg.message_id == MR72_TARGET_INFO) {
-                // update targets found
-                _msg.targets_found = _msg.payload[0];
-                _msg.target_index = 0;
-            }
-
+            case ParseState::WAITING_FOR_END2:
             // use TARGET_STATUS to get the nearest target detected
-            else if (_msg.message_id == MR72_TARGET_STATUS) {
+            // target at index 0 is the minimum distance detected
+            if (b == MR72_END &&
+                _msg.message_id_1 == MR72_TARGET_STATUS_1 &&
+                _msg.message_id_2 == MR72_TARGET_STATUS_2 &&
+                _msg.payload[0] == 0) {
                 uint16_t dist = UINT16_VALUE(_msg.payload[2], _msg.payload[3]);
-                if (_msg.target_index == 0) {
-                    _msg.min_dist = dist;
-                } else {
-                    _msg.min_dist = MIN(_msg.min_dist, dist);
-                }
-
-                // last target, use the minimum distance for averaging
-                if (_msg.target_index++ == _msg.targets_found) {
-                    sum_reading_cm += _msg.min_dist;
-                    count_read++;
-                }
+                sum_reading_cm += dist;
+                count_read++;
             }
+
+            // reset parser
+            reset_parser = true;
             break;
         }
 
@@ -139,6 +130,7 @@ bool AP_RangeFinder_MR72::get_reading(float &reading_m)
         // handle reset of parser
         if (reset_parser) {
             _msg.state = ParseState::WAITING_FOR_HEADER1;
+            _msg.payload_index = 0;
         }
     }
     // average reads

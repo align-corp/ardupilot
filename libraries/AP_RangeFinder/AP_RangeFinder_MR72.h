@@ -50,6 +50,7 @@ private:
         ParseState state;
         uint8_t payload[MR72_PAYLOAD_LENGTH];
         uint8_t payload_index;
+        bool next_is_nearest;
     } _msg;
 
 };

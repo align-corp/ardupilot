@@ -31,8 +31,10 @@
 extern const AP_HAL::HAL& hal;
 
 #define MR72_HEADER 0xAA
-#define MR72_TARGET_STATUS_1 0x0C
+#define MR72_TARGET_STATUS_1 0x0B
 #define MR72_TARGET_STATUS_2 0x07
+#define MR72_TARGET_INFO_1 0x0C
+#define MR72_TARGET_INFO_2 0x07
 #define MR72_TARGET_INFO 0x0B
 #define MR72_END 0x55
 
@@ -111,14 +113,20 @@ bool AP_RangeFinder_MR72::get_reading(float &reading_m)
 
             case ParseState::WAITING_FOR_END2:
             // use TARGET_STATUS to get the nearest target detected
-            // target at index 0 is the minimum distance detected
-            if (b == MR72_END &&
-                _msg.message_id_1 == MR72_TARGET_STATUS_1 &&
-                _msg.message_id_2 == MR72_TARGET_STATUS_2 &&
-                _msg.payload[0] == 0) {
-                uint16_t dist = UINT16_VALUE(_msg.payload[2], _msg.payload[3]);
-                sum_reading_cm += dist;
-                count_read++;
+            // first target received is the nearest one
+            if (b == MR72_END) {
+                if (_msg.message_id_1 == MR72_TARGET_STATUS_1 &&
+                    _msg.message_id_2 == MR72_TARGET_STATUS_2) {
+                    _msg.next_is_nearest = true;
+                }
+                else if (_msg.message_id_1 == MR72_TARGET_INFO_1 &&
+                    _msg.message_id_2 == MR72_TARGET_INFO_2 &&
+                    _msg.next_is_nearest) {
+                    uint16_t dist = UINT16_VALUE(_msg.payload[2], _msg.payload[3]);
+                    sum_reading_cm += dist;
+                    count_read++;
+                    _msg.next_is_nearest = false;
+                }
             }
 
             // reset parser

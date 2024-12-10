@@ -404,6 +404,9 @@ private:
     bool get_wp_bearing_deg(float &bearing) const override;
     bool get_wp_crosstrack_error_m(float &xtrack_error) const override;
 
+    // align bucket controller
+    void update_align_bucket();
+
     enum class FailsafeAction: int8_t {
         None          = 0,
         RTL           = 1,
@@ -429,6 +432,22 @@ private:
     static_assert(_failsafe_priorities[ARRAY_SIZE(_failsafe_priorities) - 1] == -1,
                   "_failsafe_priorities is missing the sentinel");
 
+    // Align bucket controller global variables
+#define ALIGN_BUCKET_AXIS_NUM 2
+    struct AlignBucket {
+        enum class State : uint8_t {
+            STOP,
+            STOP_WAIT,
+            STOPPED,
+            UP,
+            UP_WAIT,
+            UPPED,
+            DOWN,
+            DOWN_WAIT,
+            DOWNED,
+        } state[ALIGN_BUCKET_AXIS_NUM];
+        uint32_t last_ms[ALIGN_BUCKET_AXIS_NUM];
+    } align_bucket;
 
 public:
     void failsafe_check();

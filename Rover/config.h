@@ -59,6 +59,14 @@
 # define MODE_FOLLOW_ENABLED AP_FOLLOW_ENABLED
 #endif
 
+//////////////////////////////////////////////////////////////////////////////
+// Align defines
+#ifndef ALIGN_BUCKET_ENABLED
+#define ALIGN_BUCKET_ENABLED ENABLED
+#endif
+#ifndef ALIGN_BUCKET_DELAY_DEFAULT
+#define ALIGN_BUCKET_DELAY_DEFAULT  150 // in ms
+#endif
 
 //////////////////////////////////////////////////////////////////////////////
 // Developer Items

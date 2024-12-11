@@ -70,6 +70,11 @@ public:
         k_param_serial1_baud,   // deprecated, can be deleted
         k_param_serial2_baud,   // deprecated, can be deleted
 
+#if ALIGN_BUCKET_ENABLED
+        // Align params
+        k_param_align_bucket_delay = 50,    // bucket delay to prevent relay burning
+#endif
+
         // 97: RSSI
         k_param_rssi = 97,
         k_param_rpm_sensor,     // rpm sensor 98
@@ -241,6 +246,12 @@ public:
     AP_Int32    log_bitmask;
     AP_Int8     reset_switch_chan;
     AP_Int8     initial_mode;
+
+    // Align 
+    //
+#if ALIGN_BUCKET_ENABLED
+    AP_Int16     align_bucket_delay;
+#endif
 
     // Telemetry control
     //

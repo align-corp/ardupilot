@@ -216,6 +216,17 @@ const AP_Param::Info Rover::var_info[] = {
     // @Description: Driving mode for switch position 6 (1750 to 2049)
     GSCALAR(mode6,           "MODE6",         (int8_t)Mode::Number::MANUAL),
 
+#if ALIGN_BUCKET_ENABLED
+    // @Param: AL_BUCK_DEL
+    // @DisplayName: BucketDelay
+    // @Description: The delay in milliseconds to avoid bucket relay burn
+    // @Units: ms
+    // @Range: 1 255
+    // @Increment: 1
+    // @User: Standard
+    GSCALAR(align_bucket_delay, "AL_BUCK_DEL",  ALIGN_BUCKET_DELAY_DEFAULT),
+#endif
+
     // variables not in the g class which contain EEPROM saved variables
 
     // @Group: COMPASS_

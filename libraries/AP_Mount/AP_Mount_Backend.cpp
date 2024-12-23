@@ -835,6 +835,7 @@ uint16_t AP_Mount_Backend::get_gimbal_device_flags() const
     case MAV_MOUNT_MODE_MAVLINK_TARGETING:
         switch (mnt_target.target_type) {
         case MountTargetType::RATE:
+        default:
             yaw_lock_state = mnt_target.rate_rads.yaw_is_ef;
             break;
         case MountTargetType::ANGLE:

@@ -57,6 +57,7 @@ void AP_Mount_Gremsy::update()
                 mnt_target.angle_rad = rc_target;
                 break;
             case MountTargetType::RATE:
+            default:
                 mnt_target.rate_rads = rc_target;
                 break;
             }
@@ -95,6 +96,7 @@ void AP_Mount_Gremsy::update()
             send_gimbal_device_set_attitude(mnt_target.angle_rad.roll, mnt_target.angle_rad.pitch, mnt_target.angle_rad.yaw, mnt_target.angle_rad.yaw_is_ef);
             break;
         case MountTargetType::RATE:
+        default:
             send_gimbal_device_set_rate(mnt_target.rate_rads.roll, mnt_target.rate_rads.pitch, mnt_target.rate_rads.yaw, mnt_target.rate_rads.yaw_is_ef);
             break;
     }

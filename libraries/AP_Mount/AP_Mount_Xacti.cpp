@@ -144,6 +144,7 @@ void AP_Mount_Xacti::update()
                 mnt_target.angle_rad = rc_target;
                 break;
             case MountTargetType::RATE:
+            default:
                 mnt_target.rate_rads = rc_target;
                 break;
             }
@@ -183,6 +184,7 @@ void AP_Mount_Xacti::update()
             send_target_angles(mnt_target.angle_rad.pitch, mnt_target.angle_rad.yaw, mnt_target.angle_rad.yaw_is_ef);
             break;
         case MountTargetType::RATE:
+        default:
             send_target_rates(mnt_target.rate_rads.pitch, mnt_target.rate_rads.yaw, mnt_target.rate_rads.yaw_is_ef);
             break;
     }

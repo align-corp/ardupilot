@@ -67,6 +67,7 @@ void AP_Mount_SoloGimbal::update()
             MountTarget rc_target;
             get_rc_target(mnt_target.target_type, rc_target);
             switch (mnt_target.target_type) {
+            default:
             case MountTargetType::ANGLE:
                 mnt_target.angle_rad = rc_target;
                 break;

@@ -217,6 +217,7 @@ protected:
     enum class MountTargetType {
         ANGLE,
         RATE,
+        PITCH_ANGLE_YAW_RATE,
     };
 
     // class for a single angle or rate target

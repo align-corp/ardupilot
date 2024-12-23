@@ -683,7 +683,7 @@ void AP_Mount_Backend::get_rc_target(MountTargetType& target_type, MountTarget& 
     target_rpy.yaw_is_ef = _yaw_lock;
 
     // if RC_RATE is zero, targets are angle
-    if (_params.rc_rate_max <= 0) {
+    if (_params.rc_rate_max == 0) {
         target_type = MountTargetType::ANGLE;
 
         // roll angle
@@ -700,15 +700,21 @@ void AP_Mount_Backend::get_rc_target(MountTargetType& target_type, MountTarget& 
             // yaw target in body frame so apply body frame limits
             target_rpy.yaw = radians(((yaw_in + 1.0f) * 0.5f * (_params.yaw_angle_max - _params.yaw_angle_min) + _params.yaw_angle_min));
         }
-        return;
+    } else if (_params.rc_rate_max < 0) {
+        // RC_RATE < 0, angle control for pitch and roll, rate control for yaw
+        target_type = MountTargetType::PITCH_ANGLE_YAW_RATE;
+        const float rc_rate_max_rads = radians(-_params.rc_rate_max.get());
+        target_rpy.yaw = yaw_in * rc_rate_max_rads;
+        target_rpy.roll = radians(((roll_in + 1.0f) * 0.5f * (_params.roll_angle_max - _params.roll_angle_min) + _params.roll_angle_min));
+        target_rpy.pitch = radians(((pitch_in + 1.0f) * 0.5f * (_params.pitch_angle_max - _params.pitch_angle_min) + _params.pitch_angle_min));
+    } else {
+        // calculate rate targets
+        target_type = MountTargetType::RATE;
+        const float rc_rate_max_rads = radians(_params.rc_rate_max.get());
+        target_rpy.roll = roll_in * rc_rate_max_rads;
+        target_rpy.pitch = pitch_in * rc_rate_max_rads;
+        target_rpy.yaw = yaw_in * rc_rate_max_rads;
     }
-
-    // calculate rate targets
-    target_type = MountTargetType::RATE;
-    const float rc_rate_max_rads = radians(_params.rc_rate_max.get());
-    target_rpy.roll = roll_in * rc_rate_max_rads;
-    target_rpy.pitch = pitch_in * rc_rate_max_rads;
-    target_rpy.yaw = yaw_in * rc_rate_max_rads;
 }
 
 // get angle targets (in radians) to a Location

@@ -64,6 +64,7 @@ void AP_Mount_Servo::update()
                 mnt_target.angle_rad = rc_target;
                 break;
             case MountTargetType::RATE:
+            default:
                 mnt_target.rate_rads = rc_target;
                 break;
             }
@@ -99,6 +100,7 @@ void AP_Mount_Servo::update()
     // send target angles or rates depending on the target type
     switch (mnt_target.target_type) {
         case MountTargetType::RATE:
+        default:
             update_angle_target_from_rate(mnt_target.rate_rads, mnt_target.angle_rad);
             FALLTHROUGH;
         case MountTargetType::ANGLE:

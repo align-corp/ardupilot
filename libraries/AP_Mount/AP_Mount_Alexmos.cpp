@@ -58,6 +58,7 @@ void AP_Mount_Alexmos::update()
                 mnt_target.angle_rad = rc_target;
                 break;
             case MountTargetType::RATE:
+            default:
                 mnt_target.rate_rads = rc_target;
                 break;
             }
@@ -92,6 +93,7 @@ void AP_Mount_Alexmos::update()
 
     // send target angles or rates depending on the target type
     switch (mnt_target.target_type) {
+        default:
         case MountTargetType::RATE:
             update_angle_target_from_rate(mnt_target.rate_rads, mnt_target.angle_rad);
             FALLTHROUGH;

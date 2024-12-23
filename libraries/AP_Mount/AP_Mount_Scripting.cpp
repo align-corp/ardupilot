@@ -54,6 +54,7 @@ void AP_Mount_Scripting::update()
                 mnt_target.angle_rad = rc_target;
                 break;
             case MountTargetType::RATE:
+            default:
                 mnt_target.rate_rads = rc_target;
                 break;
             }

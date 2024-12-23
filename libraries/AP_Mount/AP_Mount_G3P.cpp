@@ -110,11 +110,12 @@ void AP_Mount_G3P::update()
             MountTarget rc_target;
             get_rc_target(mnt_target.target_type, rc_target);
             switch (mnt_target.target_type) {
-            case MountTargetType::ANGLE:
-                mnt_target.angle_rad = rc_target;
-                break;
             case MountTargetType::RATE:
                 mnt_target.rate_rads = rc_target;
+                break;
+            case MountTargetType::ANGLE:
+            default:
+                mnt_target.angle_rad = rc_target;
                 break;
             }
             break;
@@ -153,6 +154,9 @@ void AP_Mount_G3P::update()
             break;
         case MountTargetType::RATE:
             send_target_rates(mnt_target.rate_rads.pitch, mnt_target.rate_rads.roll, mnt_target.rate_rads.yaw);
+            break;
+        case MountTargetType::PITCH_ANGLE_YAW_RATE:
+            send_target_angles(mnt_target.angle_rad.pitch, mnt_target.angle_rad.yaw, mnt_target.angle_rad.yaw_is_ef, true);
             break;
     }
 
@@ -438,7 +442,7 @@ void AP_Mount_G3P::send_target_rates(float pitch_rads, float roll_rads, float ya
 
 // send target pitch and yaw angles to gimbal
 // yaw_is_ef should be true if yaw_rad target is an earth frame angle, false if body_frame
-void AP_Mount_G3P::send_target_angles(float pitch_rad, float yaw_rad, bool yaw_is_ef)
+void AP_Mount_G3P::send_target_angles(float pitch_rad, float yaw_rad, bool yaw_is_ef, bool yaw_send_rate)
 {
     // stop gimbal if no recent actual angles
     uint32_t now_ms = AP_HAL::millis();
@@ -448,7 +452,7 @@ void AP_Mount_G3P::send_target_angles(float pitch_rad, float yaw_rad, bool yaw_i
     }
 
     // gimbal centering function
-    if (fabsf(pitch_rad) < 0.01f && fabsf(yaw_rad) < 0.01f) {
+    if (fabsf(pitch_rad) < 0.01f && fabsf(yaw_rad) < 0.01f && !yaw_send_rate) {
         center_gimbal();
         set_mode(MAV_MOUNT_MODE_RC_TARGETING);
         return;
@@ -459,9 +463,15 @@ void AP_Mount_G3P::send_target_angles(float pitch_rad, float yaw_rad, bool yaw_i
     float pitch_rate_rads = constrain_float(pitch_err_rad * AP_MOUNT_G3P_PITCH_P, -2.0f, 2.0f);
 
     // convert yaw angle to body-frame the use simple P controller to convert yaw angle error to a target rate scalar (-100 to +100)
-    const float yaw_bf_rad = yaw_is_ef ? wrap_PI(yaw_rad - AP::ahrs().get_yaw()) : yaw_rad;
-    const float yaw_err_rad = (yaw_bf_rad - _current_angle_rad.z);
-    float yaw_rate_rads = constrain_float(yaw_err_rad * AP_MOUNT_G3P_YAW_P, -2.0f, 2.0f);
+    float yaw_rate_rads;
+    float yaw_err_rad = 0.0f;
+    if (yaw_send_rate) {
+        yaw_rate_rads = yaw_rad;
+    } else {
+        const float yaw_bf_rad = yaw_is_ef ? wrap_PI(yaw_rad - AP::ahrs().get_yaw()) : yaw_rad;
+        yaw_err_rad = (yaw_bf_rad - _current_angle_rad.z);
+        yaw_rate_rads = constrain_float(yaw_err_rad * AP_MOUNT_G3P_YAW_P, -2.0f, 2.0f);
+    }
 
     // send calculated rates
     send_target_rates(pitch_rate_rads, 0, yaw_rate_rads);

@@ -139,7 +139,7 @@ private:
 
     // send target pitch and yaw angles to gimbal
     // yaw_is_ef should be true if yaw_rad target is an earth frame angle, false if body_frame
-    void send_target_angles(float pitch_rad, float yaw_rad, bool yaw_is_ef);
+    void send_target_angles(float pitch_rad, float yaw_rad, bool yaw_is_ef, bool pitch_send_rate = false);
 
     // send position to DV
     void send_gps_position();

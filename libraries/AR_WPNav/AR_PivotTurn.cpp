@@ -59,8 +59,7 @@ const AP_Param::GroupInfo AR_PivotTurn::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("DELAY", 3, AR_PivotTurn, _delay, AR_PIVOT_DELAY_DEFAULT),
     
-    // @Param: PIVOT_ACCURACY
-    // @Param: ACC
+    // @Param: ACCURACY
     // @DisplayName: Accuracy of pivot turn
     // @Description: Angle error to declare pivot turn complete 
     // @Units: deg

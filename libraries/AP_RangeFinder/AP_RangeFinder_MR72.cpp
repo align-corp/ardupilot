@@ -122,10 +122,14 @@ bool AP_RangeFinder_MR72::get_reading(float &reading_m)
                 else if (_msg.message_id_1 == MR72_TARGET_INFO_1 &&
                     _msg.message_id_2 == MR72_TARGET_INFO_2 &&
                     _msg.next_is_nearest) {
-                    uint16_t dist = UINT16_VALUE(_msg.payload[2], _msg.payload[3]);
-                    sum_reading_cm += dist;
-                    count_read++;
-                    _msg.next_is_nearest = false;
+                    float angle_deg = UINT16_VALUE(_msg.payload[1], _msg.payload[4])*0.01f - 90;
+                    uint16_t dist_cm = UINT16_VALUE(_msg.payload[2], _msg.payload[3]);
+                    // count reading only if angle is within 20 degrees
+                    if (fabsf(angle_deg) < 20) {
+                        sum_reading_cm += dist_cm;
+                        count_read++;
+                        _msg.next_is_nearest = false;
+                    }
                 }
             }
 

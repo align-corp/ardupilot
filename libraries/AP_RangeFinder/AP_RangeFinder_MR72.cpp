@@ -19,6 +19,7 @@
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Math/AP_Math.h>
+#include <AP_Logger/AP_Logger.h>
 
 #define AP_RANGEFINDER_MR72_DEBUG
 
@@ -124,6 +125,10 @@ bool AP_RangeFinder_MR72::get_reading(float &reading_m)
                     _msg.next_is_nearest) {
                     float angle_deg = UINT16_VALUE(_msg.payload[1], _msg.payload[4])*0.01f - 90;
                     uint16_t dist_cm = UINT16_VALUE(_msg.payload[2], _msg.payload[3]);
+                    AP::logger().Write("MR72", "TimeUS,dist,deg", "Qff",
+                                        AP_HAL::micros64(),
+                                        dist_cm*0.01f,
+                                        angle_deg);
                     // count reading only if angle is within 20 degrees
                     if (fabsf(angle_deg) < 20) {
                         sum_reading_cm += dist_cm;

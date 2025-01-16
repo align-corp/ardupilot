@@ -21,14 +21,6 @@
 #include <AP_Math/AP_Math.h>
 #include <AP_Logger/AP_Logger.h>
 
-#define AP_RANGEFINDER_MR72_DEBUG
-
-#ifdef AP_RANGEFINDER_MR72_DEBUG
-#define debug(fmt, args ...)  do {hal.console->printf("%s:%d: " fmt "\n", __FUNCTION__, __LINE__, ## args); } while(0)
-#else
-#define debug(fmt, args ...)
-#endif
-
 extern const AP_HAL::HAL& hal;
 
 #define MR72_HEADER 0xAA

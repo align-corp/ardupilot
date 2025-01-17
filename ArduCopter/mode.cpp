@@ -645,11 +645,19 @@ void Mode::land_run_vertical_control(bool pause_descent)
         // Don't speed up for landing.
         max_land_descent_velocity = MIN(max_land_descent_velocity, -abs(g.land_speed));
 
+        // Slow down to a fixed 20 cm/s when we are really close to the ground and a rangefinder is available
+        int16_t sqrt_error = MAX(g2.land_alt_low,100)-get_alt_above_ground_cm();
+        int16_t land_speed = -abs(g.land_speed);
+        if (copter.rangefinder_alt_ok() && get_alt_above_ground_cm() < 80) {
+            sqrt_error = 50-get_alt_above_ground_cm();
+            land_speed = -20;
+        }
+
         // Compute a vertical velocity demand such that the vehicle approaches g2.land_alt_low. Without the below constraint, this would cause the vehicle to hover at g2.land_alt_low.
-        cmb_rate = sqrt_controller(MAX(g2.land_alt_low,100)-get_alt_above_ground_cm(), pos_control->get_pos_z_p().kP(), pos_control->get_max_accel_z_cmss(), G_Dt);
+        cmb_rate = sqrt_controller(sqrt_error, pos_control->get_pos_z_p().kP(), pos_control->get_max_accel_z_cmss(), G_Dt);
 
         // Constrain the demanded vertical velocity so that it is between the configured maximum descent speed and the configured minimum descent speed.
-        cmb_rate = constrain_float(cmb_rate, max_land_descent_velocity, -abs(g.land_speed));
+        cmb_rate = constrain_float(cmb_rate, max_land_descent_velocity, land_speed);
 
 #if AC_PRECLAND_ENABLED
         const bool navigating = pos_control->is_active_xy();

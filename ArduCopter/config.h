@@ -348,7 +348,7 @@
  # define LAND_SPEED    50          // the descent speed for the final stage of landing in cm/s
 #endif
 #ifndef LAND_REPOSITION_DEFAULT
- # define LAND_REPOSITION_DEFAULT   1   // by default the pilot can override roll/pitch during landing
+ # define LAND_REPOSITION_DEFAULT   2   // by default the pilot can override roll/pitch during landing, unless altitude < LAND_ALT_LOW/4
 #endif
 #ifndef LAND_WITH_DELAY_MS
  # define LAND_WITH_DELAY_MS        4000    // default delay (in milliseconds) when a land-with-delay is triggered during a failsafe event
@@ -358,6 +358,14 @@
 #endif
 #ifndef LAND_RANGEFINDER_MIN_ALT_CM
 #define LAND_RANGEFINDER_MIN_ALT_CM 200
+#endif
+
+// Automatic land in loiter
+#ifndef PILOT_LAND_ALT_DEFAULT
+ # define PILOT_LAND_ALT_DEFAULT 200
+#endif
+#ifndef PILOT_LAND_LOW_DEFAULT
+ # define PILOT_LAND_LOW_DEFAULT 50
 #endif
 
 //////////////////////////////////////////////////////////////////////////////

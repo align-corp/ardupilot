@@ -68,6 +68,24 @@ const AP_Param::Info Copter::var_info[] = {
     // @Increment: 10
     GSCALAR(pilot_takeoff_alt,  "PILOT_TKOFF_ALT",  PILOT_TKOFF_ALT_DEFAULT),
 
+    // @Param: PILOT_LAND_ALT
+    // @DisplayName: Pilot land altitude
+    // @Description: At this altitude the pilot desired horizontal speed will linearly decreased to zero unitl PILOT_LAND_LOW is reached
+    // @User: Standard
+    // @Units: cm
+    // @Range: 0.0 1000.0
+    // @Increment: 10
+    GSCALAR(pilot_land_alt,  "PILOT_LAND_ALT",  PILOT_LAND_ALT_DEFAULT),
+
+    // @Param: PILOT_LAND_LOW
+    // @DisplayName: Pilot land low altitude
+    // @Description: At this altitude the pilot can't control horizontal speed. Keep throttle down for automatic land.
+    // @User: Standard
+    // @Units: cm
+    // @Range: 0.0 1000.0
+    // @Increment: 10
+    GSCALAR(pilot_land_low_alt,  "PILOT_LAND_LOW",  PILOT_LAND_LOW_DEFAULT),
+
     // @Param: PILOT_THR_BHV
     // @DisplayName: Throttle stick behavior
     // @Description: Bitmask containing various throttle stick options. TX with sprung throttle can set PILOT_THR_BHV to "1" so motor feedback when landed starts from mid-stick instead of bottom of stick.

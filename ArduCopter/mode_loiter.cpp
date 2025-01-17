@@ -2,6 +2,10 @@
 
 #if MODE_LOITER_ENABLED == ENABLED
 
+//TODO: parameters
+#define LOITER_LOW_ALTITUDE_CM 200
+#define LOITER_LAND_ALTITUDE_CM 50
+
 /*
  * Init and run calls for loiter flight mode
  */
@@ -79,6 +83,44 @@ void ModeLoiter::precision_loiter_xy()
 }
 #endif
 
+void ModeLoiter::update_landing_state()
+{
+    // rangefiner must be healthy
+    if (!copter.rangefinder_alt_ok()) {
+        landing_state = LandingState::ALTITUDE_HIGH;
+        return;
+    }
+
+    // abort landing if throttle is increased by user
+    if (landing_state == LandingState::LANDING) {
+        if (channel_throttle->norm_input() > 0.05f) {
+            landing_state = LandingState::ALTITUDE_LOW;
+        }
+        return;
+    }
+
+    uint32_t now_ms = AP_HAL::millis();
+    uint16_t altitude = get_alt_above_ground_cm();
+    // check landing state based on rangefinder altitude
+    if (altitude < LOITER_LAND_ALTITUDE_CM+30) {
+        // full negative throttle and 2 s delay for landing routine when altitude < 80 cm
+        if (channel_throttle->norm_input() < -0.9f) {
+            if (landing_request_start_ms == 0) {
+                landing_request_start_ms = now_ms;
+            } else if (now_ms - landing_request_start_ms > 3000) {
+                landing_state = LandingState::LANDING;
+            }
+        } else {
+            landing_request_start_ms = 0;
+        }
+    } else if (altitude < LOITER_LOW_ALTITUDE_CM) {
+        landing_request_start_ms = 0;
+        landing_state = LandingState::ALTITUDE_LOW;
+    } else {
+        landing_state = LandingState::ALTITUDE_HIGH;
+    }
+}
+
 // loiter_run - runs the loiter controller
 // should be called at 100hz or more
 void ModeLoiter::run()
@@ -87,11 +129,36 @@ void ModeLoiter::run()
     float target_yaw_rate = 0.0f;
     float target_climb_rate = 0.0f;
     int16_t max_speed_down = 0;
+    uint16_t land_speed = abs(g.land_speed) > 0 ? abs(g.land_speed) : get_pilot_speed_dn();
+    float input_angle_max_cd = loiter_nav->get_angle_max_cd();
 
-    if ((get_alt_above_ground_cm() < g2.land_alt_low) && (abs(g.land_speed) > 0) && copter.rangefinder_alt_ok() ) {
-        max_speed_down = -abs(g.land_speed);
-    } else {
-        max_speed_down = -get_pilot_speed_dn();
+    // Landing state controller
+    update_landing_state();
+    switch (landing_state) {
+        case LandingState::ALTITUDE_HIGH:
+            // Compute a vertical velocity demand such that the vehicle approaches g2.land_alt_low. 
+            max_speed_down = sqrt_controller(g2.land_alt_low-get_alt_above_ground_cm() , pos_control->get_pos_z_p().kP(), 
+                    pos_control->get_max_accel_z_cmss(), G_Dt);
+            // Constrain the demanded vertical velocity
+            max_speed_down = constrain_float(max_speed_down, -get_pilot_speed_dn(), -land_speed);
+            break;
+
+        case LandingState::ALTITUDE_LOW:
+            // Compute a vertical velocity demand such that the vehicle approaches land altitude.
+            max_speed_down = sqrt_controller(LOITER_LAND_ALTITUDE_CM-get_alt_above_ground_cm() , pos_control->get_pos_z_p().kP(), 
+                    pos_control->get_max_accel_z_cmss(), G_Dt);
+
+            // Constrain the demanded vertical velocity
+            max_speed_down = constrain_float(max_speed_down, -land_speed, 0);
+
+            // also limit roll and pitch pilot input
+            input_angle_max_cd = linear_interpolate(0, input_angle_max_cd,
+                    get_alt_above_ground_cm(), LOITER_LAND_ALTITUDE_CM, LOITER_LOW_ALTITUDE_CM);
+            break;
+
+        case LandingState::LANDING:
+            // landing routine handled in loiter state machine
+            break;
     }
 
     // set vertical speed and acceleration limits
@@ -103,7 +170,7 @@ void ModeLoiter::run()
         update_simple_mode();
 
         // convert pilot input to lean angles
-        get_pilot_desired_lean_angles(target_roll, target_pitch, loiter_nav->get_angle_max_cd(), attitude_control->get_althold_lean_angle_max_cd());
+        get_pilot_desired_lean_angles(target_roll, target_pitch, input_angle_max_cd, attitude_control->get_althold_lean_angle_max_cd());
 
         // process pilot's roll and pitch input
         loiter_nav->set_pilot_desired_acceleration(target_roll, target_pitch);
@@ -171,6 +238,13 @@ void ModeLoiter::run()
     case AltHold_Flying:
         // set motors to full range
         motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
+
+        // landing routine
+        if (landing_state == LandingState::LANDING) {
+            // run landing controller
+            land_run_horiz_and_vert_control();
+            return;
+        }
 
 #if AC_PRECLAND_ENABLED
         bool precision_loiter_old_state = _precision_loiter_active;

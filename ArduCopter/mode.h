@@ -1249,6 +1249,15 @@ protected:
 #endif
 
 private:
+    void update_landing_state();
+    enum class LandingState {
+        ALTITUDE_HIGH,
+        ALTITUDE_LOW,
+        LANDING,
+    }; // state machine for landing
+
+    LandingState landing_state;
+    uint32_t landing_request_start_ms = 0;
 
 #if AC_PRECLAND_ENABLED
     bool _precision_loiter_enabled;

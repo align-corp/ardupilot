@@ -94,6 +94,10 @@ enum class LogEvent : uint8_t {
     NOT_SURFACED = 164,
     BOTTOMED = 165,
     NOT_BOTTOMED = 166,
+
+    // Custom Loiter events
+    LOITER_LAND_START = 200,
+    LOITER_LAND_ABORT = 201,
 };
 
 enum class LogDataID : uint8_t {

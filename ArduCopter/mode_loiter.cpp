@@ -95,6 +95,7 @@ void ModeLoiter::update_landing_state()
     if (landing_state == LandingState::LANDING) {
         if (channel_throttle->norm_input() > 0.05f) {
             landing_state = LandingState::ALTITUDE_LOW;
+            LOGGER_WRITE_EVENT(LogEvent::LOITER_LAND_ABORT);
         }
         return;
     }
@@ -109,6 +110,7 @@ void ModeLoiter::update_landing_state()
                 landing_request_start_ms = now_ms;
             } else if (now_ms - landing_request_start_ms > 3000) {
                 landing_state = LandingState::LANDING;
+                LOGGER_WRITE_EVENT(LogEvent::LOITER_LAND_START);
             }
         } else {
             landing_request_start_ms = 0;

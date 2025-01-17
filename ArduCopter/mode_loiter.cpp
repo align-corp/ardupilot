@@ -172,9 +172,6 @@ void ModeLoiter::run()
         // convert pilot input to lean angles
         get_pilot_desired_lean_angles(target_roll, target_pitch, input_angle_max_cd, attitude_control->get_althold_lean_angle_max_cd());
 
-        // process pilot's roll and pitch input
-        loiter_nav->set_pilot_desired_acceleration(target_roll, target_pitch);
-
         // get pilot's desired yaw rate
         target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->norm_input_dz());
 
@@ -245,6 +242,9 @@ void ModeLoiter::run()
             land_run_horiz_and_vert_control();
             return;
         }
+
+        // process pilot's roll and pitch input
+        loiter_nav->set_pilot_desired_acceleration(target_roll, target_pitch);
 
 #if AC_PRECLAND_ENABLED
         bool precision_loiter_old_state = _precision_loiter_active;

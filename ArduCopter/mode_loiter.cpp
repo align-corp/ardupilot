@@ -167,7 +167,6 @@ void ModeLoiter::run()
         case LandingState::LANDING:
             // disarm when the landing detector says we've landed
             if (copter.ap.land_complete && motors->get_spool_state() == AP_Motors::SpoolState::GROUND_IDLE) {
-                hal.console->printf("Landing\n");
                 copter.arming.disarm(AP_Arming::Method::LANDED);
             }
 

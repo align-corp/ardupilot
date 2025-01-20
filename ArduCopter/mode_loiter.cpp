@@ -2,10 +2,6 @@
 
 #if MODE_LOITER_ENABLED == ENABLED
 
-//TODO: parameters
-#define LOITER_LOW_ALTITUDE_CM 200
-#define LOITER_LAND_ALTITUDE_CM 50
-
 /*
  * Init and run calls for loiter flight mode
  */
@@ -109,7 +105,7 @@ void ModeLoiter::update_landing_state(AltHoldModeState alt_hold_state)
     uint32_t now_ms = AP_HAL::millis();
     int32_t lgr_altitude = constrain_int32((get_alt_above_ground_cm() - copter.rangefinder.ground_clearance_cm_orient(ROTATION_PITCH_270)), 0, INT32_MAX);
     // check landing state based on rangefinder altitude
-    if (lgr_altitude < LOITER_LAND_ALTITUDE_CM+30) {
+    if (lgr_altitude < g.pilot_land_low_alt+30) {
         // full negative throttle and 2 s delay for landing routine when altitude < 80 cm
         if (channel_throttle->norm_input() < -0.9f) {
             if (landing_request_start_ms == 0) {
@@ -121,7 +117,7 @@ void ModeLoiter::update_landing_state(AltHoldModeState alt_hold_state)
         } else {
             landing_request_start_ms = 0;
         }
-    } else if (lgr_altitude < LOITER_LOW_ALTITUDE_CM) {
+    } else if (lgr_altitude < g.pilot_land_alt) {
         landing_request_start_ms = 0;
         landing_state = LandingState::ALTITUDE_LOW;
     } else {
@@ -157,7 +153,7 @@ void ModeLoiter::run()
 
         case LandingState::ALTITUDE_LOW:
             // Compute a vertical velocity demand such that the vehicle approaches land altitude.
-            max_speed_down = sqrt_controller(LOITER_LAND_ALTITUDE_CM-lgr_altitude , pos_control->get_pos_z_p().kP(), 
+            max_speed_down = sqrt_controller(g.pilot_land_low_alt -lgr_altitude , pos_control->get_pos_z_p().kP(), 
                     pos_control->get_max_accel_z_cmss(), G_Dt);
 
             // Constrain the demanded vertical velocity
@@ -165,7 +161,7 @@ void ModeLoiter::run()
 
             // also limit roll and pitch pilot input
             input_angle_max_cd = linear_interpolate(0, input_angle_max_cd,
-                    lgr_altitude, LOITER_LAND_ALTITUDE_CM, LOITER_LOW_ALTITUDE_CM);
+                    lgr_altitude, g.pilot_land_low_alt, g.pilot_land_alt);
             break;
 
         case LandingState::LANDING:

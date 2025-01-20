@@ -360,6 +360,14 @@
 #define LAND_RANGEFINDER_MIN_ALT_CM 200
 #endif
 
+// Automatic land in loiter
+#ifndef PILOT_LAND_ALT_DEFAULT
+ # define PILOT_LAND_ALT_DEFAULT 250
+#endif
+#ifndef PILOT_LAND_LOW_DEFAULT
+ # define PILOT_LAND_LOW_DEFAULT 50
+#endif
+
 //////////////////////////////////////////////////////////////////////////////
 // Landing Detector
 //

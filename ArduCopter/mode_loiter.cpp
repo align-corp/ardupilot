@@ -141,7 +141,8 @@ void ModeLoiter::run()
     float input_angle_max_cd = loiter_nav->get_angle_max_cd();
 
     // Landing state controller
-    update_landing_state();
+    update_landing_state(loiter_state);
+
     switch (landing_state) {
         case LandingState::ALTITUDE_HIGH:
             // Compute a vertical velocity demand such that the vehicle approaches g2.land_alt_low. 

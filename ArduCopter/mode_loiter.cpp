@@ -166,8 +166,23 @@ void ModeLoiter::run()
             break;
 
         case LandingState::LANDING:
-            // landing routine handled in loiter state machine
-            break;
+            // disarm when the landing detector says we've landed
+            if (copter.ap.land_complete && motors->get_spool_state() == AP_Motors::SpoolState::GROUND_IDLE) {
+                hal.console->printf("Landing\n");
+                copter.arming.disarm(AP_Arming::Method::LANDED);
+            }
+
+            // Land State Machine Determination
+            if (is_disarmed_or_landed()) {
+                make_safe_ground_handling();
+            } else {
+                // set motors to full range
+                motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
+
+                // run normal landing or precision landing (if enabled)
+                land_run_normal_or_precland(false);
+            }
+            return;
     }
 
     // set vertical speed and acceleration limits
@@ -244,13 +259,6 @@ void ModeLoiter::run()
     case AltHold_Flying:
         // set motors to full range
         motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
-
-        // landing routine
-        if (landing_state == LandingState::LANDING) {
-            // run landing controller
-            land_run_horiz_and_vert_control();
-            return;
-        }
 
         // process pilot's roll and pitch input
         loiter_nav->set_pilot_desired_acceleration(target_roll, target_pitch);

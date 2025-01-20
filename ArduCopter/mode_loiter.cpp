@@ -191,7 +191,7 @@ void ModeLoiter::run()
     }
 
     // Loiter State Machine Determination
-    AltHoldModeState loiter_state = get_alt_hold_state(target_climb_rate);
+    loiter_state = get_alt_hold_state(target_climb_rate);
 
     // Loiter State Machine
     switch (loiter_state) {

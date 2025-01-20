@@ -1258,6 +1258,7 @@ private:
 
     LandingState landing_state;
     uint32_t landing_request_start_ms = 0;
+    AltHoldModeState loiter_state;
 
 #if AC_PRECLAND_ENABLED
     bool _precision_loiter_enabled;

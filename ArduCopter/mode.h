@@ -1249,7 +1249,7 @@ protected:
 #endif
 
 private:
-    void update_landing_state();
+    void update_landing_state(AltHoldModeState alt_hold_state);
     enum class LandingState {
         ALTITUDE_HIGH,
         ALTITUDE_LOW,

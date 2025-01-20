@@ -87,18 +87,18 @@ void ModeLoiter::update_landing_state(AltHoldModeState alt_hold_state)
         return;
     }
 
-    // enable landing controller only when copter is flying
-    if (alt_hold_state != AltHoldModeState::AltHold_Flying) {
-        landing_state = LandingState::ALTITUDE_HIGH;
-        return;
-    }
-
     // abort landing if throttle is increased by user
     if (landing_state == LandingState::LANDING) {
         if (channel_throttle->norm_input() > 0.05f || !motors->armed()) {
             landing_state = LandingState::ALTITUDE_LOW;
             LOGGER_WRITE_EVENT(LogEvent::LOITER_LAND_ABORT);
         }
+        return;
+    }
+
+    // enable landing controller only when copter is flying
+    if (alt_hold_state != AltHoldModeState::AltHold_Flying) {
+        landing_state = LandingState::ALTITUDE_HIGH;
         return;
     }
 

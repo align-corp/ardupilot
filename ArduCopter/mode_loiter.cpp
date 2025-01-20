@@ -107,9 +107,9 @@ void ModeLoiter::update_landing_state(AltHoldModeState alt_hold_state)
     }
 
     uint32_t now_ms = AP_HAL::millis();
-    uint16_t altitude = get_alt_above_ground_cm();
+    int32_t lgr_altitude = constrain_int32((get_alt_above_ground_cm() - copter.rangefinder.ground_clearance_cm_orient(ROTATION_PITCH_270)), 0, INT32_MAX);
     // check landing state based on rangefinder altitude
-    if (altitude < LOITER_LAND_ALTITUDE_CM+30) {
+    if (lgr_altitude < LOITER_LAND_ALTITUDE_CM+30) {
         // full negative throttle and 2 s delay for landing routine when altitude < 80 cm
         if (channel_throttle->norm_input() < -0.9f) {
             if (landing_request_start_ms == 0) {
@@ -121,7 +121,7 @@ void ModeLoiter::update_landing_state(AltHoldModeState alt_hold_state)
         } else {
             landing_request_start_ms = 0;
         }
-    } else if (altitude < LOITER_LOW_ALTITUDE_CM) {
+    } else if (lgr_altitude < LOITER_LOW_ALTITUDE_CM) {
         landing_request_start_ms = 0;
         landing_state = LandingState::ALTITUDE_LOW;
     } else {
@@ -143,10 +143,13 @@ void ModeLoiter::run()
     // Landing state controller
     update_landing_state(loiter_state);
 
+    // calculate landing gear altitude
+    int32_t lgr_altitude = constrain_int32((get_alt_above_ground_cm() - copter.rangefinder.ground_clearance_cm_orient(ROTATION_PITCH_270)), 0, INT32_MAX);
+
     switch (landing_state) {
         case LandingState::ALTITUDE_HIGH:
             // Compute a vertical velocity demand such that the vehicle approaches g2.land_alt_low. 
-            max_speed_down = sqrt_controller(g2.land_alt_low-get_alt_above_ground_cm() , pos_control->get_pos_z_p().kP(), 
+            max_speed_down = sqrt_controller(g2.land_alt_low-lgr_altitude , pos_control->get_pos_z_p().kP(), 
                     pos_control->get_max_accel_z_cmss(), G_Dt);
             // Constrain the demanded vertical velocity
             max_speed_down = constrain_float(max_speed_down, -get_pilot_speed_dn(), -land_speed);
@@ -154,7 +157,7 @@ void ModeLoiter::run()
 
         case LandingState::ALTITUDE_LOW:
             // Compute a vertical velocity demand such that the vehicle approaches land altitude.
-            max_speed_down = sqrt_controller(LOITER_LAND_ALTITUDE_CM-get_alt_above_ground_cm() , pos_control->get_pos_z_p().kP(), 
+            max_speed_down = sqrt_controller(LOITER_LAND_ALTITUDE_CM-lgr_altitude , pos_control->get_pos_z_p().kP(), 
                     pos_control->get_max_accel_z_cmss(), G_Dt);
 
             // Constrain the demanded vertical velocity
@@ -162,7 +165,7 @@ void ModeLoiter::run()
 
             // also limit roll and pitch pilot input
             input_angle_max_cd = linear_interpolate(0, input_angle_max_cd,
-                    get_alt_above_ground_cm(), LOITER_LAND_ALTITUDE_CM, LOITER_LOW_ALTITUDE_CM);
+                    lgr_altitude, LOITER_LAND_ALTITUDE_CM, LOITER_LOW_ALTITUDE_CM);
             break;
 
         case LandingState::LANDING:

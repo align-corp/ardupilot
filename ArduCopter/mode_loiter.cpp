@@ -190,9 +190,6 @@ void ModeLoiter::run()
             return;
     }
 
-    // set vertical speed and acceleration limits
-    pos_control->set_max_speed_accel_z(max_speed_down, g.pilot_speed_up, g.pilot_accel_z);
-
     // process pilot inputs unless we are in radio failsafe
     if (!copter.failsafe.radio) {
         // apply SIMPLE mode transform to pilot inputs
@@ -239,6 +236,8 @@ void ModeLoiter::run()
         attitude_control->reset_rate_controller_I_terms_smoothly();
         loiter_nav->init_target();
         attitude_control->input_thrust_vector_rate_heading(loiter_nav->get_thrust_vector(), target_yaw_rate, false);
+        // set vertical speed and acceleration limits
+        pos_control->set_max_speed_accel_z(max_speed_down, g.pilot_speed_up, g.pilot_accel_z*0.25f);
         pos_control->relax_z_controller(0.0f);   // forces throttle output to decay to zero
         break;
 
@@ -247,6 +246,9 @@ void ModeLoiter::run()
         if (!takeoff.running()) {
             takeoff.start(constrain_float(g.pilot_takeoff_alt,0.0f,1000.0f));
         }
+
+        // limit acceleration to achieve a smooth takeoff
+        pos_control->set_max_speed_accel_z(max_speed_down, g.pilot_speed_up, g.pilot_accel_z*0.25f);
 
         // get avoidance adjusted climb rate
         target_climb_rate = get_avoidance_adjusted_climbrate(target_climb_rate);
@@ -270,6 +272,9 @@ void ModeLoiter::run()
 
         // process pilot's roll and pitch input
         loiter_nav->set_pilot_desired_acceleration(target_roll, target_pitch);
+
+        // set vertical speed and acceleration limits
+        pos_control->set_max_speed_accel_z(max_speed_down, g.pilot_speed_up, g.pilot_accel_z);
 
 #if AC_PRECLAND_ENABLED
         bool precision_loiter_old_state = _precision_loiter_active;

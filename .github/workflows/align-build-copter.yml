@@ -28,6 +28,7 @@ jobs:
             AP6v2-M4P,
             AP6v2-M4P-dev,
             AP6v2-M450,
+            AP6v2-M450-gps,
             AP6v2-M450-dev,
         ]
 

@@ -640,21 +640,28 @@ void Mode::land_run_vertical_control(bool pause_descent)
         // do not ignore limits until we have slowed down for landing
         ignore_descent_limit = (MAX(g2.land_alt_low,100) > get_alt_above_ground_cm()) || copter.ap.land_complete_maybe;
 
-        float max_land_descent_velocity;
-        if (g.land_speed_high > 0) {
-            max_land_descent_velocity = -g.land_speed_high;
+        // if altitude is < LAND_ALT_LOW/4 slow down descent rate and limit acceleration
+        if (get_alt_above_ground_cm() < g2.land_alt_low * 0.25f) {
+            cmb_rate = -MAX(abs(g.land_speed)*0.5f, 20);
+            pos_control->set_max_speed_accel_z(cmb_rate, 0, -cmb_rate*0.5f);
+
         } else {
-            max_land_descent_velocity = pos_control->get_max_speed_down_cms();
+            float max_land_descent_velocity;
+            if (g.land_speed_high > 0) {
+                max_land_descent_velocity = -g.land_speed_high;
+            } else {
+                max_land_descent_velocity = pos_control->get_max_speed_down_cms();
+            }
+
+            // Don't speed up for landing.
+            max_land_descent_velocity = MIN(max_land_descent_velocity, -abs(g.land_speed));
+
+            // Compute a vertical velocity demand such that the vehicle approaches g2.land_alt_low. Without the below constraint, this would cause the vehicle to hover at g2.land_alt_low.
+            cmb_rate = sqrt_controller(MAX(g2.land_alt_low,100)-get_alt_above_ground_cm(), pos_control->get_pos_z_p().kP(), pos_control->get_max_accel_z_cmss(), G_Dt);
+
+            // Constrain the demanded vertical velocity so that it is between the configured maximum descent speed and the configured minimum descent speed.
+            cmb_rate = constrain_float(cmb_rate, max_land_descent_velocity, -abs(g.land_speed));
         }
-
-        // Don't speed up for landing.
-        max_land_descent_velocity = MIN(max_land_descent_velocity, -abs(g.land_speed));
-
-        // Compute a vertical velocity demand such that the vehicle approaches g2.land_alt_low. Without the below constraint, this would cause the vehicle to hover at g2.land_alt_low.
-        cmb_rate = sqrt_controller(MAX(g2.land_alt_low,100)-get_alt_above_ground_cm(), pos_control->get_pos_z_p().kP(), pos_control->get_max_accel_z_cmss(), G_Dt);
-
-        // Constrain the demanded vertical velocity so that it is between the configured maximum descent speed and the configured minimum descent speed.
-        cmb_rate = constrain_float(cmb_rate, max_land_descent_velocity, -abs(g.land_speed));
 
 #if AC_PRECLAND_ENABLED
         const bool navigating = pos_control->is_active_xy();

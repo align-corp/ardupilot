@@ -113,11 +113,14 @@ static const uint32_t accept_list[] = {
     
 static bool accept_unsigned_callback(const mavlink_status_t *status, uint32_t msgId)
 {
+    // To ensure more protection do not allow unsigned packets even from USB
+    /*
     if (status == mavlink_get_channel_status(MAVLINK_COMM_0)) {
         // always accept channel 0, assumed to be secure channel. This
         // is USB on PX4 boards
         return true;
     }
+    */
     for (uint8_t i=0; i<ARRAY_SIZE(accept_list); i++) {
         if (accept_list[i] == msgId) {
             return true;

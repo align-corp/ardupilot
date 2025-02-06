@@ -1,0 +1,9 @@
+CompileFlags:
+    CompilationDatabase: ./build/sitl/
+    Remove: [-mno-thumb-interwork]
+    Add: [
+        -fsyntax-only,  # Force syntax checks
+        -Wno-gnu-designator
+    ]
+Diagnostics:
+    Suppress: []

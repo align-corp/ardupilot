@@ -1,0 +1,72 @@
+name: align build rover
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{github.workflow}}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-rover:
+    runs-on: ubuntu-22.04
+    container: ardupilot/ardupilot-dev-chibios:v0.1.3
+    strategy:
+      fail-fast: false  # don't cancel if a job from the matrix fails
+      matrix:
+        rover: [
+          AP6v2-GA22,
+          AP6v2-GA45,
+          AP6v2-GM22,
+          AP6v2-GM45,
+        ]
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: 'recursive'
+      
+      - name: align build
+        shell: bash
+        run: |
+          git config --global --add safe.directory ${GITHUB_WORKSPACE}
+          PATH="/usr/lib/ccache:/opt/gcc-arm-none-eabi-10/bin:$PATH"
+          PATH="/github/home/.local/bin:$PATH"
+          ./waf configure --board ${{matrix.rover}}
+          ./waf clean
+          ./waf rover
+
+      - name: upload apj
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{matrix.rover}}
+          path: build/${{matrix.rover}}/bin/ardurover.apj
+
+
+  upload:
+    runs-on: ubuntu-22.04
+    needs: build-rover
+
+    steps:
+      - name: create align-build dir
+        run: mkdir -p align-build
+
+      - name: download apj
+        uses: actions/download-artifact@v4
+        with:
+          path: align-build
+
+      - name: create ZIP align-build
+        run: |
+          zip -r align-build/align-build-rover.zip align-build/
+
+      - name: upload ZIP align-build
+        uses: actions/upload-artifact@v4
+        with:
+          name: align-build-rover
+          path: align-build/align-build-rover.zip
+
+      - name: cleanup
+        if: always()
+        run: |
+          rm -rf align-build

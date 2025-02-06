@@ -1,11 +1,7 @@
 include ../AP6v2/hwdef.dat
 
-define ALIGN_FRAME ALIGN_E2_DEV
-
-# undef USB setup for easy access with QGC
-undef USB_VENDOR
-undef USB_PRODUCT
-undef USB_STRING_MANUFACTURER
+# define custom Align frame code
+define ALIGN_FRAME ALIGN_E2
 
 # Telemetry on Serial 1
 define DEFAULT_SERIAL1_BAUD 115

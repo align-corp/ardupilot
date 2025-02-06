@@ -1,13 +1,18 @@
+
 include ../AP6v2/hwdef.dat
 
-# defines
+# define custom Align frame code
+define ALIGN_FRAME ALIGN_M450_GPS
+
+# decrease arming delay
 define ARMING_DELAY_SEC 0.5f
-define PARAM_READONLY 1
 
 # Telemetry on Serial 1
 define DEFAULT_SERIAL1_BAUD 115
 
 # MAVLink rangefinder on Serial2
+undef DEFAULT_SERIAL2_PROTOCOL
+define DEFAULT_SERIAL2_PROTOCOL SerialProtocol_MAVLink1
 define DEFAULT_SERIAL2_BAUD 115
 
 # PCU on Serial 4
@@ -20,4 +25,3 @@ undef DEFAULT_SERIAL5_PROTOCOL
 define DEFAULT_SERIAL5_PROTOCOL SerialProtocol_ESCTelemetry
 define DEFAULT_SERIAL5_BAUD 115
 
-define ALIGN_FRAME ALIGN_M450_GPS

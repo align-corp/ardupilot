@@ -1,12 +1,17 @@
 include ../AP6v2/hwdef.dat
 
-# defines
+# define custom Align frame code
+define ALIGN_FRAME ALIGN_M450
+
+# decrease arming delay
 define ARMING_DELAY_SEC 0.5f
 
 # Telemetry on Serial 1
 define DEFAULT_SERIAL1_BAUD 115
 
 # MAVLink rangefinder on Serial2
+undef DEFAULT_SERIAL2_PROTOCOL
+define DEFAULT_SERIAL2_PROTOCOL SerialProtocol_MAVLink1
 define DEFAULT_SERIAL2_BAUD 115
 
 # PCU on Serial 4
@@ -19,9 +24,3 @@ undef DEFAULT_SERIAL5_PROTOCOL
 define DEFAULT_SERIAL5_PROTOCOL SerialProtocol_ESCTelemetry
 define DEFAULT_SERIAL5_BAUD 115
 
-define ALIGN_FRAME ALIGN_M450_DEV
-
-# undef USB setup for easy access with QGC
-undef USB_VENDOR
-undef USB_PRODUCT
-undef USB_STRING_MANUFACTURER

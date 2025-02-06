@@ -1,12 +1,7 @@
 include ../AP6v2/hwdef.dat
 
-# defines
-define ALIGN_FRAME ALIGN_GA22_DEV
+# define custom Align frame code
+define ALIGN_FRAME ALIGN_GA22
 
 # Telemetry on Serial 1
 define DEFAULT_SERIAL1_BAUD 115
-
-# undef USB setup for easy access with QGC
-undef USB_VENDOR
-undef USB_PRODUCT
-undef USB_STRING_MANUFACTURER

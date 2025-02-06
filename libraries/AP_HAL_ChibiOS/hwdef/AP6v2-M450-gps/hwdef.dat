@@ -12,7 +12,7 @@ define DEFAULT_SERIAL1_BAUD 115
 
 # MAVLink rangefinder on Serial2
 undef DEFAULT_SERIAL2_PROTOCOL
-define DEFAULT_SERIAL2_PROTOCOL SerialProtocol_MAVLink1
+define DEFAULT_SERIAL2_PROTOCOL SerialProtocol_MAVLink
 define DEFAULT_SERIAL2_BAUD 115
 
 # PCU on Serial 4

@@ -1,7 +1,0 @@
-include ../AP6/hwdef.dat
-
-# defines
-define ARMING_DELAY_SEC 0.5f
-define PARAM_READONLY 1
-
-define ALIGN_FRAME ALIGN_M6T22

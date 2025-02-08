@@ -398,3 +398,55 @@
 #ifndef AP_FILTER_ENABLED
 #define AP_FILTER_ENABLED 0
 #endif
+
+#ifndef AP_ADVANCEDFAILSAFE_ENABLED
+#define AP_ADVANCEDFAILSAFE_ENABLED 0
+#endif
+
+#ifndef AP_ARMING_ENABLED
+#define AP_ARMING_ENABLED 0
+#endif
+
+#ifndef AP_LTM_TELEM_ENABLED
+#define AP_LTM_TELEM_ENABLED 0
+#endif
+
+#ifndef AP_GRIPPER_ENABLED
+#define AP_GRIPPER_ENABLED 0
+#endif
+
+#ifndef HAL_SPRAYER_ENABLED
+#define HAL_SPRAYER_ENABLED 0
+#endif
+
+#ifndef AP_VEHICLE_ENABLED
+#define AP_VEHICLE_ENABLED 0
+#endif
+
+#ifndef OSD_ENABLED
+#define OSD_ENABLED 0
+#endif
+
+#ifndef OSD_PARAM_ENABLED
+#define OSD_PARAM_ENABLED 0
+#endif
+
+#ifndef AP_SCHEDULER_ENABLED
+#define AP_SCHEDULER_ENABLED 0
+#endif
+
+#ifndef AP_RC_CHANNEL_ENABLED
+#define AP_RC_CHANNEL_ENABLED 0
+#endif
+
+#ifndef AP_CUSTOMROTATIONS_ENABLED
+#define AP_CUSTOMROTATIONS_ENABLED 0
+#endif
+
+#ifndef AP_QUICKTUNE_ENABLED
+#define AP_QUICKTUNE_ENABLED 0
+#endif
+
+#ifndef HAL_OS_POSIX_IO
+#define HAL_OS_POSIX_IO 0
+#endif

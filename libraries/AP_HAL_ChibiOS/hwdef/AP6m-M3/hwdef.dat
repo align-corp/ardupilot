@@ -1,0 +1,11 @@
+include ../AP6m/hwdef.dat
+
+# define custom Align frame code
+define ALIGN_FRAME ALIGN_M3
+
+# decrease arming delay
+define ARMING_DELAY_SEC 0.5f
+
+# bootloader embedding / bootloader flashing not available
+define AP_BOOTLOADER_FLASHING_ENABLED 0
+

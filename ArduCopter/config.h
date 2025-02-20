@@ -362,7 +362,7 @@
 
 // Automatic land in loiter
 #ifndef PILOT_LAND_ALT_DEFAULT
- # define PILOT_LAND_ALT_DEFAULT 200
+ # define PILOT_LAND_ALT_DEFAULT 140
 #endif
 #ifndef PILOT_LAND_LOW_DEFAULT
  # define PILOT_LAND_LOW_DEFAULT 50

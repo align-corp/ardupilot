@@ -158,6 +158,7 @@ void ModeLoiter::run()
             max_speed_down = constrain_float(max_speed_down, -get_pilot_speed_dn(), -land_speed);
             break;
 
+        // altitude is below PILOT_LAND_ALT
         case LandingState::ALTITUDE_LOW:
             // Compute a vertical velocity demand such that the vehicle approaches land altitude.
             max_speed_down = sqrt_controller(lgr_land_low_alt -get_alt_above_ground_cm() , pos_control->get_pos_z_p().kP(), 
@@ -166,11 +167,14 @@ void ModeLoiter::run()
             // Constrain the demanded vertical velocity
             max_speed_down = constrain_float(max_speed_down, -land_speed, 0);
 
-            // also limit roll and pitch pilot input
-            input_angle_max_cd = linear_interpolate(0, input_angle_max_cd,
-                    get_alt_above_ground_cm(), lgr_land_low_alt, lgr_land_alt);
+            // limit roll and pitch pilot input
+            if (g.land_repositioning > 1 && lgr_land_alt > lgr_land_low_alt) {
+                input_angle_max_cd = linear_interpolate(0, input_angle_max_cd,
+                        get_alt_above_ground_cm(), lgr_land_low_alt, lgr_land_alt);
+            }
             break;
 
+        // altitude is below PILOT_LAND_LOW
         case LandingState::LANDING:
             // disarm when the landing detector says we've landed
             if (copter.ap.land_complete && motors->get_spool_state() == AP_Motors::SpoolState::GROUND_IDLE) {

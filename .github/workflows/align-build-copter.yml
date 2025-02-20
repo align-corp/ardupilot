@@ -25,6 +25,7 @@ jobs:
             AP6v2-M4P-G3P,
             AP6v2-M450,
             AP6v2-M450-gps,
+            AP6v2-M450-G3P,
         ]
 
     steps:

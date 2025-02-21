@@ -141,6 +141,7 @@ public:
         bool video_recording;     // true when the vehicle is recording video
         bool temp_cal_running;    // true if a temperature calibration is running
         bool gyro_calibrated;     // true if calibrated gyro/acc
+        bool align_turning_off;   // true if the vehicle is turning off
     };
 
     /// notify_events_type - bitmask of active events.

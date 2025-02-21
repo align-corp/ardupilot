@@ -19,7 +19,7 @@
 
 #include "NotifyDevice.h"
 
-class AP_BoardLED: public NotifyDevice
+class AP_BoardLED_Align: public NotifyDevice
 {
 public:
     // initialise the LED driver
@@ -29,8 +29,12 @@ public:
     void update(void) override;
 
 private:
+
 #if (defined(HAL_GPIO_A_LED_PIN) && defined(HAL_GPIO_B_LED_PIN) && \
      defined(HAL_GPIO_C_LED_PIN))
+
+    void set_led_from_voltage();
+
     enum class State : uint8_t {
         START,
         LED1_ON,
@@ -38,6 +42,7 @@ private:
         LED3_ON,
         LED4_ON,
         TURNING_ON,
+        WAIT_BUTTON_RELEASED,
         ON,
         TURNING_OFF,
         LED4_OFF,

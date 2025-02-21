@@ -15,6 +15,8 @@
 #include "AP_BoardLED4_Align.h"
 
 #include "AP_Notify.h"
+#include "AP_BattMonitor/AP_BattMonitor.h"
+
 
 #if (defined(HAL_GPIO_A_LED_PIN) && defined(HAL_GPIO_B_LED_PIN) && \
      defined(HAL_GPIO_C_LED_PIN) && defined(HAL_GPIO_D_LED_PIN) && \
@@ -31,9 +33,18 @@ static_assert((HAL_GPIO_A_LED_PIN != HAL_GPIO_B_LED_PIN) &&
 #define HAL_GPIO_BUTTON_PRESSED 1
 #endif
 
-extern const AP_HAL::HAL& hal;
+#ifndef LED_BATT_VOLT_MAX
+#define LED_BATT_VOLT_MAX 12.6f
+#endif
 
-bool AP_BoardLED::init(void)
+#ifndef LED_BATT_VOLT_MIN
+#define LED_BATT_VOLT_MIN 10.5f
+#endif
+
+extern const AP_HAL::HAL& hal;
+const AP_BattMonitor &batt = AP::battery();
+
+bool AP_BoardLED_Align::init(void)
 {
     // setup the main LEDs as outputs
     // define pin mode in hwdef, to be sure all I/O are
@@ -48,20 +59,21 @@ bool AP_BoardLED::init(void)
 /*
   main update function called at 50Hz
  */
-void AP_BoardLED::update(void)
+void AP_BoardLED_Align::update(void)
 {
     // update at 10 Hz
     uint32_t now_ms = AP_HAL::millis();
-    if (now_ms - _last_update_ms < 100) {
+    if (now_ms - _last_update_ms < 150) {
         return;
     }
     _last_update_ms = now_ms;
 
-    if (_state < State::TURNING_ON) {
-        if (hal.gpio    }
     // battery light state machine
     switch(_state) {
         case State::START:
+            // Set turning off flag
+            AP_Notify::flags.powering_off = false;
+
             // Turn all LED off
             hal.gpio->write(HAL_GPIO_A_LED_PIN, HAL_GPIO_LED_OFF);
             hal.gpio->write(HAL_GPIO_B_LED_PIN, HAL_GPIO_LED_OFF);
@@ -69,10 +81,10 @@ void AP_BoardLED::update(void)
             hal.gpio->write(HAL_GPIO_D_LED_PIN, HAL_GPIO_LED_OFF);
             
             // Check button
-            if (hal.gpio->read(HAL_GPIO_BUTTON_PIN) != HAL_GPIO_BUTTON_PRESSED) {
-                _state = State::TURNING_OFF;
-            } else {
+            if (hal.gpio->read(HAL_GPIO_BUTTON_PIN) == HAL_GPIO_BUTTON_PRESSED) {
                 _state = State::LED1_ON;
+            } else {
+                _state = State::TURNING_OFF;
             }
             break;
 
@@ -81,10 +93,10 @@ void AP_BoardLED::update(void)
             hal.gpio->write(HAL_GPIO_A_LED_PIN, HAL_GPIO_LED_ON);
             
             // Check button
-            if (hal.gpio->read(HAL_GPIO_BUTTON_PIN) != HAL_GPIO_BUTTON_PRESSED) {
-                _state = State::TURNING_OFF;
-            } else {
+            if (hal.gpio->read(HAL_GPIO_BUTTON_PIN) == HAL_GPIO_BUTTON_PRESSED) {
                 _state = State::LED2_ON;
+            } else {
+                _state = State::TURNING_OFF;
             }
             break;
 
@@ -93,10 +105,10 @@ void AP_BoardLED::update(void)
             hal.gpio->write(HAL_GPIO_B_LED_PIN, HAL_GPIO_LED_ON);
             
             // Check button
-            if (hal.gpio->read(HAL_GPIO_BUTTON_PIN) != HAL_GPIO_BUTTON_PRESSED) {
-                _state = State::TURNING_OFF;
-            } else {
+            if (hal.gpio->read(HAL_GPIO_BUTTON_PIN) == HAL_GPIO_BUTTON_PRESSED) {
                 _state = State::LED3_ON;
+            } else {
+                _state = State::TURNING_OFF;
             }
             break;
 
@@ -105,10 +117,10 @@ void AP_BoardLED::update(void)
             hal.gpio->write(HAL_GPIO_C_LED_PIN, HAL_GPIO_LED_ON);
             
             // Check button
-            if (hal.gpio->read(HAL_GPIO_BUTTON_PIN) != HAL_GPIO_BUTTON_PRESSED) {
-                _state = State::TURNING_OFF;
-            } else {
+            if (hal.gpio->read(HAL_GPIO_BUTTON_PIN) == HAL_GPIO_BUTTON_PRESSED) {
                 _state = State::LED4_ON;
+            } else {
+                _state = State::TURNING_OFF;
             }
             break;
 
@@ -117,15 +129,28 @@ void AP_BoardLED::update(void)
             hal.gpio->write(HAL_GPIO_D_LED_PIN, HAL_GPIO_LED_ON);
 
             // Check button
-            if (hal.gpio->read(HAL_GPIO_BUTTON_PIN) != HAL_GPIO_BUTTON_PRESSED) {
-                _state = State::TURNING_OFF;
-            } else {
+            if (hal.gpio->read(HAL_GPIO_BUTTON_PIN) == HAL_GPIO_BUTTON_PRESSED) {
                 _state = State::TURNING_ON;
+            } else {
+                _state = State::TURNING_OFF;
             }
             break;
 
         case State::TURNING_ON:
+            // TODO: turn on 5 V, 12 V and ESC
 
+            // Wait button to be released
+            _state = State::WAIT_BUTTON_RELEASED;
+
+            break;
+
+        case State::WAIT_BUTTON_RELEASED:
+            // Wait for button to be released
+            if (hal.gpio->read(HAL_GPIO_BUTTON_PIN) == HAL_GPIO_BUTTON_PRESSED) {
+                break;
+            }
+
+            _state = State::ON;
             break;
 
         case State::ON:
@@ -133,91 +158,147 @@ void AP_BoardLED::update(void)
             if (AP_Notify::flags.armed) {
                 break;
             }
+            
+            // Update LED based on battery voltage
+            set_led_from_voltage();
+            /* hal.gpio->write(HAL_GPIO_A_LED_PIN, HAL_GPIO_LED_ON); */
+            /* hal.gpio->write(HAL_GPIO_B_LED_PIN, HAL_GPIO_LED_ON); */
+            /* hal.gpio->write(HAL_GPIO_C_LED_PIN, HAL_GPIO_LED_ON); */
 
+            // Turn off if button is pressed
             if (hal.gpio->read(HAL_GPIO_BUTTON_PIN) == HAL_GPIO_BUTTON_PRESSED) {
+                // Turn all LED on
+                hal.gpio->write(HAL_GPIO_A_LED_PIN, HAL_GPIO_LED_ON);
+                hal.gpio->write(HAL_GPIO_B_LED_PIN, HAL_GPIO_LED_ON);
+                hal.gpio->write(HAL_GPIO_C_LED_PIN, HAL_GPIO_LED_ON);
+                hal.gpio->write(HAL_GPIO_D_LED_PIN, HAL_GPIO_LED_ON);
                 _state = State::LED4_OFF;
             }
-
-        default:
             break;
-    }
 
-    // arming light
-    static uint8_t arm_counter = 0;
-	if (AP_Notify::flags.armed) {
-        // red led solid
-        hal.gpio->write(HAL_GPIO_A_LED_PIN, HAL_GPIO_LED_ON);
-    }else{
-        if ((counter2 & 0x2) == 0) {
-            arm_counter++;
-        }
-        if (AP_Notify::flags.pre_arm_check) {
-            // passed pre-arm checks so slower single flash
-            switch(arm_counter) {
-                case 0:
-                case 1:
-                case 2:
-                    hal.gpio->write(HAL_GPIO_A_LED_PIN, HAL_GPIO_LED_ON);
-                    break;
-                case 3:
-                case 4:
-                case 5:
-                    hal.gpio->write(HAL_GPIO_A_LED_PIN, HAL_GPIO_LED_OFF);
-                    break;
-                default:
-                    // reset counter to restart the sequence
-                    arm_counter = -1;
-                    break;
+        case State::LED4_OFF:
+            // Turn on LED4
+            hal.gpio->write(HAL_GPIO_D_LED_PIN, HAL_GPIO_LED_OFF);
+
+            // Check button
+            if (hal.gpio->read(HAL_GPIO_BUTTON_PIN) == HAL_GPIO_BUTTON_PRESSED) {
+                _state = State::LED3_OFF;
+            } else {
+                _state = State::ON;
             }
-        }else{
-            // failed pre-arm checks so double flash
-            switch(arm_counter) {
-                case 0:
-                case 1:
-                case 3:
-                case 4:
-                    hal.gpio->write(HAL_GPIO_A_LED_PIN, HAL_GPIO_LED_ON);
-                    break;
+            break;
 
-                case 2:
-                case 5:
-                case 6:
-                    hal.gpio->write(HAL_GPIO_A_LED_PIN, HAL_GPIO_LED_OFF);
-                    break;
-
-                default:
-                    arm_counter = -1;
-                    break;
-            }
-        }
-    }
-
-    // gps light
-    switch (AP_Notify::flags.gps_status) {
-        case 0:
-            // no GPS attached
+        case State::LED3_OFF:
+            // Turn on LED4
             hal.gpio->write(HAL_GPIO_C_LED_PIN, HAL_GPIO_LED_OFF);
-            break;
 
-        case 1:
-            // GPS attached but no lock, blink at 4Hz
-            if ((counter2 & 0x3) == 0) {
-                hal.gpio->toggle(HAL_GPIO_C_LED_PIN);
+            // Check button
+            if (hal.gpio->read(HAL_GPIO_BUTTON_PIN) == HAL_GPIO_BUTTON_PRESSED) {
+                _state = State::LED2_OFF;
+            } else {
+                _state = State::ON;
             }
             break;
 
-        case 2:
-            // GPS attached but 2D lock, blink more slowly (around 2Hz)
-            if ((counter2 & 0x7) == 0) {
-                hal.gpio->toggle(HAL_GPIO_C_LED_PIN);
+        case State::LED2_OFF:
+            // Turn on LED4
+            hal.gpio->write(HAL_GPIO_B_LED_PIN, HAL_GPIO_LED_OFF);
+
+            // Check button
+            if (hal.gpio->read(HAL_GPIO_BUTTON_PIN) == HAL_GPIO_BUTTON_PRESSED) {
+                _state = State::LED1_OFF;
+            } else {
+                _state = State::ON;
             }
+            break;
+
+        case State::LED1_OFF:
+            // Turn on LED4
+            hal.gpio->write(HAL_GPIO_A_LED_PIN, HAL_GPIO_LED_OFF);
+
+            // Check button
+            if (hal.gpio->read(HAL_GPIO_BUTTON_PIN) == HAL_GPIO_BUTTON_PRESSED) {
+                _state = State::TURNING_OFF;
+            } else {
+                _state = State::ON;
+            }
+            break;
+
+        case State::TURNING_OFF:
+            // should be impossible to get here armed, but still better safe than sorry
+            if (AP_Notify::flags.armed) {
+                _state = State::ON;
+                AP_Notify::flags.powering_off = false;
+                break;
+            }
+
+            // turn off all LEDs
+            hal.gpio->write(HAL_GPIO_A_LED_PIN, HAL_GPIO_LED_OFF);
+            hal.gpio->write(HAL_GPIO_B_LED_PIN, HAL_GPIO_LED_OFF);
+            hal.gpio->write(HAL_GPIO_C_LED_PIN, HAL_GPIO_LED_OFF);
+            hal.gpio->write(HAL_GPIO_D_LED_PIN, HAL_GPIO_LED_OFF);
+            
+            // Turn main systems OFF
+            AP_Notify::flags.powering_off = true;
+
             break;
 
         default:
-            // solid blue on gps lock
-            hal.gpio->write(HAL_GPIO_C_LED_PIN, HAL_GPIO_LED_ON);
-            break;        
+            break;
     }
+}
+
+void AP_BoardLED_Align::set_led_from_voltage()
+{
+    const float volt_step = (LED_BATT_VOLT_MAX - LED_BATT_VOLT_MIN) / 4.0f;
+    float voltage = batt.voltage(0);
+    static bool  first_low = true;
+
+    // control LED based on battery voltage
+    /* if (voltage < 1.0f) { */
+    /*     // battery monitor is not ready */
+    /*     return; */
+    /* } */
+    if (voltage < LED_BATT_VOLT_MIN) {
+        if (first_low) {
+            first_low = false;
+            hal.gpio->write(HAL_GPIO_A_LED_PIN, HAL_GPIO_LED_ON);
+            hal.gpio->write(HAL_GPIO_B_LED_PIN, HAL_GPIO_LED_ON);
+            hal.gpio->write(HAL_GPIO_C_LED_PIN, HAL_GPIO_LED_ON);
+            hal.gpio->write(HAL_GPIO_D_LED_PIN, HAL_GPIO_LED_ON);
+        } else {
+            // flash all LEDs
+            hal.gpio->toggle(HAL_GPIO_A_LED_PIN);
+            hal.gpio->toggle(HAL_GPIO_B_LED_PIN);
+            hal.gpio->toggle(HAL_GPIO_C_LED_PIN);
+            hal.gpio->toggle(HAL_GPIO_D_LED_PIN);
+        }
+    } else if (voltage < LED_BATT_VOLT_MIN + volt_step) {
+        first_low = true;
+        hal.gpio->write(HAL_GPIO_A_LED_PIN, HAL_GPIO_LED_ON);
+        hal.gpio->write(HAL_GPIO_B_LED_PIN, HAL_GPIO_LED_OFF);
+        hal.gpio->write(HAL_GPIO_C_LED_PIN, HAL_GPIO_LED_OFF);
+        hal.gpio->write(HAL_GPIO_D_LED_PIN, HAL_GPIO_LED_OFF);
+    } else if (voltage < LED_BATT_VOLT_MIN + 2 * volt_step) {
+        first_low = true;
+        hal.gpio->write(HAL_GPIO_A_LED_PIN, HAL_GPIO_LED_ON);
+        hal.gpio->write(HAL_GPIO_B_LED_PIN, HAL_GPIO_LED_ON);
+        hal.gpio->write(HAL_GPIO_C_LED_PIN, HAL_GPIO_LED_OFF);
+        hal.gpio->write(HAL_GPIO_D_LED_PIN, HAL_GPIO_LED_OFF);
+    } else if (voltage < LED_BATT_VOLT_MIN + 3 * volt_step) {
+        first_low = true;
+        hal.gpio->write(HAL_GPIO_A_LED_PIN, HAL_GPIO_LED_ON);
+        hal.gpio->write(HAL_GPIO_B_LED_PIN, HAL_GPIO_LED_ON);
+        hal.gpio->write(HAL_GPIO_C_LED_PIN, HAL_GPIO_LED_ON);
+        hal.gpio->write(HAL_GPIO_D_LED_PIN, HAL_GPIO_LED_OFF);
+    } else {
+        first_low = true;
+        hal.gpio->write(HAL_GPIO_A_LED_PIN, HAL_GPIO_LED_ON);
+        hal.gpio->write(HAL_GPIO_B_LED_PIN, HAL_GPIO_LED_ON);
+        hal.gpio->write(HAL_GPIO_C_LED_PIN, HAL_GPIO_LED_ON);
+        hal.gpio->write(HAL_GPIO_D_LED_PIN, HAL_GPIO_LED_ON);
+    }
+
 }
 #else
 bool AP_BoardLED::init(void) {return true;}

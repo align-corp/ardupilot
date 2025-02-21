@@ -101,6 +101,11 @@ uint32_t RGBLed::get_colour_sequence_obc(void) const
 // _scheduled_update - updates _red, _green, _blue according to notify flags
 uint32_t RGBLed::get_colour_sequence(void) const
 {
+    // turn off led during power off
+    if (AP_Notify::flags.powering_off) {
+        return DEFINE_COLOUR_SEQUENCE_SOLID(BLACK);
+    }
+
     // initialising pattern
     if (AP_Notify::flags.initialising) {
         return sequence_initialising;

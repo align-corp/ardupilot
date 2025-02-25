@@ -91,7 +91,7 @@ index.html
 logs/
 mav.log
 mav.log.raw
-mav.parm
+mav*.parm
 mission.stg
 /defaults.parm
 /ArduCopter/defaults.parm

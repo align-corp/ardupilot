@@ -81,14 +81,9 @@ void ModeLoiter::precision_loiter_xy()
 
 void ModeLoiter::update_landing_state(AltHoldModeState alt_hold_state)
 {
-    // rangefiner must be healthy
-    if (!copter.rangefinder_alt_ok()) {
-        landing_state = LandingState::ALTITUDE_HIGH;
-        return;
-    }
-
-    // abort landing if throttle is increased by user
+    // keep landing even if rangefinder is not healthy
     if (landing_state == LandingState::LANDING) {
+        // abort landing if throttle is increased by user
         if (channel_throttle->norm_input_ignore_trim() > 0.1f || !motors->armed()) {
             // when landing controller is landing loiter mode should be initialized again
             init(true);
@@ -96,6 +91,12 @@ void ModeLoiter::update_landing_state(AltHoldModeState alt_hold_state)
             landing_state = LandingState::ALTITUDE_LOW;
             LOGGER_WRITE_EVENT(LogEvent::LOITER_LAND_ABORT);
         }
+        return;
+    }
+
+    // check if rangefinder is healthy
+    if (!copter.rangefinder_alt_ok()) {
+        landing_state = LandingState::ALTITUDE_HIGH;
         return;
     }
 

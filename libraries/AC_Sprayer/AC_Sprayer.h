@@ -22,9 +22,12 @@
 #define AC_SPRAYER_DEFAULT_PUMP_MIN         0       ///< default minimum pump speed expressed as a percentage from 0 to 100
 #define AC_SPRAYER_DEFAULT_SPINNER_PWM      1300    ///< default speed of spinner (higher means spray is throw further horizontally
 #define AC_SPRAYER_DEFAULT_SPINNER_DELAY_PWM 100
+#define AC_SPRAYER_DEFAULT_MIN_ALT          200
 #define AC_SPRAYER_DEFAULT_SPEED_MIN        100     ///< we must be travelling at least 1m/s to begin spraying
 #define AC_SPRAYER_DEFAULT_TURN_ON_DELAY    100     ///< delay between when we reach the minimum speed and we begin spraying.  This reduces the likelihood of constantly turning on/off the pump
 #define AC_SPRAYER_DEFAULT_SHUT_OFF_DELAY   1000    ///< shut-off delay in milli seconds.  This reduces the likelihood of constantly turning on/off the pump
+#define AC_SPRAYER_DEFAULT_ALT_TURN_ON_DELAY 100    ///< delay before spraying starts after reaching minimum altitude (ms)
+#define AC_SPRAYER_DEFAULT_ALT_SHUT_OFF_DELAY 2500  ///< delay before spraying stops after going below minimum altitude (ms)
 
 #ifndef HAL_SPRAYER_ENABLED
 #define HAL_SPRAYER_ENABLED 1
@@ -63,6 +66,7 @@ public:
 
     /// update - adjusts servo positions based on speed and requested quantity
     void update();
+    void update_copter(int32_t terrain_altitude_cm = 0);
 
     static const struct AP_Param::GroupInfo var_info[];
 
@@ -75,6 +79,7 @@ private:
     AP_Int16        _spinner_pwm;           ///< pwm rate of spinner
     AP_Int16        _spinner_delay_pwm;     ///< delay to prevent spinner malfunction
     AP_Float        _speed_min;             ///< minimum speed in cm/s above which the sprayer will be started
+    AP_Int16        _min_alt;               ///< minimum altitude in cm at which we will begin spraying
 
     /// flag bitmask
     struct sprayer_flags_type {
@@ -84,8 +89,13 @@ private:
     } _flags;
 
     // internal variables
-    uint32_t        _speed_over_min_time;   ///< time at which we reached speed minimum
-    uint32_t        _speed_under_min_time;  ///< time at which we fell below speed minimum
+    uint32_t _speed_over_min_time = 0;      ///< time at which we reached speed minimum
+    uint32_t _speed_under_min_time = 0;     ///< time at which we fell below speed minimum
+    uint32_t _alt_under_min_time = 0;       ///< time at which we were last under minimum altitude
+    uint32_t _alt_over_min_time = 0;        ///< time at which we were last over minimum altitude
+    int32_t _current_altitude = 0;          ///< current altitude in cm, no use if == 0
+    bool _altitude_ok = false;              ///< true if we are above minimum altitude
+    bool _speed_ok = false;                 ///< true if we are above minimum speed
 
     void stop_spraying();
 };

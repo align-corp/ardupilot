@@ -843,6 +843,11 @@ private:
     void landinggear_update();
 #endif
 
+#if HAL_SPRAYER_ENABLED
+    // sprayer.cpp
+    void sprayer_update();
+#endif
+
     // standby.cpp
     void standby_update();
 

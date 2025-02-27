@@ -57,7 +57,15 @@ const AP_Param::GroupInfo AC_Sprayer::var_info[] = {
     // @Units: ms
     // @Range: 1000 2000
     // @User: Standard
-    AP_GROUPINFO("SPIN_DEL",     5, AC_Sprayer, _spinner_delay_pwm, AC_SPRAYER_DEFAULT_SPINNER_DELAY_PWM),
+    AP_GROUPINFO("SPIN_DEL",   5, AC_Sprayer, _spinner_delay_pwm, AC_SPRAYER_DEFAULT_SPINNER_DELAY_PWM),
+
+    // @Param: ALT_MIN
+    // @DisplayName: Sprayer minimum altitude
+    // @Description: Minimum altitude in cm at which we will begin spraying
+    // @Units: %
+    // @Range: 0 500
+    // @User: Standard
+    AP_GROUPINFO("ALT_MIN",   6, AC_Sprayer, _min_alt, AC_SPRAYER_DEFAULT_MIN_ALT),
 
     AP_GROUPEND
 };
@@ -164,41 +172,42 @@ void AC_Sprayer::update()
     // get the current time
     const uint32_t now = AP_HAL::millis();
 
-    bool should_be_spraying = _flags.spraying;
-    // check our speed vs the minimum
+    // Check speed condition
     if (ground_speed >= _speed_min) {
-        // if we are not already spraying
-        if (!_flags.spraying) {
-            // set the timer if this is the first time we've surpassed the min speed
-            if (_speed_over_min_time == 0) {
-                _speed_over_min_time = now;
-            }else{
-                // check if we've been over the speed long enough to engage the sprayer
-                if((now - _speed_over_min_time) > AC_SPRAYER_DEFAULT_TURN_ON_DELAY) {
-                    should_be_spraying = true;
-                    _speed_over_min_time = 0;
-                }
-            }
+        if (_speed_over_min_time == 0) {
+            _speed_over_min_time = now;
+        } else if ((now - _speed_over_min_time) > AC_SPRAYER_DEFAULT_TURN_ON_DELAY) {
+            _speed_ok = true;
         }
-        // reset the speed under timer
         _speed_under_min_time = 0;
     } else {
-        // we are under the min speed.
-        if (_flags.spraying) {
-            // set the timer if this is the first time we've dropped below the min speed
-            if (_speed_under_min_time == 0) {
-                _speed_under_min_time = now;
-            }else{
-                // check if we've been over the speed long enough to engage the sprayer
-                if((now - _speed_under_min_time) > AC_SPRAYER_DEFAULT_SHUT_OFF_DELAY) {
-                    should_be_spraying = false;
-                    _speed_under_min_time = 0;
-                }
-            }
+        if (_speed_under_min_time == 0) {
+            _speed_under_min_time = now;
+        } else if ((now - _speed_under_min_time) > AC_SPRAYER_DEFAULT_SHUT_OFF_DELAY) {
+            _speed_ok = false;
         }
-        // reset the speed over timer
         _speed_over_min_time = 0;
     }
+
+    // Check altitude condition
+    if (_current_altitude >= _min_alt) {
+        if (_alt_over_min_time == 0) {
+            _alt_over_min_time = now;
+        } else if ((now - _alt_over_min_time) > AC_SPRAYER_DEFAULT_ALT_TURN_ON_DELAY) {
+            _altitude_ok = true;
+        }
+        _alt_under_min_time = 0;
+    } else {
+        if (_alt_under_min_time == 0) {
+            _alt_under_min_time = now;
+        } else if ((now - _alt_under_min_time) > AC_SPRAYER_DEFAULT_ALT_SHUT_OFF_DELAY) {
+            _altitude_ok = false;
+        }
+        _alt_over_min_time = 0;
+    }
+
+    // Combine conditions
+    bool should_be_spraying = _speed_ok && _altitude_ok;
 
     // if testing pump output speed as if travelling at 1m/s
     if (_flags.testing) {
@@ -217,6 +226,15 @@ void AC_Sprayer::update()
     } else {
         stop_spraying();
     }
+}
+
+void AC_Sprayer::update_copter(int32_t terrain_altitude_cm)
+{
+    // update altitude
+    _current_altitude = terrain_altitude_cm;
+
+    // run default update function without alititude enable
+    update();
 }
 
 namespace AP {

@@ -51,6 +51,14 @@ const AP_Param::GroupInfo AC_Sprayer::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("PUMP_MIN",   4, AC_Sprayer, _pump_min_pct, AC_SPRAYER_DEFAULT_PUMP_MIN),
 
+    // @Param: SPIN_DEL
+    // @DisplayName: Spinner delay
+    // @Description: Spinner's delay in PWM (a higher rate will disperse the spray over a wider area horizontally)
+    // @Units: ms
+    // @Range: 1000 2000
+    // @User: Standard
+    AP_GROUPINFO("SPIN_DEL",     5, AC_Sprayer, _spinner_delay_pwm, AC_SPRAYER_DEFAULT_SPINNER_DELAY_PWM),
+
     AP_GROUPEND
 };
 
@@ -88,6 +96,11 @@ AC_Sprayer *AC_Sprayer::get_singleton()
 
 void AC_Sprayer::run(const bool activate)
 {
+    // turn off the pump and spinner servos if necessary
+    if (!_flags.running) {
+        stop_spraying();
+    }
+
     // return immediately if no change
     if (_flags.running == activate) {
         return;
@@ -97,18 +110,31 @@ void AC_Sprayer::run(const bool activate)
     // do not allow running to be set to true if we are currently not enabled
     _flags.running = _enabled && activate;
 
-    // turn off the pump and spinner servos if necessary
-    if (!_flags.running) {
-        stop_spraying();
-    }
 }
 
 void AC_Sprayer::stop_spraying()
 {
+    // set flag and turn off pump
     SRV_Channels::set_output_limit(SRV_Channel::k_sprayer_pump, SRV_Channel::Limit::MIN);
-    SRV_Channels::set_output_limit(SRV_Channel::k_sprayer_spinner, SRV_Channel::Limit::MIN);
-
     _flags.spraying = false;
+
+    // if no delay is set then turn off spinner immediately
+    if (_spinner_delay_pwm == 0) {
+        SRV_Channels::set_output_limit(SRV_Channel::k_sprayer_spinner, SRV_Channel::Limit::MIN);
+        return;
+    }
+
+    // some delay is set, so reduce spinner speed gradually
+    SRV_Channel* chan = SRV_Channels::get_channel_for(SRV_Channel::k_sprayer_spinner);
+
+    // prevent segmentation fault if channel is not set
+    if (chan == nullptr) {
+        return;
+    }
+    uint16_t spinner_pwm_now = chan->get_output_pwm();
+    uint16_t spinner_pwm_min = chan->get_output_min();
+    uint16_t spinner_pwm_set = MAX(spinner_pwm_now - _spinner_delay_pwm, spinner_pwm_min);
+    chan->set_output_pwm(spinner_pwm_set);
 }
 
 /// update - adjust pwm of servo controlling pump speed according to the desired quantity and our horizontal speed

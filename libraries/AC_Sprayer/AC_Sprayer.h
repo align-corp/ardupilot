@@ -21,6 +21,7 @@
 #define AC_SPRAYER_DEFAULT_PUMP_RATE        10.0f   ///< default quantity of spray per meter travelled
 #define AC_SPRAYER_DEFAULT_PUMP_MIN         0       ///< default minimum pump speed expressed as a percentage from 0 to 100
 #define AC_SPRAYER_DEFAULT_SPINNER_PWM      1300    ///< default speed of spinner (higher means spray is throw further horizontally
+#define AC_SPRAYER_DEFAULT_SPINNER_DELAY_PWM 100
 #define AC_SPRAYER_DEFAULT_SPEED_MIN        100     ///< we must be travelling at least 1m/s to begin spraying
 #define AC_SPRAYER_DEFAULT_TURN_ON_DELAY    100     ///< delay between when we reach the minimum speed and we begin spraying.  This reduces the likelihood of constantly turning on/off the pump
 #define AC_SPRAYER_DEFAULT_SHUT_OFF_DELAY   1000    ///< shut-off delay in milli seconds.  This reduces the likelihood of constantly turning on/off the pump
@@ -72,6 +73,7 @@ private:
     AP_Float        _pump_pct_1ms;          ///< desired pump rate (expressed as a percentage of top rate) when travelling at 1m/s
     AP_Int8         _pump_min_pct;          ///< minimum pump rate (expressed as a percentage from 0 to 100)
     AP_Int16        _spinner_pwm;           ///< pwm rate of spinner
+    AP_Int16        _spinner_delay_pwm;     ///< delay to prevent spinner malfunction
     AP_Float        _speed_min;             ///< minimum speed in cm/s above which the sprayer will be started
 
     /// flag bitmask

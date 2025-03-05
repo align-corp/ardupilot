@@ -209,6 +209,11 @@ void ModeLoiter::run()
         // get pilot desired climb rate
         target_climb_rate = get_pilot_desired_climb_rate(channel_throttle->get_control_in());
         target_climb_rate = constrain_float(target_climb_rate, max_speed_down, g.pilot_speed_up);
+
+        // switch to auto if no stick input and we arrived here for OVERRIDE reason
+        if (copter._last_reason == ModeReason::OVERRIDE && is_zero(target_roll) && is_zero(target_pitch) && is_zero(target_yaw_rate) && is_zero(target_climb_rate)) {
+            copter.set_mode(Mode::Number::AUTO, ModeReason::OVERRIDE );
+        }
     } else {
         // clear out pilot desired acceleration in case radio failsafe event occurs and we do not switch to RTL for some reason
         loiter_nav->clear_pilot_desired_acceleration();
@@ -271,9 +276,6 @@ void ModeLoiter::run()
     case AltHold_Flying:
         // set motors to full range
         motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
-
-        // process pilot's roll and pitch input
-        loiter_nav->set_pilot_desired_acceleration(target_roll, target_pitch);
 
         // process pilot's roll and pitch input
         loiter_nav->set_pilot_desired_acceleration(target_roll, target_pitch);

@@ -1016,7 +1016,7 @@ void ModeAuto::wp_run()
         const float pilot_pitch = channel_pitch->norm_input();
         const bool pilot_override = fabsf(pilot_roll)>0.5 || fabsf(pilot_pitch)>0.5;
         if (pilot_override) {
-            copter.set_mode(Mode::Number::LOITER, ModeReason::UNKNOWN);
+            copter.set_mode(Mode::Number::LOITER, ModeReason::OVERRIDE);
         }
     }
 

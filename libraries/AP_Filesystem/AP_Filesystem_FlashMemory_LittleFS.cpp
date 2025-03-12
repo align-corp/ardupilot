@@ -850,6 +850,12 @@ bool AP_Filesystem_FlashMemory_LittleFS::mount_filesystem() {
     }
 
     dev_sem = dev->get_semaphore();
+
+    // init flash
+    if (!init_flash()) {
+        mark_dead();
+        return false;
+    }
 #else
     fs_cfg.read = lfs_filebd_read;
     fs_cfg.prog = lfs_filebd_prog;
@@ -863,12 +869,7 @@ bool AP_Filesystem_FlashMemory_LittleFS::mount_filesystem() {
         mark_dead();
         return false;
     }
-#if CONFIG_HAL_BOARD != HAL_BOARD_SITL
-    if (!init_flash()) {
-        mark_dead();
-        return false;
-    }
-#endif
+
     if (lfs_mount(&fs, &fs_cfg) < 0) {
         /* maybe not formatted? try formatting it */
         GCS_SEND_TEXT(MAV_SEVERITY_NOTICE, "Formatting flash");

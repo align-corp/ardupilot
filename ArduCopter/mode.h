@@ -577,7 +577,7 @@ private:
         AllowArming                        = (1 << 0U),
         AllowTakeOffWithoutRaisingThrottle = (1 << 1U),
         IgnorePilotYaw                     = (1 << 2U),
-        PilotOverride                      = (1 << 3U),
+        RollStickMix                       = (1 << 3U),
         AltitudeStickMix                   = (1 << 4U),
         AllowWeatherVaning                 = (1 << 7U),
     };

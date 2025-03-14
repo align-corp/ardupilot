@@ -528,7 +528,13 @@ bool AC_WPNav::advance_wp_target_along_track(float dt)
     target_accel *= sq(vel_scaler_dt);
     target_accel += accel_offset;
 
+    // Convert body-frame roll offset to NE frame components
+    float pilot_offset_x = -_roll_stick_mix_cm * _ahrs.sin_yaw(); // North component
+    float pilot_offset_y = _roll_stick_mix_cm * _ahrs.cos_yaw(); // East component
+
     // add stick mixing value
+    target_pos.x += pilot_offset_x;
+    target_pos.y += pilot_offset_y;
     target_pos.z += _altitude_stick_mix_cm;
 
     // convert final_target.z to altitude above the ekf origin

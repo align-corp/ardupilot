@@ -76,6 +76,10 @@ public:
     void set_alt_stick_mix(float speed_cms, float dt) {_altitude_stick_mix_cm += speed_cms * dt; }
     void reset_alt_stick_mix() {_altitude_stick_mix_cm = 0.0f; }
 
+    /// roll stick mixing
+    void set_roll_stick_mix(float speed_cms, float dt) {_roll_stick_mix_cm += speed_cms * dt; }
+    void reset_roll_stick_mix() {_roll_stick_mix_cm = 0.0f; }
+
     /// get default target horizontal velocity during wp navigation
     float get_default_speed_xy() const { return _wp_speed_cms; }
 
@@ -297,4 +301,7 @@ protected:
 
     // altitude stick mixing
     float       _altitude_stick_mix_cm = 0;
+
+    // roll stick mixing
+    float       _roll_stick_mix_cm = 0;
 };

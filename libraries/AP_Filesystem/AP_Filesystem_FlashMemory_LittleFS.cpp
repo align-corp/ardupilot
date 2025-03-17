@@ -573,7 +573,6 @@ void AP_Filesystem_FlashMemory_LittleFS::mark_dead()
 #define JEDEC_ID_WINBOND_W25Q256       0xEF4019
 #define JEDEC_ID_WINBOND_W25Q128_2     0xEF7018
 #define JEDEC_ID_WINBOND_W25N01GV      0xEFAA21
-#define JEDEC_ID_WINBOND_W25N01KV      0xEFAE21
 #define JEDEC_ID_WINBOND_W25N02KV      0xEFAA22
 #define JEDEC_ID_CYPRESS_S25FL128L     0x016018
 
@@ -739,7 +738,6 @@ uint32_t AP_Filesystem_FlashMemory_LittleFS::find_block_size_and_count() {
 
     switch (id) {
 #if AP_FILESYSTEM_LITTLEFS_FLASH_TYPE == AP_FILESYSTEM_FLASH_W25NXX
-    case JEDEC_ID_WINBOND_W25N01KV:
     case JEDEC_ID_WINBOND_W25N01GV:
         /* 128M, programmable in chunks of 2048 bytes, erasable in blocks of 128K */
         page_size = 2048;

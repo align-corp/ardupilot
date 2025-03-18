@@ -56,8 +56,9 @@ bool ModeAuto::init(bool ignore_checks)
         // reset flag indicating if pilot has applied roll or pitch inputs during landing
         copter.ap.land_repo_active = false;
 
-        // reset altitude stick mixing
+        // reset stick mixing
         wp_nav->reset_alt_stick_mix();
+        wp_nav->reset_roll_stick_mix();
 
 #if AC_PRECLAND_ENABLED
         // initialise precland state machine

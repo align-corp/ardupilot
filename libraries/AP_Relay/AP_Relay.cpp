@@ -356,15 +356,11 @@ void AP_Relay::init()
         if (function == AP_Relay_Params::FUNCTION::RELAY) {
             // relay by instance number, set the state to match our output
             const AP_Relay_Params::DefaultState default_state = _params[instance].default_state;
-            if ((default_state == AP_Relay_Params::DefaultState::OFF) ||
-                (default_state == AP_Relay_Params::DefaultState::ON)) {
-
+            // Only check ON default state, OFF is set by default at turn-on
+            // This prevent a weird glitch on relay ì when default state is OFF
+            if (default_state == AP_Relay_Params::DefaultState::ON) {
                 set_pin_by_instance(instance, (bool)default_state);
             }
-        } else {
-            // all functions are supposed to be off by default
-            // this will need revisiting when we support inversion
-            set_pin_by_instance(instance, false);
         }
 
         // Make sure any DroneCAN pin is enabled for streaming

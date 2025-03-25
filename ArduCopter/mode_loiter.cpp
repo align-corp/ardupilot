@@ -261,11 +261,31 @@ void ModeLoiter::run()
         // set position controller targets adjusted for pilot input
         takeoff.do_pilot_takeoff(target_climb_rate);
 
+#if FRAME_CONFIG == HELI_FRAME
+        // use altitude hold controller to take off
+        // loiter controller sometimes cause dangerous roll/pitch errors when taking off
+        loiter_nav->init_target();
+        // update pilot input, use the land_repositioning param for consistency
+        if (g.land_repositioning > 1) {
+            get_pilot_desired_lean_angles(target_roll, target_pitch, copter.aparm.angle_max,
+                    attitude_control->get_althold_lean_angle_max_cd());
+        } else {
+            target_roll = target_pitch = 0.0f;
+        }
+        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(target_roll, target_pitch, target_yaw_rate);
+#else
+        // update pilot input, use the land_repositioning param for consistency
+        if (g.land_repositioning > 1) {
+            loiter_nav->clear_pilot_desired_acceleration();
+        } else {
+            loiter_nav->set_pilot_desired_acceleration(target_roll, target_pitch);
+        }
         // run loiter controller
         loiter_nav->update();
-
         // call attitude controller
         attitude_control->input_thrust_vector_rate_heading(loiter_nav->get_thrust_vector(), target_yaw_rate, false);
+#endif
+
         break;
 
     case AltHold_Flying:

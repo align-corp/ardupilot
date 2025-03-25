@@ -705,8 +705,9 @@ void NavEKF3_core::readGpsYawData()
     // if the GPS has yaw data then fuse it as an Euler yaw angle
     float yaw_deg, yaw_accuracy_deg;
     uint32_t yaw_time_ms;
-    if (gps.status(selected_gps) >= AP_DAL_GPS::GPS_OK_FIX_3D &&
-        dal.gps().gps_yaw_deg(selected_gps, yaw_deg, yaw_accuracy_deg, yaw_time_ms) &&
+    uint8_t gps_instance_yaw = frontend->_gpsYawInstance > 0 ? frontend->_gpsYawInstance-1 : selected_gps;
+    if (gps.status(gps_instance_yaw) >= AP_DAL_GPS::GPS_OK_FIX_3D &&
+        dal.gps().gps_yaw_deg(gps_instance_yaw, yaw_deg, yaw_accuracy_deg, yaw_time_ms) &&
         yaw_time_ms != yawMeasTime_ms) {
         // GPS modules are rather too optimistic about their
         // accuracy. Set to min of 5 degrees here to prevent

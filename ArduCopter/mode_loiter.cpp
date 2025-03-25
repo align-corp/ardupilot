@@ -275,9 +275,6 @@ void ModeLoiter::run()
         // process pilot's roll and pitch input
         loiter_nav->set_pilot_desired_acceleration(target_roll, target_pitch);
 
-        // process pilot's roll and pitch input
-        loiter_nav->set_pilot_desired_acceleration(target_roll, target_pitch);
-
         // set vertical speed and acceleration limits
         pos_control->set_max_speed_accel_z(max_speed_down, g.pilot_speed_up, g.pilot_accel_z);
 

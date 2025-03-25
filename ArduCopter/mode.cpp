@@ -291,8 +291,10 @@ bool Copter::set_mode(Mode::Number mode, ModeReason reason)
 #if FRAME_CONFIG == HELI_FRAME
     // do not allow helis to enter a non-manual throttle mode if the
     // rotor runup is not complete
+    // still allow switching from from loiter to alt_hold
     if (!ignore_checks && !new_flightmode->has_manual_throttle() &&
-        (motors->get_spool_state() == AP_Motors::SpoolState::SPOOLING_UP || motors->get_spool_state() == AP_Motors::SpoolState::SPOOLING_DOWN)) {
+        (motors->get_spool_state() == AP_Motors::SpoolState::SPOOLING_UP || motors->get_spool_state() == AP_Motors::SpoolState::SPOOLING_DOWN) &&
+        (mode != Mode::Number::ALT_HOLD || flightmode->mode_number() != Mode::Number::LOITER)) {
         #if MODE_AUTOROTATE_ENABLED == ENABLED
             //if the mode being exited is the autorotation mode allow mode change despite rotor not being at
             //full speed.  This will reduce altitude loss on bail-outs back to non-manual throttle modes

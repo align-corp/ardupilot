@@ -734,6 +734,15 @@ const AP_Param::GroupInfo NavEKF3::var_info2[] = {
     // @Units: m
     AP_GROUPINFO("GPS_VACC_MAX", 10, NavEKF3, _gpsVAccThreshold, 0.0f),
 
+    // @Param: GPS_YAW_INST
+    // @DisplayName: GPS instance to always use for yaw
+    // @Description: GPS instance to always use for yaw
+    // @Bitmask: 0:PrimaryGPS,1:AlwaysFirstGPS,2:AlwaysSecondGPS
+    // @Range: -1 1
+    // @Increment: 1
+    // @User: Advanced
+    AP_GROUPINFO("GPS_YAW_INST", 11, NavEKF3, _gpsYawInstance, 0),
+
     AP_GROUPEND
 };
 

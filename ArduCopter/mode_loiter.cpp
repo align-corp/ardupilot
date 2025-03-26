@@ -118,6 +118,7 @@ void ModeLoiter::update_landing_state(AltHoldModeState alt_hold_state)
 
     // check landing state based on rangefinder altitude
     if (get_alt_above_ground_cm() < lgr_land_low_alt+30) {
+        landing_state = LandingState::ALTITUDE_LOW;
         // full negative throttle and 2 s delay for landing routine when altitude < 80 cm
         if (channel_throttle->norm_input_ignore_trim() < -0.9f) {
             if (landing_request_start_ms == 0) {

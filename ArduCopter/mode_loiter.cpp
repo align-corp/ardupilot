@@ -168,7 +168,7 @@ void ModeLoiter::run()
         // altitude is below PILOT_LAND_ALT
         case LandingState::ALTITUDE_LOW:
             // Compute a vertical velocity demand such that the vehicle approaches land altitude.
-            max_speed_down = sqrt_controller(lgr_land_low_alt -get_alt_above_ground_cm() , pos_control->get_pos_z_p().kP(), 
+            max_speed_down = sqrt_controller(lgr_land_low_alt-get_alt_above_ground_cm(), pos_control->get_pos_z_p().kP(), 
                     pos_control->get_max_accel_z_cmss(), G_Dt);
 
             // Constrain the demanded vertical velocity

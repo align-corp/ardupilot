@@ -83,6 +83,11 @@ void ModeLoiter::update_landing_state(AltHoldModeState alt_hold_state)
 {
     // keep landing even if rangefinder is not healthy
     if (landing_state == LandingState::LANDING) {
+        // do not change state if we have landed: traditional helicopters wait
+        // spooling down before disarming
+        if (copter.ap.land_complete) {
+            return;
+        }
         // abort landing if throttle is increased by user
         if (channel_throttle->norm_input_ignore_trim() > 0.1f || !motors->armed()) {
             // when landing controller is landing loiter mode should be initialized again

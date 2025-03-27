@@ -133,6 +133,16 @@ void ModeLoiter::update_landing_state(AltHoldModeState alt_hold_state)
             if (landing_request_start_ms == 0) {
                 landing_request_start_ms = now_ms;
             } else if (now_ms - landing_request_start_ms > 2000) {
+                // initialise yaw
+                auto_yaw.set_mode(AutoYaw::Mode::HOLD);
+
+                // reset flag indicating if pilot has applied roll or pitch inputs during landing
+                copter.ap.land_repo_active = false;
+
+                // this will be set true if prec land is later active
+                copter.ap.prec_land_active = false;
+
+                // set landing state
                 landing_state = LandingState::LANDING;
                 LOGGER_WRITE_EVENT(LogEvent::LOITER_LAND_START);
             }

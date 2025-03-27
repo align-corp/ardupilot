@@ -59,6 +59,9 @@ void ModeAltHold::run()
         FALLTHROUGH;
 
     case AltHold_Landed_Pre_Takeoff:
+        if (motors->get_spool_state() == AP_Motors::SpoolState::SPOOLING_UP) {
+            attitude_control->reset_yaw_target_and_rate();
+        }
         attitude_control->reset_rate_controller_I_terms_smoothly();
         pos_control->relax_z_controller(0.0f);   // forces throttle output to decay to zero
         break;

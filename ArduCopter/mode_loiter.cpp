@@ -34,6 +34,9 @@ bool ModeLoiter::init(bool ignore_checks)
     pos_control->set_max_speed_accel_z(-get_pilot_speed_dn(), g.pilot_speed_up, g.pilot_accel_z);
     pos_control->set_correction_speed_accel_z(-get_pilot_speed_dn(), g.pilot_speed_up, g.pilot_accel_z);
 
+    // set default landing state
+    landing_state = LandingState::ALTITUDE_HIGH;
+
 #if AC_PRECLAND_ENABLED
     _precision_loiter_active = false;
 #endif
@@ -81,8 +84,14 @@ void ModeLoiter::precision_loiter_xy()
 
 void ModeLoiter::update_landing_state(AltHoldModeState alt_hold_state)
 {
+
     // keep landing even if rangefinder is not healthy
     if (landing_state == LandingState::LANDING) {
+        // after landing and disarming go back to default state and init loiter controller again
+        if (!motors->armed()) {
+            init(true);
+            return;
+        }
         // do not change state if we have landed: traditional helicopters wait
         // spooling down before disarming
         if (copter.ap.land_complete) {
@@ -92,7 +101,6 @@ void ModeLoiter::update_landing_state(AltHoldModeState alt_hold_state)
         if (channel_throttle->norm_input_ignore_trim() > 0.1f || !motors->armed()) {
             // when landing controller is landing loiter mode should be initialized again
             init(true);
-
             landing_state = LandingState::ALTITUDE_LOW;
             LOGGER_WRITE_EVENT(LogEvent::LOITER_LAND_ABORT);
         }
@@ -108,6 +116,7 @@ void ModeLoiter::update_landing_state(AltHoldModeState alt_hold_state)
     // enable landing controller only when copter is flying
     if (alt_hold_state != AltHoldModeState::AltHold_Flying) {
         landing_state = LandingState::ALTITUDE_HIGH;
+        landing_request_start_ms = 0;
         return;
     }
 

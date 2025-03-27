@@ -244,6 +244,9 @@ void ModeLoiter::run()
         FALLTHROUGH;
 
     case AltHold_Landed_Pre_Takeoff:
+        if (motors->get_spool_state() == AP_Motors::SpoolState::SPOOLING_UP) {
+            attitude_control->reset_yaw_target_and_rate();
+        }
         attitude_control->reset_rate_controller_I_terms_smoothly();
         loiter_nav->init_target();
         attitude_control->input_thrust_vector_rate_heading(loiter_nav->get_thrust_vector(), target_yaw_rate, false);

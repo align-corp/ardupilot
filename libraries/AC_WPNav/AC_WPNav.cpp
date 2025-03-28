@@ -241,6 +241,49 @@ void AC_WPNav::set_speed_down(float speed_down_cms)
     update_track_with_speed_accel_limits();
 }
 
+/// set roll stick mixing from a norm roll input (-1.0, 1.0)
+void AC_WPNav::set_roll_stick_mix(float roll_norm, float dt) {
+    const float max_speed_cms = MAX(get_default_speed_xy(), 500.0f);
+    // pilot input is zero, reset offset limiting speed, acceleration and jerk
+    if (is_zero(roll_norm)) {
+        if (_roll_stick_mix_cm.is_zero()) {
+            // offset is already zero
+            return;
+        }
+        // calculate position error
+        shape_pos_vel_accel_xy({0.0, 0.0}, {0.0f, 0.0f}, {0.0f, 0.0f},
+                         _roll_stick_mix_cm, _roll_stick_mix_vel_cms, _roll_stick_mix_accel_cmss,
+                         max_speed_cms, get_wp_acceleration(), _pos_control.get_shaping_jerk_xy_cmsss(),
+                         dt, true);
+    } else {
+        // pilot is overriding roll, change position offset accordingly
+        
+        // calculate desired unlimited speed vector in earth frame
+        const Vector2f desired_unlimited_speed_xy = {-roll_norm * max_speed_cms * _ahrs.sin_yaw(), 
+            roll_norm * max_speed_cms * _ahrs.cos_yaw()};
+
+        // shape velocity and acceleration 
+        shape_vel_accel_xy(desired_unlimited_speed_xy, {0.0f, 0.0f},
+                _roll_stick_mix_vel_cms, _roll_stick_mix_accel_cmss,
+                get_wp_acceleration(),
+                _pos_control.get_shaping_jerk_xy_cmsss(), dt, true);
+    }
+
+    // update velocity and position offset from limited acceleration
+    _roll_stick_mix_vel_cms.x += _roll_stick_mix_accel_cmss.x * dt;
+    _roll_stick_mix_cm.x += (postype_t)_roll_stick_mix_vel_cms.x * dt;
+    _roll_stick_mix_vel_cms.y += _roll_stick_mix_accel_cmss.y * dt;
+    _roll_stick_mix_cm.y += (postype_t)_roll_stick_mix_vel_cms.y * dt;
+}
+
+/// reset roll stick mixing
+void AC_WPNav::reset_roll_stick_mix() {
+    // set position, velocity and acceleration offset to zero
+    _roll_stick_mix_cm.zero();
+    _roll_stick_mix_vel_cms.zero();
+    _roll_stick_mix_accel_cmss.zero();
+}
+
 /// set_wp_destination waypoint using location class
 ///     returns false if conversion from location to vector from ekf origin cannot be calculated
 bool AC_WPNav::set_wp_destination_loc(const Location& destination)
@@ -528,13 +571,9 @@ bool AC_WPNav::advance_wp_target_along_track(float dt)
     target_accel *= sq(vel_scaler_dt);
     target_accel += accel_offset;
 
-    // Convert body-frame roll offset to NE frame components
-    float pilot_offset_x = -_roll_stick_mix_cm * _ahrs.sin_yaw(); // North component
-    float pilot_offset_y = _roll_stick_mix_cm * _ahrs.cos_yaw(); // East component
-
     // add stick mixing value
-    target_pos.x += pilot_offset_x;
-    target_pos.y += pilot_offset_y;
+    target_pos.x += _roll_stick_mix_cm.x;
+    target_pos.y += _roll_stick_mix_cm.y;
     target_pos.z += _altitude_stick_mix_cm;
 
     // convert final_target.z to altitude above the ekf origin

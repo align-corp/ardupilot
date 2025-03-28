@@ -1011,7 +1011,6 @@ void ModeAuto::wp_run()
         return;
     }
 
-
     // set motors to full range
     motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
 
@@ -1040,23 +1039,9 @@ void ModeAuto::wp_run()
 
         // stick mixing for roll and pitch
         if ((copter.g2.auto_options & (uint32_t)Options::RollStickMix) != 0) {
-            float target_roll, target_pitch;
-            float input_angle_max_cd = loiter_nav->get_angle_max_cd();
-            // apply SIMPLE mode transform to pilot inputs
-            update_simple_mode();
-
-            // convert pilot input to lean angles
-            get_pilot_desired_lean_angles(target_roll, target_pitch, input_angle_max_cd, attitude_control->get_althold_lean_angle_max_cd());
-
-            const float pilot_roll_norm = channel_roll->norm_input();
-            if (fabsf(pilot_roll_norm) > 0.1f) {
-                const float max_xy_speed = MAX(wp_nav->get_default_speed_xy(), 5.0f);
-                const float pilot_roll_speed = max_xy_speed * pilot_roll_norm;
-                wp_nav->set_roll_stick_mix(pilot_roll_speed, G_Dt);
-            } else {
-                wp_nav->reset_roll_stick_mix();
-            }
-
+            float pilot_roll_norm = channel_roll->norm_input();
+            pilot_roll_norm = fabsf(pilot_roll_norm) > 0.1f ? pilot_roll_norm : 0.0f;
+            wp_nav->set_roll_stick_mix(pilot_roll_norm, G_Dt);
         }
     }
 

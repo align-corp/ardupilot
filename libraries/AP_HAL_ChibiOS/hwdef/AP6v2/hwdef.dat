@@ -228,8 +228,12 @@ define HAL_IMUHEAT_P_DEFAULT 50
 define HAL_IMUHEAT_I_DEFAULT 0.07
 define HAL_IMU_TEMP_MARGIN_LOW_DEFAULT 5
 
-# LittleFS on W25N01KV
-DATAFLASH littlefs:w25nxx
+# enable logging to dataflash
+define HAL_LOGGING_DATAFLASH_ENABLED 1
+define HAL_LOGGING_DATAFLASH_DRIVER AP_Logger_W25N01GV
+
+# enable scripting even if there is no SD card
+define AP_SCRIPTING_ENABLED 1
 
 DMA_NOSHARE  SPI1* SPI4*
 

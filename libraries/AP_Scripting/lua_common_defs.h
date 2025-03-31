@@ -11,12 +11,11 @@
 #endif // REPL_DIRECTORY
 
 #ifndef SCRIPTING_DIRECTORY
-  // can't use HAL_OS_POSIX_IO here ebcause SITL assumes no APM prefix
-  #if HAL_OS_FATFS_IO || HAL_OS_LITTLEFS_IO
+  #if HAL_OS_FATFS_IO
     #define SCRIPTING_DIRECTORY "/APM/scripts"
   #else
     #define SCRIPTING_DIRECTORY "./scripts"
-  #endif // HAL_OS_FATFS_IO || HAL_OS_LITTLEFS_IO
+  #endif //HAL_OS_FATFS_IO
 #endif // SCRIPTING_DIRECTORY
 
 #ifndef REPL_IN

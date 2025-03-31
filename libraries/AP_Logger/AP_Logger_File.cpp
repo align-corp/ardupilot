@@ -16,9 +16,6 @@
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Filesystem/AP_Filesystem.h>
-#if AP_FILESYSTEM_LITTLEFS_ENABLED
-#include <AP_Filesystem/AP_Filesystem_FlashMemory_LittleFS.h>
-#endif
 
 #include "AP_Logger.h"
 #include "AP_Logger_File.h"
@@ -974,8 +971,6 @@ void AP_Logger_File::io_timer(void)
         // least once per 2 seconds if data is available
         return;
     }
-
-#if !AP_FILESYSTEM_LITTLEFS_ENABLED // too expensive on littlefs, rely on ENOSPC below
     if (tnow - _free_space_last_check_time > _free_space_check_interval) {
         _free_space_last_check_time = tnow;
         last_io_operation = "disk_space_avail";
@@ -988,7 +983,7 @@ void AP_Logger_File::io_timer(void)
         }
         last_io_operation = "";
     }
-#endif
+
     _last_write_time = tnow;
     if (nbytes > _writebuf_chunk) {
         // be kind to the filesystem layer
@@ -999,7 +994,6 @@ void AP_Logger_File::io_timer(void)
     const uint8_t *head = _writebuf.readptr(size);
     nbytes = MIN(nbytes, size);
 
-#if !AP_FILESYSTEM_LITTLEFS_ENABLED
     // try to align writes on a 512 byte boundary to avoid filesystem reads
     if ((nbytes + _write_offset) % 512 != 0) {
         uint32_t ofs = (nbytes + _write_offset) % 512;
@@ -1007,7 +1001,7 @@ void AP_Logger_File::io_timer(void)
             nbytes -= ofs;
         }
     }
-#endif
+
     last_io_operation = "write";
     if (!write_fd_semaphore.take(1)) {
         return;
@@ -1016,20 +1010,10 @@ void AP_Logger_File::io_timer(void)
         write_fd_semaphore.give();
         return;
     }
-
-#if AP_FILESYSTEM_LITTLEFS_ENABLED && CONFIG_HAL_BOARD != HAL_BOARD_SITL
-    bool sync_block = AP::littlefs().sync_block(_write_fd, _write_offset, nbytes);
-#endif // AP_FILESYSTEM_LITTLEFS_ENABLED
-
     ssize_t nwritten = AP::FS().write(_write_fd, head, nbytes);
     last_io_operation = "";
     if (nwritten <= 0) {
-        if (errno == ENOSPC) {
-            DEV_PRINTF("Out of space for logging\n");
-            stop_logging();
-            _open_error_ms = AP_HAL::millis(); // prevent logging starting again for 5s
-            last_io_operation = "";
-        } else if ((tnow - _last_write_ms)/1000U > unsigned(_front._params.file_timeout)) {
+        if ((tnow - _last_write_ms)/1000U > unsigned(_front._params.file_timeout)) {
             // if we can't write for LOG_FILE_TIMEOUT seconds we give up and close
             // the file. This allows us to cope with temporary write
             // failures caused by directory listing
@@ -1045,28 +1029,16 @@ void AP_Logger_File::io_timer(void)
         _last_write_ms = tnow;
         _write_offset += nwritten;
         _writebuf.advance(nwritten);
-
         /*
-          fsync on littlefs is extremely expensive (20% CPU on an H7) particularly because the
-          COW architecture can mean you end up copying a load of blocks. instead try and only sync
-          at the end of a block to avoid copying and minimise CPU. fsync is needed for the file
-          metadata (including size) to be updated
+          the best strategy for minimizing corruption on microSD cards
+          seems to be to write in 4k chunks and fsync the file on each
+          chunk, ensuring the directory entry is updated after each
+          write.
          */
 #if CONFIG_HAL_BOARD != HAL_BOARD_SITL && CONFIG_HAL_BOARD_SUBTYPE != HAL_BOARD_SUBTYPE_LINUX_NONE
-#if AP_FILESYSTEM_LITTLEFS_ENABLED
-        if (sync_block)
-#endif // AP_FILESYSTEM_LITTLEFS_ENABLED
-        {
-            /*
-              the best strategy for minimizing corruption on microSD cards
-              seems to be to write in 4k chunks and fsync the file on each
-              chunk, ensuring the directory entry is updated after each
-              write.
-            */
-            last_io_operation = "fsync";
-            AP::FS().fsync(_write_fd);
-            last_io_operation = "";
-        }
+        last_io_operation = "fsync";
+        AP::FS().fsync(_write_fd);
+        last_io_operation = "";
 #endif
 
 #if AP_RTC_ENABLED && CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS

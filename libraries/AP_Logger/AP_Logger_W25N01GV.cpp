@@ -5,7 +5,7 @@
 
 #include <AP_HAL/AP_HAL.h>
 
-#include "AP_Logger_W25NXX.h"
+#include "AP_Logger_W25N01GV.h"
 
 #if HAL_LOGGING_DATAFLASH_ENABLED
 
@@ -30,41 +30,38 @@ extern const AP_HAL::HAL& hal;
 #define JEDEC_STATUS_BUSY            0x01
 #define JEDEC_STATUS_WRITEPROTECT    0x02
 
-#define W25NXX_STATUS_REG           0xC0
-#define W25NXX_PROT_REG             0xA0
-#define W25NXX_CONF_REG             0xB0
-#define W25NXX_STATUS_EFAIL         0x04
-#define W25NXX_STATUS_PFAIL         0x08
+#define W25N01G_STATUS_REG           0xC0
+#define W25N01G_PROT_REG             0xA0
+#define W25N01G_CONF_REG             0xB0
+#define W25N01G_STATUS_EFAIL         0x04
+#define W25N01G_STATUS_PFAIL         0x08
 
-#define W25NXX_PROT_SRP1_ENABLE          (1 << 0)
-#define W25NXX_PROT_WP_E_ENABLE          (1 << 1)
-#define W25NXX_PROT_TB_ENABLE            (1 << 2)
-#define W25NXX_PROT_PB0_ENABLE           (1 << 3)
-#define W25NXX_PROT_PB1_ENABLE           (1 << 4)
-#define W25NXX_PROT_PB2_ENABLE           (1 << 5)
-#define W25NXX_PROT_PB3_ENABLE           (1 << 6)
-#define W25NXX_PROT_SRP2_ENABLE          (1 << 7)
+#define W25N01G_PROT_SRP1_ENABLE          (1 << 0)
+#define W25N01G_PROT_WP_E_ENABLE          (1 << 1)
+#define W25N01G_PROT_TB_ENABLE            (1 << 2)
+#define W25N01G_PROT_PB0_ENABLE           (1 << 3)
+#define W25N01G_PROT_PB1_ENABLE           (1 << 4)
+#define W25N01G_PROT_PB2_ENABLE           (1 << 5)
+#define W25N01G_PROT_PB3_ENABLE           (1 << 6)
+#define W25N01G_PROT_SRP2_ENABLE          (1 << 7)
 
-#define W25NXX_CONFIG_ECC_ENABLE         (1 << 4)
-#define W25NXX_CONFIG_BUFFER_READ_MODE   (1 << 3)
+#define W25N01G_CONFIG_ECC_ENABLE         (1 << 4)
+#define W25N01G_CONFIG_BUFFER_READ_MODE   (1 << 3)
 
-#define W25NXX_TIMEOUT_PAGE_READ_US        60   // tREmax = 60us (ECC enabled)
-#define W25NXX_TIMEOUT_PAGE_PROGRAM_US     700  // tPPmax = 700us
-#define W25NXX_TIMEOUT_BLOCK_ERASE_MS      10   // tBEmax = 10ms
-#define W25NXX_TIMEOUT_RESET_MS            500  // tRSTmax = 500ms
-
+#define W25N01G_TIMEOUT_PAGE_READ_US        60   // tREmax = 60us (ECC enabled)
+#define W25N01G_TIMEOUT_PAGE_PROGRAM_US     700  // tPPmax = 700us
+#define W25N01G_TIMEOUT_BLOCK_ERASE_MS      10   // tBEmax = 10ms
+#define W25N01G_TIMEOUT_RESET_MS            500  // tRSTmax = 500ms
 #define W25N01G_NUM_BLOCKS                  1024
-#define W25N02K_NUM_BLOCKS                  2048
 
 #define JEDEC_ID_WINBOND_W25N01GV      0xEFAA21
 #define JEDEC_ID_WINBOND_W25N01KV      0xEFAE21
-#define JEDEC_ID_WINBOND_W25N02KV      0xEFAA22
 
-void AP_Logger_W25NXX::Init()
+void AP_Logger_W25N01GV::Init()
 {
     dev = hal.spi->get_device("dataflash");
     if (!dev) {
-        AP_HAL::panic("PANIC: AP_Logger W25NXX device not found");
+        AP_HAL::panic("PANIC: AP_Logger W25N01GV device not found");
         return;
     }
 
@@ -84,17 +81,17 @@ void AP_Logger_W25NXX::Init()
         uint8_t b = JEDEC_DEVICE_RESET;
         dev->transfer(&b, 1, nullptr, 0);
     }
-    hal.scheduler->delay(W25NXX_TIMEOUT_RESET_MS);
+    hal.scheduler->delay(W25N01G_TIMEOUT_RESET_MS);
 
     // disable write protection
-    WriteStatusReg(W25NXX_PROT_REG, 0);
+    WriteStatusReg(W25N01G_PROT_REG, 0);
     // enable ECC and buffer mode
-    WriteStatusReg(W25NXX_CONF_REG, W25NXX_CONFIG_ECC_ENABLE|W25NXX_CONFIG_BUFFER_READ_MODE);
+    WriteStatusReg(W25N01G_CONF_REG, W25N01G_CONFIG_ECC_ENABLE|W25N01G_CONFIG_BUFFER_READ_MODE);
 
-    printf("W25NXX status: SR-1=0x%x, SR-2=0x%x, SR-3=0x%x\n",
-        ReadStatusRegBits(W25NXX_PROT_REG),
-        ReadStatusRegBits(W25NXX_CONF_REG),
-        ReadStatusRegBits(W25NXX_STATUS_REG));
+    printf("W25N01GV status: SR-1=0x%x, SR-2=0x%x, SR-3=0x%x\n",
+        ReadStatusRegBits(W25N01G_PROT_REG),
+        ReadStatusRegBits(W25N01G_CONF_REG),
+        ReadStatusRegBits(W25N01G_STATUS_REG));
 
     AP_Logger_Block::Init();
 }
@@ -102,7 +99,7 @@ void AP_Logger_W25NXX::Init()
 /*
   wait for busy flag to be cleared
  */
-void AP_Logger_W25NXX::WaitReady()
+void AP_Logger_W25N01GV::WaitReady()
 {
     if (flash_died) {
         return;
@@ -119,7 +116,7 @@ void AP_Logger_W25NXX::WaitReady()
     }
 }
 
-bool AP_Logger_W25NXX::getSectorCount(void)
+bool AP_Logger_W25N01GV::getSectorCount(void)
 {
     WaitReady();
 
@@ -138,13 +135,6 @@ bool AP_Logger_W25NXX::getSectorCount(void)
         df_PageSize = 2048;
         df_PagePerBlock = 64;
         df_PagePerSector = 64; // make sectors equivalent to block
-        flash_blockNum = W25N01G_NUM_BLOCKS;
-        break;
-    case JEDEC_ID_WINBOND_W25N02KV:
-        df_PageSize = 2048;
-        df_PagePerBlock = 64;
-        df_PagePerSector = 64; // make sectors equivalent to block
-        flash_blockNum = W25N02K_NUM_BLOCKS;
         break;
 
     default:
@@ -153,14 +143,14 @@ bool AP_Logger_W25NXX::getSectorCount(void)
         return false;
     }
 
-    df_NumPages = flash_blockNum * df_PagePerBlock;
+    df_NumPages = W25N01G_NUM_BLOCKS * df_PagePerBlock;
 
     printf("SPI Flash 0x%08x found pages=%u\n", id, df_NumPages);
     return true;
 }
 
 // Read the status register bits
-uint8_t AP_Logger_W25NXX::ReadStatusRegBits(uint8_t bits)
+uint8_t AP_Logger_W25N01GV::ReadStatusRegBits(uint8_t bits)
 {
     WITH_SEMAPHORE(dev_sem);
     uint8_t cmd[2] { JEDEC_READ_STATUS, bits };
@@ -169,7 +159,7 @@ uint8_t AP_Logger_W25NXX::ReadStatusRegBits(uint8_t bits)
     return status;
 }
 
-void AP_Logger_W25NXX::WriteStatusReg(uint8_t reg, uint8_t bits)
+void AP_Logger_W25N01GV::WriteStatusReg(uint8_t reg, uint8_t bits)
 {
     WaitReady();
     WITH_SEMAPHORE(dev_sem);
@@ -177,14 +167,14 @@ void AP_Logger_W25NXX::WriteStatusReg(uint8_t reg, uint8_t bits)
     dev->transfer(cmd, 3, nullptr, 0);
 }
 
-bool AP_Logger_W25NXX::Busy()
+bool AP_Logger_W25N01GV::Busy()
 {
-    uint8_t status = ReadStatusRegBits(W25NXX_STATUS_REG);
+    uint8_t status = ReadStatusRegBits(W25N01G_STATUS_REG);
 
-    if ((status & W25NXX_STATUS_PFAIL) != 0) {
+    if ((status & W25N01G_STATUS_PFAIL) != 0) {
         printf("Program failure!\n");
     }
-    if ((status & W25NXX_STATUS_EFAIL) != 0) {
+    if ((status & W25N01G_STATUS_EFAIL) != 0) {
         printf("Erase failure!\n");
     }
 
@@ -194,18 +184,18 @@ bool AP_Logger_W25NXX::Busy()
 /*
   send a command with an address
 */
-void AP_Logger_W25NXX::send_command_addr(uint8_t command, uint32_t PageAdr)
+void AP_Logger_W25N01GV::send_command_addr(uint8_t command, uint32_t PageAdr)
 {
     uint8_t cmd[4];
     cmd[0] = command;
-    cmd[1] = (PageAdr >>  16) & 0xff;
+    cmd[1] = 0;    // dummy
     cmd[2] = (PageAdr >>  8) & 0xff;
     cmd[3] = (PageAdr >>  0) & 0xff;
 
     dev->transfer(cmd, 4, nullptr, 0);
 }
 
-void AP_Logger_W25NXX::PageToBuffer(uint32_t pageNum)
+void AP_Logger_W25N01GV::PageToBuffer(uint32_t pageNum)
 {
     if (pageNum == 0 || pageNum > df_NumPages+1) {
         printf("Invalid page read %u\n", pageNum);
@@ -249,12 +239,7 @@ void AP_Logger_W25NXX::PageToBuffer(uint32_t pageNum)
     }
 }
 
-//#define AP_W25NXX_DEBUG
-#ifdef AP_W25NXX_DEBUG
-static uint32_t block_writes;
-static uint32_t last_write_msg_ms;
-#endif
-void AP_Logger_W25NXX::BufferToPage(uint32_t pageNum)
+void AP_Logger_W25N01GV::BufferToPage(uint32_t pageNum)
 {
     if (pageNum == 0 || pageNum > df_NumPages+1) {
         printf("Invalid page write %u\n", pageNum);
@@ -290,21 +275,12 @@ void AP_Logger_W25NXX::BufferToPage(uint32_t pageNum)
         WITH_SEMAPHORE(dev_sem);
         send_command_addr(JEDEC_PROGRAM_EXECUTE, PageAdr);
     }
-
-#ifdef AP_W25NXX_DEBUG
-    block_writes++;
-    if (AP_HAL::millis() - last_write_msg_ms > 5000) {
-        hal.console->printf("W25NXX: writes %lukB/s, pages %lu/s\n", (block_writes*df_PageSize)/(5*1024), block_writes/5);
-        block_writes = 0;
-        last_write_msg_ms = AP_HAL::millis();
-    }
-#endif
 }
 
 /*
   erase one sector (sizes varies with hw)
 */
-void AP_Logger_W25NXX::SectorErase(uint32_t blockNum)
+void AP_Logger_W25N01GV::SectorErase(uint32_t blockNum)
 {
     WriteEnable();
     WITH_SEMAPHORE(dev_sem);
@@ -316,12 +292,12 @@ void AP_Logger_W25NXX::SectorErase(uint32_t blockNum)
 /*
   erase one 4k sector
 */
-void AP_Logger_W25NXX::Sector4kErase(uint32_t sectorNum)
+void AP_Logger_W25N01GV::Sector4kErase(uint32_t sectorNum)
 {
     SectorErase(sectorNum);
 }
 
-void AP_Logger_W25NXX::StartErase()
+void AP_Logger_W25N01GV::StartErase()
 {
     WriteEnable();
 
@@ -335,10 +311,10 @@ void AP_Logger_W25NXX::StartErase()
     printf("Dataflash: erase started\n");
 }
 
-bool AP_Logger_W25NXX::InErase()
+bool AP_Logger_W25N01GV::InErase()
 {
     if (erase_start_ms && !Busy()) {
-        if (erase_block < flash_blockNum) {
+        if (erase_block < W25N01G_NUM_BLOCKS) {
             SectorErase(erase_block++);
         } else {
             printf("Dataflash: erase done (%u ms)\n", AP_HAL::millis() - erase_start_ms);
@@ -349,7 +325,7 @@ bool AP_Logger_W25NXX::InErase()
     return erase_start_ms != 0;
 }
 
-void AP_Logger_W25NXX::WriteEnable(void)
+void AP_Logger_W25N01GV::WriteEnable(void)
 {
     WaitReady();
     WITH_SEMAPHORE(dev_sem);

@@ -17,8 +17,10 @@ jobs:
         copter: [
             AP6v2-M460,
             AP6v2-M460-G3P,
+            AP6v2-M460-A10,
             AP6v2-M490,
             AP6v2-M490-G3P,
+            AP6v2-M490-A10,
             AP6v2-M6T22,
             AP6v2-M4T12,
             AP6v2-M4P,

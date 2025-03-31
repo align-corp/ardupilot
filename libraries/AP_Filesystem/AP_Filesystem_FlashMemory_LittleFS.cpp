@@ -856,18 +856,10 @@ bool AP_Filesystem_FlashMemory_LittleFS::mount_filesystem() {
 #endif
 
     uint32_t id = find_block_size_and_count();
-    uint8_t fail_count = 0;
 
-    // retry get device ID if it fails the first time
-    // no need delay, it's already implemented on
-    // find_block_size_and_count()
-    while (!id) {
-        fail_count++;
-        if (fail_count == 5) {
-            mark_dead();
-            return false;
-        }
-        id = find_block_size_and_count();
+    if (!id) {
+        mark_dead();
+        return false;
     }
 #if CONFIG_HAL_BOARD != HAL_BOARD_SITL
     if (!init_flash()) {

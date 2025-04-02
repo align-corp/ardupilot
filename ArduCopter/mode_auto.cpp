@@ -1037,11 +1037,25 @@ void ModeAuto::wp_run()
             wp_nav->set_alt_stick_mix(pilot_climb_rate, G_Dt);
         }
 
-        // stick mixing for roll and pitch
+        // stick mixing for roll
+        static bool is_roll_stick_mixing = false;
         if ((copter.g2.auto_options & (uint32_t)Options::RollStickMix) != 0) {
             float pilot_roll_norm = channel_roll->norm_input();
             pilot_roll_norm = fabsf(pilot_roll_norm) > 0.1f ? pilot_roll_norm : 0.0f;
-            wp_nav->set_roll_stick_mix(pilot_roll_norm, G_Dt);
+            if (wp_nav->set_roll_stick_mix(pilot_roll_norm, G_Dt)) {
+                // use pilot rate for yaw
+                if (!is_roll_stick_mixing) {
+                    // lock yaw heading
+                    auto_yaw.set_mode(AutoYaw::Mode::HOLD);
+                    is_roll_stick_mixing = true;
+                }
+            } else {
+                if (is_roll_stick_mixing) {
+                    // use default yaw mode
+                    auto_yaw.set_mode_to_default(false);
+                    is_roll_stick_mixing = false;
+                }
+            }
         }
     }
 

@@ -170,3 +170,6 @@ autotest_result_*_junit.xml
 
 # clangd cache files
 .cache/
+
+# mavproxy scripts folder
+mp/

@@ -242,19 +242,26 @@ void AC_WPNav::set_speed_down(float speed_down_cms)
 }
 
 /// set roll stick mixing from a norm roll input (-1.0, 1.0)
-void AC_WPNav::set_roll_stick_mix(float roll_norm, float dt) {
+bool AC_WPNav::set_roll_stick_mix(float roll_norm, float dt) {
     const float max_speed_cms = MAX(get_default_speed_xy(), 500.0f);
     // pilot input is zero, reset offset limiting speed, acceleration and jerk
     if (is_zero(roll_norm)) {
-        if (_roll_stick_mix_cm.is_zero()) {
-            // offset is already zero
-            return;
+        if (_roll_stick_mix_cm.is_zero() && _roll_stick_mix_vel_cms.is_zero() && _roll_stick_mix_accel_cmss.is_zero()) {
+            // return false to indicate we are not overriding
+            return false;
         }
         // calculate position error
         shape_pos_vel_accel_xy({0.0, 0.0}, {0.0f, 0.0f}, {0.0f, 0.0f},
                          _roll_stick_mix_cm, _roll_stick_mix_vel_cms, _roll_stick_mix_accel_cmss,
                          max_speed_cms, get_wp_acceleration(), _pos_control.get_shaping_jerk_xy_cmsss(),
                          dt, true);
+    
+        // when position error is near zero, reset velocity and acceleration offset to zero
+        if (_roll_stick_mix_cm.length_squared() < 100.0f) {
+            _roll_stick_mix_cm.zero();
+            _roll_stick_mix_vel_cms.zero();
+            _roll_stick_mix_accel_cmss.zero();
+        }
     } else {
         // pilot is overriding roll, change position offset accordingly
         
@@ -274,6 +281,9 @@ void AC_WPNav::set_roll_stick_mix(float roll_norm, float dt) {
     _roll_stick_mix_cm.x += (postype_t)_roll_stick_mix_vel_cms.x * dt;
     _roll_stick_mix_vel_cms.y += _roll_stick_mix_accel_cmss.y * dt;
     _roll_stick_mix_cm.y += (postype_t)_roll_stick_mix_vel_cms.y * dt;
+
+    // is overriding, return true
+    return true;
 }
 
 /// reset roll stick mixing
@@ -575,6 +585,10 @@ bool AC_WPNav::advance_wp_target_along_track(float dt)
     target_pos.x += _roll_stick_mix_cm.x;
     target_pos.y += _roll_stick_mix_cm.y;
     target_pos.z += _altitude_stick_mix_cm;
+    target_vel.x += _roll_stick_mix_vel_cms.x;
+    target_vel.y += _roll_stick_mix_vel_cms.y;
+    target_accel.x += _roll_stick_mix_accel_cmss.x;
+    target_accel.y += _roll_stick_mix_accel_cmss.y;
 
     // convert final_target.z to altitude above the ekf origin
     target_pos.z += _pos_control.get_pos_offset_z_cm();

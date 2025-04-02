@@ -73,11 +73,12 @@ public:
     void set_speed_down(float speed_down_cms);
 
     /// altitude stick mixing. Warning: altitude speed set point must be constrained.
+    //TODO: input shape altitude and feed vel and acc to pos controller
     void set_alt_stick_mix(float speed_cms, float dt) {_altitude_stick_mix_cm += speed_cms * dt; }
     void reset_alt_stick_mix() {_altitude_stick_mix_cm = 0.0f; }
 
     /// roll stick mixing
-    void set_roll_stick_mix(float roll_norm, float dt);
+    bool set_roll_stick_mix(float roll_norm, float dt);
     void reset_roll_stick_mix();
 
     /// get default target horizontal velocity during wp navigation

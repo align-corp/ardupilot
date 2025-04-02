@@ -731,7 +731,7 @@ void Mode::land_run_horizontal_control()
             // use half maximum acceleration as the maximum velocity to ensure aircraft will
             // stop from full reposition speed in less than 1 second.
             float max_pilot_vel = wp_nav->get_wp_acceleration() * 0.5;
-            if (g.land_repositioning > 1 && copter.rangefinder_alt_ok()) {
+            if (g.land_repositioning > 1) {
                 // use rangefinder to limit max velocity near ground
                 max_pilot_vel = linear_interpolate(0.0f, max_pilot_vel, get_alt_above_ground_cm(), 100U, 200U);
             }

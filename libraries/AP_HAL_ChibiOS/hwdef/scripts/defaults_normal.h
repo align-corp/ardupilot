@@ -15,4 +15,6 @@
 #endif
 
 // enable terrain only if there's an SD card available:
+#ifndef AP_TERRAIN_AVAILABLE
 #define AP_TERRAIN_AVAILABLE HAL_OS_FATFS_IO
+#endif

@@ -9,8 +9,3 @@ define ARMING_DELAY_SEC 0.5f
 
 # just a frame to cope with Align app
 define ALIGN_FRAME ALIGN_M460
-
-# undef USB setup for easy access with QGC
-undef USB_VENDOR
-undef USB_PRODUCT
-undef USB_STRING_MANUFACTURER

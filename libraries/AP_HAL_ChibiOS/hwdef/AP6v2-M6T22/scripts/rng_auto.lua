@@ -9,7 +9,7 @@ local distances_count = {0, 0, 0, 0, 0, 0, 0, 0, 0}
 local last_gcs_string_sent = uint32_t(0)
 assert(param:add_table(PARAM_TABLE_KEY, "OAL_", 4), "could not add param table")
 assert(param:add_param(PARAM_TABLE_KEY, 1, "ENABLE", 1), "could not add param1")
-assert(param:add_param(PARAM_TABLE_KEY, 2, "NEAR_MS", 600), "could not add param2")
+assert(param:add_param(PARAM_TABLE_KEY, 2, "NEAR_MS", 200), "could not add param2")
 assert(param:add_param(PARAM_TABLE_KEY, 3, "MIN_SPD", 0.5), "could not add param3")
 assert(param:add_param(PARAM_TABLE_KEY, 4, "DEBUG", 0), "could not add param4")
 local ENABLE = Parameter("OAL_ENABLE")
@@ -18,6 +18,9 @@ local NEAR_MS = Parameter("OAL_NEAR_MS")
 local MIN_SPD = Parameter("OAL_MIN_SPD")
 local DEBUG = Parameter("OAL_DEBUG")
 function distance_check()
+if ENABLE:get() < 1 then
+return distance_check, UPDATE_MS
+end
 local count_limit = NEAR_MS:get() / UPDATE_MS
 if vehicle:get_mode() ~= AUTO_MODE and vehicle:get_mode() ~= GUIDED_MODE then
 return distance_check, UPDATE_MS
@@ -50,9 +53,6 @@ gcs:send_text(6, string.format("Angle: %f, Sector: %d, Distance: %.1f, count: %d
 last_gcs_string_sent = millis()
 end
 return distance_check, UPDATE_MS
-end
-if ENABLE:get() < 1 then
-return
 end
 if NEAR_MS:get() < 100 then
 gcs:send_text(2, string.format("OAL: check parameters"))

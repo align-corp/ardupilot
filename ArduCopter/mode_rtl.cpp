@@ -432,6 +432,11 @@ void ModeRTL::compute_return_target()
             gcs().send_text(MAV_SEVERITY_CRITICAL, "RTL: no terrain data, using alt-above-home");
             break;
         case AC_WPNav::TerrainSource::TERRAIN_FROM_RANGEFINDER:
+            // check if RTL_ALT is higher than rangefinder's max range
+            if (copter.g.rtl_altitude > copter.rangefinder.max_distance_cm_orient(ROTATION_PITCH_270)) {
+                alt_type = ReturnTargetAltType::RELATIVE;
+                break;
+            }
             alt_type = ReturnTargetAltType::RANGEFINDER;
             break;
         case AC_WPNav::TerrainSource::TERRAIN_FROM_TERRAINDATABASE:

@@ -3,7 +3,12 @@ CompileFlags:
     Remove: [-mno-thumb-interwork]
     Add: [
         -fsyntax-only,  # Force syntax checks
-        -Wno-gnu-designator
+        -Wno-gnu-designator,
+        -DALIGN_BATTERY_PANEL,
+        -DHAL_GPIO_D_LED_PIN=200,
+        -DHAL_GPIO_BUTTON_PIN=201,
+        -DHAL_GPIO_MAIN_POWER_PIN=202,
+        -DHAL_GPIO_POWER_OFF=1
     ]
 Diagnostics:
     Suppress: []

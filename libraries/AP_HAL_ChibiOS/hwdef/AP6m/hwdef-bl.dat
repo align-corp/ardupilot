@@ -1,0 +1,57 @@
+# hw definition file for processing by chibios_hwdef.py
+# for AP6 hardware
+
+# MCU class and specific type
+MCU STM32H7xx STM32H743xx
+
+# crystal frequency
+OSCILLATOR_HZ 24000000
+
+# board ID for firmware load
+APJ_BOARD_ID 153 # AP_HW_ALIGN_AP6-mini TODO: change after PR to ArduPilot
+
+FLASH_SIZE_KB 2048
+
+# bootloader is installed at zero offset
+FLASH_RESERVE_START_KB 0
+
+# use 2 pages for flash storage
+# H743 has 16 pages of 128k each
+STORAGE_FLASH_PAGE 1
+
+# the location where the bootloader will put the firmware
+# the H743 has 128k sectors
+FLASH_BOOTLOADER_LOAD_KB 384
+
+# order of UARTs (and USB)
+SERIAL_ORDER OTG1 UART4
+
+# faster bootloader
+define HAL_BOOTLOADER_TIMEOUT 1000
+
+# USB
+PA11 OTG_FS_DM OTG1
+PA12 OTG_FS_DP OTG1
+PA9 VBUS INPUT OPENDRAIN
+
+# pins for SWD debugging
+PA13 JTMS-SWDIO SWD
+PA14 JTCK-SWCLK SWD
+
+# CS pins
+PA4 ICM42688_CS CS
+PC4 MS5611_CS CS
+PE4 FLASH_CS CS
+
+# uart1 (serial1)
+PC10 UART4_TX UART4
+PB8 UART4_RX UART4
+
+# GPIO 
+PA15 LED1 OUTPUT HIGH GPIO(80)
+PC11 LED2 OUTPUT HIGH GPIO(81)
+PD0  LED3 OUTPUT HIGH GPIO(82)
+PD1  LED4 OUTPUT HIGH GPIO(83)
+PC2 EXTERN_GPIO84 INPUT FLOATING GPIO(84) # Button
+PC3 EXTERN_GPIO85 OUTPUT LOW GPIO(85) # Power Enable
+

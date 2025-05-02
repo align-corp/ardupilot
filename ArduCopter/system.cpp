@@ -43,6 +43,11 @@ void Copter::init_ardupilot()
     // initialise battery monitor
     battery.init();
 
+#ifdef ALIGN_BATTERY_PANEL
+    // update battery information ASAP
+    battery.read();
+#endif
+
     // Init RSSI
     rssi.init();
     

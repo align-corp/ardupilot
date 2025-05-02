@@ -141,6 +141,9 @@ public:
         bool video_recording;     // true when the vehicle is recording video
         bool temp_cal_running;    // true if a temperature calibration is running
         bool gyro_calibrated;     // true if calibrated gyro/acc
+#ifdef ALIGN_BATTERY_PANEL
+        bool align_turning_off;   // true if align vehicle is turning off
+#endif
     };
 
     /// notify_events_type - bitmask of active events.

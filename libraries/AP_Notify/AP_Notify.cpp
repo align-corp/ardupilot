@@ -16,6 +16,7 @@
 #include "AP_Notify.h"
 
 #include "AP_BoardLED.h"
+#include "AP_BoardLED4_Align.h"
 #include "PixRacerLED.h"
 #include "Buzzer.h"
 #include "Display.h"
@@ -309,6 +310,8 @@ void AP_Notify::add_backends(void)
 
 #if defined(HAL_HAVE_PIXRACER_LED)
                 ADD_BACKEND(new PixRacerLED());
+#elif (defined(ALIGN_BATTERY_PANEL) && defined(HAL_GPIO_A_LED_PIN) && defined(HAL_GPIO_B_LED_PIN) && defined(HAL_GPIO_C_LED_PIN) && defined(HAL_GPIO_D_LED_PIN))
+                ADD_BACKEND(new AP_BoardLED_Align());
 #elif (defined(HAL_GPIO_A_LED_PIN) && defined(HAL_GPIO_B_LED_PIN) && defined(HAL_GPIO_C_LED_PIN))
   #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_CHIBIOS_VRBRAIN_V51 || CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_CHIBIOS_VRBRAIN_V52 || CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_CHIBIOS_VRUBRAIN_V51 || CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_CHIBIOS_VRCORE_V10 || CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_CHIBIOS_VRBRAIN_V54
                 ADD_BACKEND(new VRBoard_LED());

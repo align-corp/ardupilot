@@ -53,6 +53,7 @@ private:
         DIE_HERE,
     } _state;
     uint32_t _last_update_ms;
+    bool led_flash_first = true;
 
 #endif
 };

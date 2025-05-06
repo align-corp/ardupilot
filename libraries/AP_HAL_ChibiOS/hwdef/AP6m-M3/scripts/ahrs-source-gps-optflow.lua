@@ -79,6 +79,11 @@ assert(optical_flow, 'could not access optical flow')
 function update()
 
   if FLGP_ENABLE:get() < 1 then
+    if source_prev ~= EKF_SRC_GPS then
+        source_prev = EKF_SRC_GPS
+        ahrs:set_posvelyaw_source_set(source_prev) -- switch to GPS
+        gcs:send_text(0, "FLGP disabled: switched to Source " .. string.format("%d", source_prev+1))
+    end
     return update, 100
   end
 
@@ -162,9 +167,13 @@ function update()
     gps_vs_opticalflow_vote = gps_vs_opticalflow_vote + 1
   end
 
-  -- prevent EKF failsafe immediately switching to GPS if we're getting out of ragnefinder range
+  -- prevent EKF failsafe immediately switching to GPS if we're getting out of rangefinder range
   -- yes, this is cheating
-  local climb_rate = -ahrs:get_velocity_NED():z() -- m/s
+  local velocity_ned = ahrs:get_velocity_NED()
+  local climb_rate = 0
+  if velocity_ned ~= nil then
+    climb_rate = -velocity_ned:z() -- m/s
+  end
   if (gps_usable) and
       (rngfnd_distance_m > rangefinder:max_distance_cm_orient(RNG_ROTATION_DOWN) * 0.006) and
       (climb_rate > 0.3) and
@@ -196,8 +205,14 @@ function update()
   return update, 100
 end
 
--- use optical flow for takeoff
-source_prev = 1
-ahrs:set_posvelyaw_source_set(source_prev)
-gcs:send_text(4, "Auto switched to Source " .. string.format("%d", source_prev+1))
-return update()
+if FLGP_ENABLE:get() < 1 then
+    source_prev = 0
+    ahrs:set_posvelyaw_source_set(source_prev)
+    gcs:send_text(4, "FLGP disabled, switched to Source " .. string.format("%d", source_prev+1))
+else
+    -- use optical flow for takeoff
+    source_prev = 1
+    ahrs:set_posvelyaw_source_set(source_prev)
+    gcs:send_text(4, "Takeoff, switch to Source " .. string.format("%d", source_prev+1))
+end
+return update, 100

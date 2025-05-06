@@ -74,6 +74,8 @@ void AP_BoardLED_Align::update(void)
         case State::START:
             // Set turning off flag
             AP_Notify::flags.powering_off = false;
+            _state = State::TURNING_ON;
+            break;
 
             // Turn all LED off
             hal.gpio->write(HAL_GPIO_A_LED_PIN, HAL_GPIO_LED_OFF);

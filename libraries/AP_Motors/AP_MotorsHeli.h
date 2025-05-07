@@ -139,8 +139,9 @@ public:
     // set_enable_bailout - allows main code to set when RSC can immediately ramp engine instantly
     void set_enable_bailout(bool bailout) { _heliflags.enable_bailout = bailout; }
 
-    // set land complete flag
+    // set and get land complete flag
     void set_land_complete(bool landed) { _heliflags.land_complete = landed; }
+    bool get_land_complete() { return _heliflags.land_complete; }
 	
 	//return zero lift collective position
     float get_coll_mid() const { return _collective_zero_thrust_pct; }

@@ -24,6 +24,12 @@ private:
     // called when the mode switch changes position:
     void mode_switch_changed(modeswitch_pos_t new_pos) override;
 
+#ifdef FLTMODE_SWITCH_COMPASS_CALIBRATION
+    // compass cal with fast movement of mode switch
+    uint8_t fltmode_switch_count = 0;
+    uint8_t fltmode_switch_last_pos = 0;
+    uint32_t fltmode_switch_time_ms = 0;
+#endif
 };
 
 class RC_Channels_Copter : public RC_Channels

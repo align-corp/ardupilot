@@ -35,6 +35,43 @@ void RC_Channel_Copter::mode_switch_changed(modeswitch_pos_t new_pos)
             copter.set_simple_mode(BIT_IS_SET(copter.g.simple_modes, new_pos) ? Copter::SimpleMode::SIMPLE : Copter::SimpleMode::NONE);
         }
     }
+
+#ifdef FLTMODE_SWITCH_COMPASS_CALIBRATION
+    // calibrate compass if user switch 6 times from FLTMODE1 to FLTMODE6
+    // return if copter is armed
+    if (copter.motors->armed()) {
+        return;
+    }
+
+    uint32_t now_ms = AP_HAL::millis();
+    // reset counter and timer after 2 s
+    if (now_ms - fltmode_switch_time_ms > 2000) {
+        fltmode_switch_count = 0;
+    }
+
+    // increase counter
+    if ((fltmode_switch_last_pos < 2 && new_pos > 4) ||
+        (fltmode_switch_last_pos > 4 && new_pos < 2)) {
+        fltmode_switch_count++;
+        fltmode_switch_time_ms = now_ms;
+        fltmode_switch_last_pos = new_pos;
+    }
+
+    if (fltmode_switch_count >= 6) {
+        Compass &compass = AP::compass();
+        if (compass.is_calibrating()) {
+            compass.cancel_calibration_all();
+        } else {
+            const bool retry = true;
+            const bool autosave = true;
+            const float delay = 2.0;
+            const bool autoreboot = true;
+            compass.start_calibration_all(retry, autosave, delay, autoreboot);
+        }
+        fltmode_switch_count = 0;
+        fltmode_switch_last_pos = 0;
+    }
+#endif
 }
 
 bool RC_Channels_Copter::in_rc_failsafe() const

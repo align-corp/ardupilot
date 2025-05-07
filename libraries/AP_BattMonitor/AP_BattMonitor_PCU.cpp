@@ -1,4 +1,5 @@
 #include "AP_BattMonitor_config.h"
+#include "AP_Compass/AP_Compass.h"
 
 #if AP_BATTERY_PCU_ENABLED
 
@@ -125,16 +126,22 @@ bool AP_BattMonitor_PCU::send_message()
         return false;
     }
 
-    // Get int to send
-    uint16_t pwm_LGR = get_landing_gear();
-
-    // Create the serialized message
-    bool pre_arm_checks = true;
+    if (AP::compass().is_calibrating()) {
+        // orange LED if compass is calibrating
+        _message_to_send[6] = 1;    // LED green
+        _message_to_send[7] = 1;    // LED red
+    } else {
+        // check prearm state for green/red LED
+        bool pre_arm_checks = true;
 #if !defined(HAL_BUILD_AP_PERIPH)
-    pre_arm_checks = AP::arming().pre_arm_checks(false);
+        pre_arm_checks = AP::arming().pre_arm_checks(false);
 #endif
-    _message_to_send[6] = pre_arm_checks ? 1 : 0;    // LED green
-    _message_to_send[7] = pre_arm_checks ? 0 : 1;    // LED red
+        _message_to_send[6] = pre_arm_checks ? 1 : 0;    // LED green
+        _message_to_send[7] = pre_arm_checks ? 0 : 1;    // LED red
+    }
+
+    // landing gear state
+    uint16_t pwm_LGR = get_landing_gear();
     _message_to_send[8] = static_cast<uint8_t>(pwm_LGR & 0xFF);
     _message_to_send[9] = static_cast<uint8_t>((pwm_LGR >> 8) & 0xFF);
 

@@ -3,6 +3,9 @@ include ../AP6v2/hwdef.dat
 # define custom Align frame code
 define ALIGN_FRAME ALIGN_M460_A10
 
+# use flight mode switch for compass calibration
+define FLTMODE_SWITCH_COMPASS_CALIBRATION
+
 # decrease arming delay
 define ARMING_DELAY_SEC 0.5f
 

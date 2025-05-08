@@ -77,14 +77,15 @@ void Copter::update_heli_control_dynamics(void)
     if (!motors->using_leaky_integrator()) {
         //turn off leaky_I
         attitude_control->use_leaky_i(false);
-        if (ap.land_complete || ap.land_complete_maybe) {
-            motors->set_land_complete(true);
-        } else {
-            motors->set_land_complete(false);
-        }
     } else {
         // Use Leaky_I if we are not moving fast
         attitude_control->use_leaky_i(!heli_flags.dynamic_flight);
+    }
+
+    // update land flag
+    if (ap.land_complete || ap.land_complete_maybe) {
+        motors->set_land_complete(true);
+    } else {
         motors->set_land_complete(false);
     }
 

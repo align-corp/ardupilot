@@ -35,11 +35,11 @@ static_assert((HAL_GPIO_A_LED_PIN != HAL_GPIO_B_LED_PIN) &&
 #endif
 
 #ifndef LED_BATT_VOLT_MAX
-#define LED_BATT_VOLT_MAX 25.2f
+#define LED_BATT_VOLT_MAX 25.2f // 4.2 * 6
 #endif
 
 #ifndef LED_BATT_VOLT_MIN
-#define LED_BATT_VOLT_MIN 21.0f
+#define LED_BATT_VOLT_MIN 21.6f // 3.6 * 6
 #endif
 
 extern const AP_HAL::HAL& hal;
@@ -157,16 +157,13 @@ void AP_BoardLED_Align::update(void)
             break;
 
         case State::ON:
+            // Update LED based on battery voltage
+            set_led_from_voltage();
+
             // Do nothing if drone is armed
             if (AP_Notify::flags.armed) {
                 break;
             }
-            
-            // Update LED based on battery voltage
-            set_led_from_voltage();
-            /* hal.gpio->write(HAL_GPIO_A_LED_PIN, HAL_GPIO_LED_ON); */
-            /* hal.gpio->write(HAL_GPIO_B_LED_PIN, HAL_GPIO_LED_ON); */
-            /* hal.gpio->write(HAL_GPIO_C_LED_PIN, HAL_GPIO_LED_ON); */
 
             // Turn off if button is pressed
             if (hal.gpio->read(HAL_GPIO_BUTTON_PIN) == HAL_GPIO_BUTTON_PRESSED) {

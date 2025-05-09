@@ -265,7 +265,11 @@ void AP_OpticalFlow::stop_calibration()
 
 void AP_OpticalFlow::update_state(const OpticalFlow_state &state)
 {
-    _state = state;
+    // filter flowrate: this will add a 20 ms delay at 100 Hz update rate
+    _state.flowRate.x = _flow_x_avg.apply(state.flowRate.x);
+    _state.flowRate.y = _flow_y_avg.apply(state.flowRate.y);
+    _state.bodyRate = state.bodyRate;
+    _state.surface_quality = state.surface_quality;
     _last_update_ms = AP_HAL::millis();
 
 #if AP_AHRS_ENABLED

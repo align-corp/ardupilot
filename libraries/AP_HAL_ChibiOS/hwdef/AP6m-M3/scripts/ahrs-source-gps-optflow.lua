@@ -108,16 +108,6 @@ function update()
     return update, 1000
   end
 
-  -- altitude hold: don't use opticalflow
-  if vehicle:get_mode() <= 2 then
-    if source_prev ~= EKF_SRC_GPS then
-        source_prev = EKF_SRC_GPS
-        ahrs:set_posvelyaw_source_set(source_prev) -- switch to GPS
-        gcs:send_text(0, "alt_hold: switched to Source " .. string.format("%d", source_prev+1))
-    end
-    return update, 100
-  end
-
   -- check if GPS is usable
   local gps_hdop = gps:get_hdop(gps:primary_sensor())
   local gps_nsats = gps:num_sats(gps:primary_sensor())
@@ -206,12 +196,12 @@ function update()
 end
 
 if FLGP_ENABLE:get() < 1 then
-    source_prev = 0
+    source_prev = EKF_SRC_GPS
     ahrs:set_posvelyaw_source_set(source_prev)
     gcs:send_text(4, "FLGP disabled, switched to Source " .. string.format("%d", source_prev+1))
 else
     -- use optical flow for takeoff
-    source_prev = 1
+    source_prev = EKF_SRC_OPTICALFLOW
     ahrs:set_posvelyaw_source_set(source_prev)
     gcs:send_text(4, "Takeoff, switch to Source " .. string.format("%d", source_prev+1))
 end

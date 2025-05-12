@@ -15,10 +15,10 @@ jobs:
       fail-fast: false  # don't cancel if a job from the matrix fails
       matrix:
         rover: [
-          AP6v2-GA22,
-          AP6v2-GA45,
-          AP6v2-GM22,
-          AP6v2-GM45,
+          AP6-GA22,
+          AP6-GA45,
+          AP6-GM22,
+          AP6-GM45,
         ]
 
     steps:

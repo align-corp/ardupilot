@@ -15,19 +15,19 @@ jobs:
       fail-fast: false  # don't cancel if a job from the matrix fails
       matrix:
         copter: [
-            AP6v2-M460,
-            AP6v2-M460-G3P,
-            AP6v2-M460-A10,
-            AP6v2-M490,
-            AP6v2-M490-G3P,
-            AP6v2-M490-A10,
-            AP6v2-M6T22,
-            AP6v2-M4T12,
-            AP6v2-M4P,
-            AP6v2-M4P-G3P,
-            AP6v2-M450,
-            AP6v2-M450-gps,
-            AP6v2-M450-G3P,
+            AP6-M460,
+            AP6-M460-G3P,
+            AP6-M460-A10,
+            AP6-M490,
+            AP6-M490-G3P,
+            AP6-M490-A10,
+            AP6-M6T22,
+            AP6-M4T12,
+            AP6-M4P,
+            AP6-M4P-G3P,
+            AP6-M450,
+            AP6-M450-gps,
+            AP6-M450-G3P,
         ]
 
     steps:
@@ -58,12 +58,12 @@ jobs:
       fail-fast: false  # don't cancel if a job from the matrix fails
       matrix:
         heli: [
-            AP6v2-E1,
-            AP6v2-E1-G3P,
-            AP6v2-E2,
-            AP6v2-E2-G3P,
-            AP6v2-TB70,
-            AP6v2-TB70-AT12,
+            AP6-E1,
+            AP6-E1-G3P,
+            AP6-E2,
+            AP6-E2-G3P,
+            AP6-TB70,
+            AP6-TB70-AT12,
         ]
 
     steps:

@@ -17,3 +17,5 @@ undef DEFAULT_SERIAL3_PROTOCOL
 define DEFAULT_SERIAL3_PROTOCOL SerialProtocol_Rangefinder
 define DEFAULT_SERIAL3_BAUD 921
 
+# list of files to put in ROMFS (Lua scripts)
+ROMFS scripts/rng_auto.lua lua_scr/rng_auto.lua

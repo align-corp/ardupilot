@@ -27,3 +27,5 @@ undef DEFAULT_SERIAL5_PROTOCOL
 define DEFAULT_SERIAL5_PROTOCOL SerialProtocol_ESCTelemetry
 define DEFAULT_SERIAL5_BAUD 115
 
+# list of files to put in ROMFS (Lua scripts)
+ROMFS scripts/battery_6s.lua lua_scr/battery_6s.lua

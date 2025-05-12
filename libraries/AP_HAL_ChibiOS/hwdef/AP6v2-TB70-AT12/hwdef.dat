@@ -8,3 +8,6 @@ define DEFAULT_SERIAL1_BAUD 115
 
 # 3 notch filters
 define HAL_INS_NUM_HARMONIC_NOTCH_FILTERS 3
+
+# list of files to put in ROMFS (Lua scripts)
+ROMFS scripts/heli_arm.lua lua_scr/heli_arm.lua

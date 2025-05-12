@@ -21,3 +21,8 @@ define DEFAULT_SERIAL3_BAUD 115
 undef DEFAULT_SERIAL4_PROTOCOL
 define DEFAULT_SERIAL4_PROTOCOL SerialProtocol_PCU
 define DEFAULT_SERIAL4_BAUD 115
+
+# list of files to put in ROMFS (Lua scripts)
+ROMFS scripts/battery_6s.lua lua_scr/battery_6s.lua
+ROMFS scripts/rng_auto.lua lua_scr/rng_auto.lua
+ROMFS scripts/led_4.lua lua_scr/led_4.lua

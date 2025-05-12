@@ -1,0 +1,10 @@
+include ../AP6/hwdef.dat
+
+# define custom Align frame code
+define ALIGN_FRAME ALIGN_TB70
+
+# Telemetry on Serial 1
+define DEFAULT_SERIAL1_BAUD 115
+
+# 3 notch filters
+define HAL_INS_NUM_HARMONIC_NOTCH_FILTERS 3

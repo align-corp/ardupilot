@@ -1,0 +1,11 @@
+include ../AP6/hwdef.dat
+
+# Simulation on Hardware
+include ../include/SimOnHW.inc
+AUTOBUILD_TARGETS Copter
+
+# defines
+define ARMING_DELAY_SEC 0.5f
+
+# just a frame to cope with Align app
+define ALIGN_FRAME ALIGN_M460

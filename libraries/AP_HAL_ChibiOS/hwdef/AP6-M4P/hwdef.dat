@@ -1,0 +1,21 @@
+include ../AP6/hwdef.dat
+
+# define custom Align frame code
+define ALIGN_FRAME ALIGN_M4P
+
+# decrease arming delay
+define ARMING_DELAY_SEC 0.5f
+
+# Telemetry on Serial 1
+define DEFAULT_SERIAL1_BAUD 115
+
+# Rangefinders on Serial2 (front) and Serial 3 (down)
+undef DEFAULT_SERIAL2_PROTOCOL
+define DEFAULT_SERIAL2_PROTOCOL SerialProtocol_Rangefinder
+define DEFAULT_SERIAL2_BAUD 921
+undef DEFAULT_SERIAL3_PROTOCOL
+define DEFAULT_SERIAL3_PROTOCOL SerialProtocol_Rangefinder
+define DEFAULT_SERIAL3_BAUD 921
+
+# list of files to put in ROMFS (Lua scripts)
+ROMFS scripts/rng_auto.lua lua_scr/rng_auto.lua

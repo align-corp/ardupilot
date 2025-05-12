@@ -1,0 +1,34 @@
+include ../AP6/hwdef.dat
+
+# define custom Align frame code
+define ALIGN_FRAME ALIGN_E2_G3P
+
+# Telemetry on Serial 1
+define DEFAULT_SERIAL1_BAUD 115
+
+# Rangefinders on Serial2 (front) and Serial 3 (down)
+undef DEFAULT_SERIAL2_PROTOCOL
+define DEFAULT_SERIAL2_PROTOCOL SerialProtocol_Rangefinder
+define DEFAULT_SERIAL2_BAUD 921
+undef DEFAULT_SERIAL3_PROTOCOL
+define DEFAULT_SERIAL3_PROTOCOL SerialProtocol_Rangefinder
+define DEFAULT_SERIAL3_BAUD 921
+
+# PCU on Serial 4
+define AP_BATTERY_P2_ENABLED 1
+undef DEFAULT_SERIAL4_PROTOCOL
+define DEFAULT_SERIAL4_PROTOCOL SerialProtocol_PCU
+
+# G3P on Serial 5 and 7
+undef DEFAULT_SERIAL5_PROTOCOL
+undef DEFAULT_SERIAL7_PROTOCOL
+define DEFAULT_SERIAL5_PROTOCOL SerialProtocol_Gimbal
+define DEFAULT_SERIAL7_PROTOCOL SerialProtocol_Gimbal
+
+# 3 notch filters
+define HAL_INS_NUM_HARMONIC_NOTCH_FILTERS 3
+
+# list of files to put in ROMFS (Lua scripts)
+ROMFS scripts/heli_arm.lua lua_scr/heli_arm.lua
+ROMFS scripts/rng_auto.lua lua_scr/rng_auto.lua
+ROMFS scripts/battery_12s.lua lua_scr/battery_12s.lua

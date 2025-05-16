@@ -117,6 +117,11 @@ private:
     LG_LandingGear_State gear_state_current = LG_UNKNOWN;
     uint32_t last_gear_event_ms;
 
+#ifdef AP_LANDINGGEAR_GPIO
+    // GPIO controller
+    uint32_t last_gpio_update_ms;
+#endif
+
     /// retract - retract landing gear
     void retract();
     

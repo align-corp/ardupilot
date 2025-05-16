@@ -162,14 +162,21 @@ void AP_LandingGear::deploy()
         return;
     }
 
+#ifdef AP_LANDINGGEAR_GPIO
+    // use GPIO 90 and 91 for landig gear if ENABLED == 2
+    hal.gpio->write(90, 1);
+    hal.gpio->write(91, 0);
+    last_gpio_update_ms = AP_HAL::millis();
+    gcs().send_text(MAV_SEVERITY_INFO, "LandingGear: DEPLOY");
+#else
     // set servo PWM to deployed position
     SRV_Channels::set_output_limit(SRV_Channel::k_landing_gear_control, SRV_Channel::Limit::MAX);
 
     // send message only if output has been configured
-    if (!_deployed &&
-        SRV_Channels::function_assigned(SRV_Channel::k_landing_gear_control)) {
+    if (SRV_Channels::function_assigned(SRV_Channel::k_landing_gear_control)) {
         gcs().send_text(MAV_SEVERITY_INFO, "LandingGear: DEPLOY");
     }
+#endif
 
     // set deployed flag
     _deployed = true;
@@ -184,18 +191,25 @@ void AP_LandingGear::retract()
         return;
     }
 
+#ifdef AP_LANDINGGEAR_GPIO
+    // use GPIO 90 and 91 for landig gear
+    hal.gpio->write(90, 0);
+    hal.gpio->write(91, 1);
+    last_gpio_update_ms = AP_HAL::millis();
+    gcs().send_text(MAV_SEVERITY_INFO, "LandingGear: RETRACT");
+#else
     // set servo PWM to retracted position
     SRV_Channels::set_output_limit(SRV_Channel::k_landing_gear_control, SRV_Channel::Limit::MIN);
+    // send message only if output has been configured
+    if (SRV_Channels::function_assigned(SRV_Channel::k_landing_gear_control)) {
+        gcs().send_text(MAV_SEVERITY_INFO, "LandingGear: RETRACT");
+    }
+#endif
 
     // reset deployed flag
     _deployed = false;
     _have_changed = true;
     LOGGER_WRITE_EVENT(LogEvent::LANDING_GEAR_RETRACTED);
-
-    // send message only if output has been configured
-    if (SRV_Channels::function_assigned(SRV_Channel::k_landing_gear_control)) {
-        gcs().send_text(MAV_SEVERITY_INFO, "LandingGear: RETRACT");
-    }
 }
 
 bool AP_LandingGear::deployed()
@@ -237,6 +251,15 @@ uint32_t AP_LandingGear::get_wow_state_duration_ms() const
 
 void AP_LandingGear::update(float height_above_ground_m)
 {
+#ifdef AP_LANDINGGEAR_GPIO
+    // GPIO low after 5 seconds
+    if (last_gpio_update_ms != 0 && (AP_HAL::millis() - last_gpio_update_ms) > 5000) {
+        hal.gpio->write(90, 0);
+        hal.gpio->write(91, 0);
+        last_gpio_update_ms = 0;
+    }
+#endif
+
     if (_pin_weight_on_wheels == -1) {
         last_wow_event_ms = 0;
         wow_state_current = LG_WOW_UNKNOWN;

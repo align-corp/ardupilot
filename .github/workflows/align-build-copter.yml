@@ -60,6 +60,8 @@ jobs:
         heli: [
             AP6-E1,
             AP6-E1-G3P,
+            AP6-E1v2,
+            AP6-E1v2-G3P,
             AP6-E2,
             AP6-E2-G3P,
             AP6-TB70,

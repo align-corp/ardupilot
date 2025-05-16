@@ -5,10 +5,12 @@
 // Run landing gear controller at 10Hz
 void Copter::landinggear_update()
 {
+#ifndef AP_LANDINGGEAR_GPIO
     // exit immediately if no landing gear output has been enabled
     if (!SRV_Channels::function_assigned(SRV_Channel::k_landing_gear_control)) {
         return;
     }
+#endif
 
     // support height based triggering using rangefinder or altitude above ground
     int32_t height_cm = flightmode->get_alt_above_ground_cm();

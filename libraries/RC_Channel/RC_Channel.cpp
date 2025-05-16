@@ -1365,6 +1365,14 @@ bool RC_Channel::do_aux_function(const aux_func_t ch_option, const AuxSwitchPos 
         if (lg == nullptr) {
             break;
         }
+
+        // skip first command, to avoid landing gear retract/delpoy when RC link connects 
+        static bool first_command = true;
+        if (first_command) {
+            first_command = false;
+            break;
+        }
+
         switch (ch_flag) {
         case AuxSwitchPos::LOW:
             lg->set_position(AP_LandingGear::LandingGear_Deploy);

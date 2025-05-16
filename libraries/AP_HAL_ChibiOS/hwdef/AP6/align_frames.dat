@@ -20,6 +20,8 @@ define ALIGN_TB70       0x03410001
 define ALIGN_E2         0x03420001
 define ALIGN_E2_G3P     0x03420101
 define ALIGN_TB40       0x03430001
+define ALIGN_E1V2       0x03440001
+define ALIGN_E1V2_G3P   0x03440101
 
 define ALIGN_GA22       0x03800001
 define ALIGN_GA45       0x03810001

@@ -65,7 +65,7 @@ void RC_Channel_Copter::mode_switch_changed(modeswitch_pos_t new_pos)
             const bool retry = true;
             const bool autosave = true;
             const float delay = 2.0;
-            const bool autoreboot = true;
+            const bool autoreboot = false;
             compass.start_calibration_all(retry, autosave, delay, autoreboot);
         }
         fltmode_switch_count = 0;

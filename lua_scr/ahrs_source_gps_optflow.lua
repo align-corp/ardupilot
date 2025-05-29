@@ -143,23 +143,6 @@ function update()
   end
   local rngfnd_over_threshold = (rngfnd_distance_m == 0) or (rngfnd_distance_m > rangefinder_thresh_dist)
 
-  -- altitude hold: don't use opticalflow if rangefinder is out of range
-  -- this is needed, otherwise EKF set to optical flow prevent vehicle to climb higher than 0.7*RNGFND_MAX_DIST
-  if vehicle:get_mode() <= 2 then
-      local althold_source_requested = EKF_SRC_UNDECIDED
-      if rngfnd_over_threshold then
-          althold_source_requested = EKF_SRC_GPS
-      else
-          althold_source_requested = EKF_SRC_OPTICALFLOW
-      end
-      if source_prev ~= althold_source_requested then
-          source_prev = althold_source_requested
-          ahrs:set_posvelyaw_source_set(source_prev) -- switch to GPS
-          gcs:send_text(0, "alt_hold: switched to Source " .. string.format("%d", source_prev+1))
-      end
-      return update, 100
-  end
-
   -- opticalflow is usable if quality and innovations are good and rangefinder is in range
   local opticalflow_usable = opticalflow_quality_good and (not opticalflow_over_threshold) and (not rngfnd_over_threshold)
 

@@ -775,6 +775,26 @@ bool AP_MotorsMatrix::setup_quad_matrix(motor_frame_type frame_type)
         add_motor_raw(AP_MOTORS_MOT_2, 0.94, -0.845, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 3);
         add_motor_raw(AP_MOTORS_MOT_3, 1, 0.845, AP_MOTORS_MATRIX_YAW_FACTOR_CW, 4);
         break;
+/*
+M3 motor matrix: https://www.iforce2d.net/mixercalc/
+motor order is ArduPilot ABCD
+CofG != CofL
+constrains applied:
+1 2 240
+3 4 240
+1 4 311
+2 3 292
+1 3 385.24278
+2 4 385.24278 
+1 4 h
+2 3 h
+*/
+    case MOTOR_FRAME_TYPE_ALIGN_M3:
+        add_motor_raw(AP_MOTORS_MOT_1, -1, 0.771, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 1, 0.96);
+        add_motor_raw(AP_MOTORS_MOT_4, -0.939, -0.771, AP_MOTORS_MATRIX_YAW_FACTOR_CW, 2, 1);
+        add_motor_raw(AP_MOTORS_MOT_2, 0.939, -0.771, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 3, 1);
+        add_motor_raw(AP_MOTORS_MOT_3, 1, 0.771, AP_MOTORS_MATRIX_YAW_FACTOR_CW, 4, 0.96);
+        break;
     default:
         // quad frame class does not support this frame type
         return false;

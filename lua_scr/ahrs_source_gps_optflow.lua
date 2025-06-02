@@ -68,7 +68,7 @@ local FLGP_ENABLE = bind_add_param('ENABLE', 1, 1)
 local FLGP_FLOW_THRESH = bind_add_param('FLOW_THRESH', 2, 0.3)
 
 -- OpticalFlow may be used if quality is above this threshold
-local FLGP_FLOW_QUAL = bind_add_param('FLOW_QUAL', 3, 40)
+local FLGP_FLOW_QUAL = bind_add_param('FLOW_QUAL', 3, 60)
 
 -- OpticalFlow may be used if rangefinder distance is below this threshold
 local FLGP_RNGFND_MAX = bind_add_param('RNGFND_MAX', 4, 3.5)
@@ -121,8 +121,10 @@ function update()
 
   -- check optical flow quality
   local opticalflow_quality_good = false
+  local opticalflow_dangerous = true
   if (optical_flow) then
     opticalflow_quality_good = (optical_flow:enabled() and optical_flow:healthy() and optical_flow:quality() >= opticalflow_quality_thresh)
+    opticalflow_dangerous = optical_flow:quality() < opticalflow_quality_thresh-20
   end
 
   -- get opticalflow innovations from ahrs (only x and y values are valid)
@@ -155,6 +157,29 @@ function update()
   elseif opticalflow_usable then
     -- vote for opticalflow if usable
     gps_vs_opticalflow_vote = gps_vs_opticalflow_vote + 1
+  elseif (opticalflow_dangerous) then
+    -- if we're in loiter and opticalflow quality is dangerously low switch to alt_hold and alert user
+    if (vehicle:get_mode() >= 5) then
+      gcs:send_text(0, "OpticalFlow quality dangerously low, switching to AltHold")
+      vehicle:set_mode(2)
+    end
+  end
+
+  -- altitude hold: don't use opticalflow if rangefinder is out of range
+  -- this is needed, otherwise EKF set to optical flow prevent vehicle to climb higher than 0.7*RNGFND_MAX_DIST
+  if vehicle:get_mode() <= 2 then
+      local althold_source_requested = EKF_SRC_UNDECIDED
+      if rngfnd_over_threshold then
+          althold_source_requested = EKF_SRC_GPS
+      else
+          althold_source_requested = EKF_SRC_OPTICALFLOW
+      end
+      if source_prev ~= althold_source_requested then
+          source_prev = althold_source_requested
+          ahrs:set_posvelyaw_source_set(source_prev) -- switch to GPS
+          gcs:send_text(0, "alt_hold: switched to Source " .. string.format("%d", source_prev+1))
+      end
+      return update, 100
   end
 
   -- prevent EKF failsafe immediately switching to GPS if we're getting out of rangefinder range

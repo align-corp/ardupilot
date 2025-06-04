@@ -19,7 +19,7 @@ local VOLTAGE_TO_PERCENT_TABLE = {
 local PERCENT_PER_METER = 0.015  -- Battery percentage consumed per meter of travel
 local PERCENT_PER_METER_DOWN = 0.03  -- Battery percentage consumed per meter of travel
 local MIN_SAFE_PERCENT = 5    -- Minimum battery percentage needed to return home
-local MINIMUM_RTL_DIST = 40  -- Minimum distance from home to trigger RTL
+local MINIMUM_RTL_DIST = 30  -- Minimum distance from home to trigger RTL
 local UPDATE_VOLTAGE_MS = 200
 local VOLTAGES_SAMPLES_TO_MEDIAN = 51
 local RTL_MODE = 6  -- Mode number for RTL
@@ -69,7 +69,7 @@ function update()
         local distance_m = home:get_distance(current_loc)
 
         -- return if distance from home is < MINIMUM_RTL_DIST
-        if distance_m < MINIMUM_RTL_DIST and alt < 30 then
+        if distance_m < MINIMUM_RTL_DIST and alt < MINIMUM_RTL_DIST then
             gcs:send_text(6, string.format("Distance from home = %.0f m, altitude = %.0f m, no RTH", distance_m, alt))
             return update, UPDATE_VOLTAGE_MS
         end

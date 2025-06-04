@@ -1,9 +1,13 @@
 include ../AP6/hwdef.dat
 
-# defines
-define ARMING_DELAY_SEC 0.5f
-
+# define custom Align frame code
 define ALIGN_FRAME ALIGN_MR25
+
+# use flight mode switch for compass calibration
+define FLTMODE_SWITCH_COMPASS_CALIBRATION
+
+# decrease arming delay
+define ARMING_DELAY_SEC 0.5f
 
 # ESP32 Mavlink2 on Serial 1
 define DEFAULT_SERIAL1_BAUD 230

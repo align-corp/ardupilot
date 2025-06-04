@@ -157,7 +157,7 @@ function update()
   elseif opticalflow_usable then
     -- vote for opticalflow if usable
     gps_vs_opticalflow_vote = gps_vs_opticalflow_vote + 1
-  elseif (opticalflow_dangerous) then
+  elseif opticalflow_dangerous and arming:is_armed() then
     -- if we're in loiter and opticalflow quality is dangerously low switch to alt_hold and alert user
     if (vehicle:get_mode() >= 5) then
       gcs:send_text(0, "OpticalFlow quality dangerously low, switching to AltHold")

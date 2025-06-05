@@ -73,6 +73,9 @@ local FLGP_FLOW_QUAL = bind_add_param('FLOW_QUAL', 3, 60)
 -- OpticalFlow may be used if rangefinder distance is below this threshold
 local FLGP_RNGFND_MAX = bind_add_param('RNGFND_MAX', 4, 3.5)
 
+-- Down LED control 0:Automatic, 1:Always ON, 2:Always OFFSET
+local FLGP_LED = bind_add_param('LED', 5, 0)
+
 assert(optical_flow, 'could not access optical flow')
 
 -- the main update function
@@ -144,6 +147,9 @@ function update()
       rngfnd_distance_m = rangefinder:distance_cm_orient(RNG_ROTATION_DOWN) * 0.01
   end
   local rngfnd_over_threshold = (rngfnd_distance_m == 0) or (rngfnd_distance_m > rangefinder_thresh_dist)
+
+  -- update led
+  led(opticalflow_quality_good, rngfnd_over_threshold)
 
   -- opticalflow is usable if quality and innovations are good and rangefinder is in range
   local opticalflow_usable = opticalflow_quality_good and (not opticalflow_over_threshold) and (not rngfnd_over_threshold)
@@ -218,6 +224,28 @@ function update()
   end
 
   return update, 100
+end
+
+-- LED control
+function led(of_quality_acceptable, rng_over_threshold)
+    if FLGP_LED:get() == 0 then
+        -- automatic mode
+        if rng_over_threshold then
+            -- relay 1 to OFF
+            relay:off(0)
+        elseif not of_quality_acceptable then
+                -- relay 1 to ON
+                relay:on(0)
+        end
+
+    elseif FLGP_LED:get() == 1 then
+        -- always ON
+        relay:on(0)
+
+    else
+        -- always OFF
+        relay:off(0)
+    end
 end
 
 if FLGP_ENABLE:get() < 1 then

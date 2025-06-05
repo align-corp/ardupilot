@@ -28,6 +28,7 @@ jobs:
             AP6-M450,
             AP6-M450-gps,
             AP6-M450-G3P,
+            AP6-SoH,
         ]
 
     steps:

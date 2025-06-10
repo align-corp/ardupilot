@@ -78,6 +78,10 @@ local FLGP_LED = bind_add_param('LED', 5, 0)
 
 assert(optical_flow, 'could not access optical flow')
 
+-- get roll and pitch channels
+local chan_roll = rc:get_channel(1)
+local chan_pitch = rc:get_channel(2)
+
 -- the main update function
 function update()
 
@@ -157,7 +161,10 @@ function update()
   -- automatic selection logic --
 
   -- GPS vs opticalflow vote. "-1" to move towards GPS, "+1" to move to Non-GPS
-  if (gps_usable and not opticalflow_usable) or (gps_fix == 6) then
+  if (gps_usable and arming:is_armed() and (math.abs(chan_roll:norm_input()) > 0.3 or math.abs(chan_pitch:norm_input()) > 0.3)) then
+    -- if pilot is using roll or pitch, immediately switch to GPS
+    gps_vs_opticalflow_vote = -VOTE_COUNT_MAX
+  elseif (gps_usable and not opticalflow_usable) or (gps_fix == 6) then
     -- vote for GPS GPS is usable and opticalflow is unusable OR we're in RTK fix
     gps_vs_opticalflow_vote = gps_vs_opticalflow_vote - 1
   elseif opticalflow_usable then

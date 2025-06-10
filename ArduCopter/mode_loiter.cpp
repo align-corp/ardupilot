@@ -177,6 +177,11 @@ void ModeLoiter::run()
 
     switch (landing_state) {
         case LandingState::ALTITUDE_HIGH:
+            // if rangefinder state is out of range high always use max speed down
+            if (copter.rangefinder.status_orient(ROTATION_PITCH_270) == RangeFinder::Status::OutOfRangeHigh) {
+                max_speed_down = -get_pilot_speed_dn();
+                break;
+            }
             // Compute a vertical velocity demand such that the vehicle approaches g2.land_alt_low. 
             max_speed_down = sqrt_controller(g2.land_alt_low-get_alt_above_ground_cm(), pos_control->get_pos_z_p().kP(), 
                     pos_control->get_max_accel_z_cmss(), G_Dt);

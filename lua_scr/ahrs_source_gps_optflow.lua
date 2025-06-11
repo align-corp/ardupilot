@@ -29,6 +29,8 @@
 -- luacheck: only 0
 
 -- constants
+local GPS_HDOP_GOOD = 100 -- HDOP below this value is considered good [cm]
+local GPS_MINSATS_GOOD = 17 -- number of satellites above this value is considered good
 local EKF_SRC_GPS = 0
 local EKF_SRC_OPTICALFLOW = 1
 local EKF_SRC_UNDECIDED = -1
@@ -38,8 +40,6 @@ local VOTE_COUNT_MAX = 20 -- when a vote counter reaches this number (i.e. 2sec)
 -- variables
 local source_prev = EKF_SRC_OPTICALFLOW -- opticalflow for takeoff
 local gps_vs_opticalflow_vote = 0 -- vote counter for GPS vs optical (-20 = GPS, +20 = optical flow)
-local gps_hdop_threshold = param:get("GPS_HDOP_GOOD")
-local gpa_nsats_threshold = param:get("AHRS_GPS_MINSATS")
 
 local PARAM_TABLE_KEY = 81
 PARAM_TABLE_PREFIX = "FLGP_"
@@ -85,10 +85,18 @@ local chan_pitch = rc:get_channel(2)
 -- the main update function
 function update()
 
+  -- enable check
   if FLGP_ENABLE:get() < 1 then
     if source_prev ~= EKF_SRC_GPS then
         source_prev = EKF_SRC_GPS
         ahrs:set_posvelyaw_source_set(source_prev) -- switch to GPS
+        gcs:send_text(0, "FLGP disabled: switched to Source " .. string.format("%d", source_prev+1))
+    end
+    return update, 100
+  elseif FLGP_ENABLE:get() > 1 then
+    if source_prev ~= EKF_SRC_OPTICALFLOW then
+        source_prev = EKF_SRC_OPTICALFLOW
+        ahrs:set_posvelyaw_source_set(source_prev) -- switch to optical flow
         gcs:send_text(0, "FLGP disabled: switched to Source " .. string.format("%d", source_prev+1))
     end
     return update, 100
@@ -121,8 +129,8 @@ function update()
   local gps_fix = gps:status(gps:primary_sensor())
   local gps_usable = false
   if gps_hdop ~= nil and gps_nsats ~= nil and gps_fix ~= nil then
-    gps_usable = (gps_hdop <= gps_hdop_threshold) and
-      (gps_nsats >= gpa_nsats_threshold) and
+    gps_usable = (gps_hdop <= GPS_HDOP_GOOD) and
+      (gps_nsats >= GPS_MINSATS_GOOD) and
       (gps_fix >= 3)
   end
 

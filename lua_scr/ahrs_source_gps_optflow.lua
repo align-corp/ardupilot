@@ -74,7 +74,7 @@ local FLGP_FLOW_QUAL = bind_add_param('FLOW_QUAL', 3, 60)
 local FLGP_RNGFND_MAX = bind_add_param('RNGFND_MAX', 4, 3.5)
 
 -- Down LED control 0:Automatic, 1:Always ON, 2:Always OFFSET
-local FLGP_LED = bind_add_param('LED', 5, 0)
+local FLGP_LED = bind_add_param('LED', 5, 1)
 
 assert(optical_flow, 'could not access optical flow')
 
@@ -243,23 +243,22 @@ end
 
 -- LED control
 function led(of_quality_acceptable, rng_over_threshold)
+
     if FLGP_LED:get() == 0 then
+        -- always OFF
+        relay:off(0)
+    elseif FLGP_LED:get() == 1 then
         -- automatic mode
-        if rng_over_threshold then
+        if rng_over_threshold or not arming:is_armed() then
             -- relay 1 to OFF
             relay:off(0)
         elseif not of_quality_acceptable then
                 -- relay 1 to ON
                 relay:on(0)
         end
-
-    elseif FLGP_LED:get() == 1 then
+    elseif FLGP_LED:get() == 2 then
         -- always ON
         relay:on(0)
-
-    else
-        -- always OFF
-        relay:off(0)
     end
 end
 

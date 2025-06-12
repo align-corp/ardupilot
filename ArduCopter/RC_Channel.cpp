@@ -226,7 +226,17 @@ bool RC_Channel_Copter::do_aux_function(const aux_func_t ch_option, const AuxSwi
 
         case AUX_FUNC::RTL:
 #if MODE_RTL_ENABLED == ENABLED
-            do_aux_function_change_mode(Mode::Number::RTL, ch_flag);
+            // toggle RTL mode when ch_flag changes
+            // for this to work RTL channel should be a toggle switch
+            if (ch_flag != rtl_ch_flag_last) {
+                rtl_ch_flag_last = ch_flag;
+                // if we are in RTL mode or we're not armed, reset the RTL target
+                if (!copter.arming.is_armed() || copter.flightmode->mode_number() == Mode::Number::RTL) {
+                    rc().reset_mode_switch();
+                } else {
+                    copter.set_mode(Mode::Number::RTL, ModeReason::RC_COMMAND);
+                }
+            }
 #endif
             break;
 

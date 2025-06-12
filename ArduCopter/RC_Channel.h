@@ -21,6 +21,9 @@ private:
     void do_aux_function_change_air_mode(const AuxSwitchPos ch_flag);
     void do_aux_function_change_force_flying(const AuxSwitchPos ch_flag);
 
+    // RTL channel last state
+    AuxSwitchPos rtl_ch_flag_last = AuxSwitchPos::LOW;
+
     // called when the mode switch changes position:
     void mode_switch_changed(modeswitch_pos_t new_pos) override;
 

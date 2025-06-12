@@ -107,6 +107,13 @@ void ModeLoiter::update_landing_state(AltHoldModeState alt_hold_state)
         return;
     }
 
+    // prevent rangefinder OutOfRangeHigh state from switching to ALTITUDE_HIGH and cause hard landing
+    if (landing_state == LandingState::ALTITUDE_LOW &&
+        copter.rangefinder.status_orient(ROTATION_PITCH_270) == RangeFinder::Status::OutOfRangeHigh &&
+        channel_throttle->norm_input_ignore_trim() < 0.1f) {
+        return;
+    }
+
     // check if rangefinder is healthy
     if (!copter.rangefinder_alt_ok()) {
         landing_state = LandingState::ALTITUDE_HIGH;

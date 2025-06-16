@@ -31,6 +31,8 @@
 -- constants
 local GPS_HDOP_GOOD = 100 -- HDOP below this value is considered good [cm]
 local GPS_MINSATS_GOOD = 17 -- number of satellites above this value is considered good
+local GPS_HDOP_USABLE = 120 -- HDOP below this value is considered good [cm]
+local GPS_MINSATS_USABLE = 12 -- number of satellites above this value is considered good
 local EKF_SRC_GPS = 0
 local EKF_SRC_OPTICALFLOW = 1
 local EKF_SRC_UNDECIDED = -1
@@ -40,6 +42,7 @@ local VOTE_COUNT_MAX = 20 -- when a vote counter reaches this number (i.e. 2sec)
 -- variables
 local source_prev = EKF_SRC_OPTICALFLOW -- opticalflow for takeoff
 local gps_vs_opticalflow_vote = 0 -- vote counter for GPS vs optical (-20 = GPS, +20 = optical flow)
+local optical_flow_dangerous_count = 0 -- count of dangerous optical flow quality
 
 local PARAM_TABLE_KEY = 81
 PARAM_TABLE_PREFIX = "FLGP_"
@@ -123,13 +126,17 @@ function update()
     return update, 1000
   end
 
-  -- check if GPS is usable
+  -- check if GPS is usable or if it's good
   local gps_hdop = gps:get_hdop(gps:primary_sensor())
   local gps_nsats = gps:num_sats(gps:primary_sensor())
   local gps_fix = gps:status(gps:primary_sensor())
   local gps_usable = false
+  local gps_good = false
   if gps_hdop ~= nil and gps_nsats ~= nil and gps_fix ~= nil then
-    gps_usable = (gps_hdop <= GPS_HDOP_GOOD) and
+    gps_usable = (gps_hdop <= GPS_HDOP_USABLE) and
+      (gps_nsats >= GPS_MINSATS_USABLE) and
+      (gps_fix >= 3)
+    gps_good = (gps_hdop <= GPS_HDOP_GOOD) and
       (gps_nsats >= GPS_MINSATS_GOOD) and
       (gps_fix >= 3)
   end
@@ -169,20 +176,27 @@ function update()
   -- automatic selection logic --
 
   -- GPS vs opticalflow vote. "-1" to move towards GPS, "+1" to move to Non-GPS
-  if (gps_usable and arming:is_armed() and (math.abs(chan_roll:norm_input()) > 0.3 or math.abs(chan_pitch:norm_input()) > 0.3)) then
+  if (gps_good and arming:is_armed() and (math.abs(chan_roll:norm_input()) > 0.3 or math.abs(chan_pitch:norm_input()) > 0.3)) then
     -- if pilot is using roll or pitch, immediately switch to GPS
     gps_vs_opticalflow_vote = -VOTE_COUNT_MAX
-  elseif (gps_usable and not opticalflow_usable) or (gps_fix == 6) then
-    -- vote for GPS GPS is usable and opticalflow is unusable OR we're in RTK fix
+    optical_flow_dangerous_count = 0
+  elseif (gps_usable and not opticalflow_usable) or (gps_good and gps_fix == 6) then
+    -- vote for GPS if it's usable and opticalflow is unusable OR we're in RTK fix
     gps_vs_opticalflow_vote = gps_vs_opticalflow_vote - 1
+    optical_flow_dangerous_count = 0
   elseif opticalflow_usable then
     -- vote for opticalflow if usable
     gps_vs_opticalflow_vote = gps_vs_opticalflow_vote + 1
+    optical_flow_dangerous_count = 0
   elseif opticalflow_dangerous and arming:is_armed() then
     -- if we're in loiter and opticalflow quality is dangerously low switch to alt_hold and alert user
     if (vehicle:get_mode() >= 5) then
-      gcs:send_text(0, "OpticalFlow quality dangerously low, switching to AltHold")
-      vehicle:set_mode(2)
+        optical_flow_dangerous_count = optical_flow_dangerous_count + 1
+        if (optical_flow_dangerous_count >= 4) then
+            optical_flow_dangerous_count = 0
+            gcs:send_text(MAV_SEVERITY.ALERT, "AltHold: OpticalFlow quality too low")
+            vehicle:set_mode(2) -- switch to AltHold
+        end
     end
   end
 

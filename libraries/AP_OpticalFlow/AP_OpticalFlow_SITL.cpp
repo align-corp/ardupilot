@@ -56,8 +56,8 @@ void AP_OpticalFlow_SITL::update(void)
                       radians(_sitl->state.pitchDeg),
                       radians(_sitl->state.yawDeg));
 
-
-    state.surface_quality = 51;
+    // set surface quality from parameter SIM_FLOW_QUALITY
+    state.surface_quality = _sitl->flow_quality > 0 ? _sitl->flow_quality : 51;
 
     // sensor position offset in body frame
     Vector3f posRelSensorBF = _sitl->optflow_pos_offset;

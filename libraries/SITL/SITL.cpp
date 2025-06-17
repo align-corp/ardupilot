@@ -149,6 +149,10 @@ const AP_Param::GroupInfo SIM::var_info[] = {
     // @Description: Opflow data delay
     // @Units: ms
     AP_GROUPINFO("FLOW_DELAY",    36, SIM,  flow_delay, 0),
+    // @Param: FLOW_QUALITY
+    // @DisplayName: Opflow Quality
+    // @Description: Optical Flow quality, 0-255
+    AP_GROUPINFO("FLOW_QUALITY",    37, SIM,  flow_quality, 51),
     AP_GROUPINFO("ADSB_COUNT",    45, SIM,  adsb_plane_count, -1),
     AP_GROUPINFO("ADSB_RADIUS",   46, SIM,  adsb_radius_m, 10000),
     AP_GROUPINFO("ADSB_ALT",      47, SIM,  adsb_altitude_m, 1000),

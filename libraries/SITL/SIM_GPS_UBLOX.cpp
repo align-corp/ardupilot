@@ -189,6 +189,11 @@ void GPS_UBlox::publish(const GPS_Data *d)
     uint32_t _next_nav_sv_info_time = 0;
 
     const auto gps_tow = gps_time();
+    // Get GPS fix type from SITL param
+    uint8_t gps_fix_type = d->have_lock ? _sitl->gps_fix[instance] : 0;
+    if (gps_fix_type > 3) {
+        gps_fix_type = 3;
+    }
 
     pos.time = gps_tow.ms;
     pos.longitude = d->longitude * 1.0e7;
@@ -199,7 +204,7 @@ void GPS_UBlox::publish(const GPS_Data *d)
     pos.vertical_accuracy = _sitl->gps_accuracy[instance]*1000;
 
     status.time = gps_tow.ms;
-    status.fix_type = d->have_lock?3:0;
+    status.fix_type = gps_fix_type;
     status.fix_status = d->have_lock?1:0;
     status.differential_status = 0;
     status.res = 0;
@@ -220,7 +225,7 @@ void GPS_UBlox::publish(const GPS_Data *d)
     velned.heading_accuracy = 4;
 
     memset(&sol, 0, sizeof(sol));
-    sol.fix_type = d->have_lock?3:0;
+    sol.fix_type = gps_fix_type;
     sol.fix_status = 221;
     sol.satellites = d->have_lock ? _sitl->gps_numsats[instance] : 3;
     sol.time = gps_tow.ms;
@@ -231,7 +236,7 @@ void GPS_UBlox::publish(const GPS_Data *d)
     dop.pDOP = 65535;
     dop.tDOP = 65535;
     dop.vDOP = 200;
-    dop.hDOP = 121;
+    dop.hDOP = _sitl->gps_hdop[instance];
     dop.nDOP = 65535;
     dop.eDOP = 65535;
 
@@ -245,8 +250,22 @@ void GPS_UBlox::publish(const GPS_Data *d)
     pvt.valid = 0; // invalid utc date
     pvt.t_acc = 0;
     pvt.nano = 0;
-    pvt.fix_type = d->have_lock? 0x3 : 0;
-    pvt.flags = 0b10000011; // carrsoln=fixed, psm = na, diffsoln and fixok
+    pvt.fix_type = gps_fix_type;
+    
+    // Calculate pvt.flags based on GPS fix type
+    if (_sitl->gps_fix[instance] == 6) {
+        // RTK fixed
+        pvt.flags = 0b10000011; // carrsoln=fixed, diffsoln and fixok
+    } else if (_sitl->gps_fix[instance] == 5) {
+        // RTK float
+        pvt.flags = 0b01000011; // carrsoln=float, diffsoln and fixok
+    } else if (_sitl->gps_fix[instance] == 4) {
+        // DGPS
+        pvt.flags = 0b00000011; // carrsoln=na, diffsoln and fixok
+    } else {
+        // 3D fix
+        pvt.flags = 0b00000001; // carrsoln=na, diffsoln and fixok
+    }
     pvt.flags2 =0;
     pvt.num_sv = d->have_lock ? _sitl->gps_numsats[instance] : 3;
     pvt.lon = d->longitude * 1.0e7;

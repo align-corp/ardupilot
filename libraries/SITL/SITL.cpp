@@ -648,6 +648,30 @@ const AP_Param::GroupInfo SIM::var_gps[] = {
     // @User: Advanced
     // @Values: 0:Disabled, 1:Enabled
     AP_GROUPINFO("GPS_JAM",       16, SIM,  gps_jam[0], 0),
+    // @Param: GPS_HDOP
+    // @DisplayName: GPS HDOP
+    // @Description: GPS HDOP value
+    // @User: Advanced
+    // @Units: cm
+    AP_GROUPINFO("GPS_HDOP",      17, SIM,  gps_hdop[0], 121),
+    // @Param: GPS_FIX
+    // @DisplayName: GPS Fix Type
+    // @Description: Select GPS Fix Type
+    // @User: Advanced
+    // @Values: 2:2D_FIX, 3:3D_FIX, 4:DGPS_FIX, 5:RTK_FLOATING, 6:RTK_FIXED
+    AP_GROUPINFO("GPS_FIX",       18, SIM,  gps_fix[0], 3),
+    // @Param: GPS_2_FIX
+    // @DisplayName: GPS 2 Fix Type
+    // @Description: Select GPS 2 Fix Type
+    // @User: Advanced
+    // @Values: 2:2D_FIX, 3:3D_FIX, 4:DGPS_FIX, 5:RTK_FLOATING, 6:RTK_FIXED
+    AP_GROUPINFO("GPS2_FIX",      28, SIM,  gps_fix[1], 3),
+    // @Param: GPS2_HDOP
+    // @DisplayName: GPS 2 HDOP
+    // @Description: GPS 2 HDOP value
+    // @User: Advanced
+    // @Units: cm
+    AP_GROUPINFO("GPS2_HDOP",      29, SIM,  gps_hdop[1], 121),
     // @Param: GPS2_DISABLE
     // @DisplayName: GPS 2 disable
     // @Description: Disables GPS 2

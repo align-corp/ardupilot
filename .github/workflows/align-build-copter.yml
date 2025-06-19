@@ -2,6 +2,9 @@ name: align build copter
 
 on:
   workflow_dispatch:
+  push:
+    tags:
+      - 'v*'
 
 concurrency:
   group: ci-${{github.workflow}}-${{ github.ref }}

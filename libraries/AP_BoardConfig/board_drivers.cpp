@@ -67,55 +67,7 @@ void AP_BoardConfig::board_init_debug()
 }
 
 
-#if AP_FEATURE_BOARD_DETECT
-
-AP_BoardConfig::px4_board_type AP_BoardConfig::px4_configured_board;
-
-void AP_BoardConfig::board_setup_drivers(void)
-{
-    if (state.board_type == PX4_BOARD_OLDDRIVERS) {
-        printf("Old drivers no longer supported\n");
-        state.board_type.set(PX4_BOARD_AUTO);
-    }
-
-    // run board auto-detection
-    board_autodetect();
-
-    px4_configured_board = (enum px4_board_type)state.board_type.get();
-
-    switch (px4_configured_board) {
-    case PX4_BOARD_PX4V1:
-    case PX4_BOARD_PIXHAWK:
-    case PX4_BOARD_PIXHAWK2:
-    case PX4_BOARD_FMUV5:
-    case PX4_BOARD_FMUV6:
-    case PX4_BOARD_SP01:
-    case PX4_BOARD_PIXRACER:
-    case PX4_BOARD_PHMINI:
-    case PX4_BOARD_AUAV21:
-    case PX4_BOARD_PH2SLIM:
-    case VRX_BOARD_BRAIN51:
-    case VRX_BOARD_BRAIN52:
-    case VRX_BOARD_BRAIN52E:
-    case VRX_BOARD_UBRAIN51:
-    case VRX_BOARD_UBRAIN52:
-    case VRX_BOARD_CORE10:
-    case VRX_BOARD_BRAIN54:
-    case PX4_BOARD_AEROFC:
-    case PX4_BOARD_PIXHAWK_PRO:
-    case PX4_BOARD_PCNC1:
-    case PX4_BOARD_MINDPXV2:
-    case FMUV6_BOARD_HOLYBRO_6X:
-    case FMUV6_BOARD_HOLYBRO_6X_REV6:
-    case FMUV6_BOARD_HOLYBRO_6X_45686:
-    case FMUV6_BOARD_CUAV_6X:
-        break;
-    default:
-        config_error("Unknown board type");
-        break;
-    }
-}
-
+#if AP_FEATURE_BOARD_DETECT || defined(ALIGN_HAL_VALIDATE_BOARD)
 #define SPI_PROBE_DEBUG 0
 
 /*
@@ -259,6 +211,57 @@ bool AP_BoardConfig::check_ms5611(const char* devname) {
 #define INV3_WHOAMI_ICM42670  0x67
 #define INV3_WHOAMI_ICM45686  0xE9
 #define INV3_WHOAMI_IIM42652  0x6f
+
+#endif //AP_FEATURE_BOARD_DETECT || defined(ALIGN_HAL_VALIDATE_BOARD)
+
+#if AP_FEATURE_BOARD_DETECT
+AP_BoardConfig::px4_board_type AP_BoardConfig::px4_configured_board;
+
+void AP_BoardConfig::board_setup_drivers(void)
+{
+    if (state.board_type == PX4_BOARD_OLDDRIVERS) {
+        printf("Old drivers no longer supported\n");
+        state.board_type.set(PX4_BOARD_AUTO);
+    }
+
+    // run board auto-detection
+    board_autodetect();
+
+    px4_configured_board = (enum px4_board_type)state.board_type.get();
+
+    switch (px4_configured_board) {
+    case PX4_BOARD_PX4V1:
+    case PX4_BOARD_PIXHAWK:
+    case PX4_BOARD_PIXHAWK2:
+    case PX4_BOARD_FMUV5:
+    case PX4_BOARD_FMUV6:
+    case PX4_BOARD_SP01:
+    case PX4_BOARD_PIXRACER:
+    case PX4_BOARD_PHMINI:
+    case PX4_BOARD_AUAV21:
+    case PX4_BOARD_PH2SLIM:
+    case VRX_BOARD_BRAIN51:
+    case VRX_BOARD_BRAIN52:
+    case VRX_BOARD_BRAIN52E:
+    case VRX_BOARD_UBRAIN51:
+    case VRX_BOARD_UBRAIN52:
+    case VRX_BOARD_CORE10:
+    case VRX_BOARD_BRAIN54:
+    case PX4_BOARD_AEROFC:
+    case PX4_BOARD_PIXHAWK_PRO:
+    case PX4_BOARD_PCNC1:
+    case PX4_BOARD_MINDPXV2:
+    case FMUV6_BOARD_HOLYBRO_6X:
+    case FMUV6_BOARD_HOLYBRO_6X_REV6:
+    case FMUV6_BOARD_HOLYBRO_6X_45686:
+    case FMUV6_BOARD_CUAV_6X:
+        break;
+    default:
+        config_error("Unknown board type");
+        break;
+    }
+}
+
 
 /*
   validation of the board type
@@ -474,6 +477,14 @@ void AP_BoardConfig::board_setup()
     board_setup_sbus();
 #if AP_FEATURE_BOARD_DETECT
     board_setup_drivers();
+#elif defined(ALIGN_HAL_VALIDATE_BOARD)
+    if((_options & SKIP_BOARD_VALIDATION) == 0) {
+        const char* errored_check = ALIGN_HAL_VALIDATE_BOARD;
+        if (errored_check != nullptr) {
+            config_error("%s", errored_check);
+            return;
+        }
+    }
 #endif
 }
 

@@ -253,16 +253,18 @@ private:
     } sdcard_storage;
 #endif
 
-#if AP_FEATURE_BOARD_DETECT
-    static enum px4_board_type px4_configured_board;
-
-    void board_setup_drivers(void);
+#if AP_FEATURE_BOARD_DETECT || defined(ALIGN_HAL_VALIDATE_BOARD)
     bool spi_check_register(const char *devname, uint8_t regnum, uint8_t value, uint8_t read_flag = 0x80);
     bool spi_check_register_inv2(const char *devname, uint8_t regnum, uint8_t value, uint8_t read_flag = 0x80);
+    bool check_ms5611(const char* devname);
+#endif // AP_FEATURE_BOARD_DETECT || defined(ALIGN_HAL_VALIDATE_BOARD)
+
+#if AP_FEATURE_BOARD_DETECT
+    static enum px4_board_type px4_configured_board;
+    void board_setup_drivers(void);
     void validate_board_type(void);
     void board_autodetect(void);
     void detect_fmuv6_variant(void);
-    bool check_ms5611(const char* devname);
 
 #endif // AP_FEATURE_BOARD_DETECT
 

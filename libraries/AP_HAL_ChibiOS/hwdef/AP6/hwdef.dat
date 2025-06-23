@@ -175,10 +175,11 @@ SPIDEV dataflash      SPI4 DEVID1  FLASH_CS         MODE3  32*MHZ  32*MHZ
 SPIDEV icm20948       SPI1 DEVID2  ICM20948_CS      MODE3   4*MHZ   8*MHZ
 SPIDEV icm42688_2     SPI6 DEVID2  ICM42688_2_CS    MODE3   2*MHZ   8*MHZ
 
-# three IMUs, first two are dumpened
-IMU Invensensev3 SPI:icm42688 ROTATION_ROLL_180_YAW_90
-IMU Invensensev2 SPI:icm20948 ROTATION_NONE
+# AP6v2 has three IMUs, first two are dumpened and caused issues: validate only if ICM20948 is not detected
+IMU Invensensev3 SPI:icm42688 ROTATION_ROLL_180_YAW_270
 IMU Invensensev3 SPI:icm42688_2 ROTATION_ROLL_180_YAW_270
+IMU Invensensev2 SPI:icm20948 ROTATION_NONE
+define ALIGN_HAL_VALIDATE_BOARD (spi_check_register_inv2("icm20948", INV2REG_WHOAMI, INV2_WHOAMI_ICM20948)?"Remove external IMU board":nullptr)
 
 # enable fast sampling IMUs
 define HAL_DEFAULT_INS_FAST_SAMPLE 7

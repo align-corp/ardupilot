@@ -3,6 +3,9 @@ include ../AP6m/hwdef.dat
 # define custom Align frame code
 define ALIGN_FRAME ALIGN_M3
 
+# use custom Align Status LED
+define ALIGN_RGB_STATUS_LED
+
 # decrease arming delay
 define ARMING_DELAY_SEC 0.5f
 

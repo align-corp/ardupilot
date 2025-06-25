@@ -64,7 +64,7 @@ end
 -- add param table
 assert(param:add_table(PARAM_TABLE_KEY, PARAM_TABLE_PREFIX, 5), 'ahrs-source-gps-optflow: could not add param table')
 
--- enable
+-- Enable 0: Disabled (always use SRC1=GPS), 1: Automatic, 2: Disabled (Always use SRC2=OpticalFlow)
 local FLGP_ENABLE = bind_add_param('ENABLE', 1, 1)
 
 -- EKF Source OpticalFlow Innovation Threshold
@@ -76,7 +76,7 @@ local FLGP_FLOW_QUAL = bind_add_param('FLOW_QUAL', 3, 60)
 -- OpticalFlow may be used if rangefinder distance is below this threshold
 local FLGP_RNGFND_MAX = bind_add_param('RNGFND_MAX', 4, 3.5)
 
--- Down LED control 0:Automatic, 1:Always ON, 2:Always OFFSET
+-- Down LED control 1:Automatic, 2:Always ON, 0:Always OFF
 local FLGP_LED = bind_add_param('LED', 5, 1)
 
 assert(optical_flow, 'could not access optical flow')

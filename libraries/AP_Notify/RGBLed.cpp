@@ -156,6 +156,20 @@ uint32_t RGBLed::get_colour_sequence(void) const
         return sequence_failsafe_radio_or_battery;
     }
 
+#ifdef ALIGN_RGB_STATUS_LED
+    // solid green if armed
+    if (AP_Notify::flags.armed) {
+        return sequence_armed;
+    }
+
+    // flash red if failing pre-arm checks
+    if (!AP_Notify::flags.pre_arm_check) {
+        return DEFINE_COLOUR_SEQUENCE_SLOW(RED);
+    }
+
+    // flash green if can fly
+    return sequence_disarmed_good_gps;
+#else
     // solid green or blue if armed
     if (AP_Notify::flags.armed) {
 #if AP_GPS_ENABLED
@@ -181,8 +195,8 @@ uint32_t RGBLed::get_colour_sequence(void) const
         return sequence_disarmed_good_gps;
     }
 #endif
-
     return sequence_disarmed_bad_gps;
+#endif // ALIGN_RGB_STATUS_LED
 }
 
 uint32_t RGBLed::get_colour_sequence_traffic_light(void) const

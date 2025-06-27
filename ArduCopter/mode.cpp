@@ -701,6 +701,10 @@ void Mode::land_run_vertical_control(bool pause_descent)
 
     // update altitude target and call position controller
     pos_control->land_at_climb_rate_cm(cmb_rate, ignore_descent_limit);
+
+    // update the vertical offset based on the surface measurement
+    copter.surface_tracking.update_surface_offset();
+
     pos_control->update_z_controller();
 }
 

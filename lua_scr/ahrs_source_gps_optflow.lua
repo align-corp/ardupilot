@@ -85,8 +85,10 @@ local chan_pitch = rc:get_channel(2)
 -- the main update function
 function update()
 
-  -- enable check
-  if FLGP_ENABLE:get() < 1 then
+  -- enable check: -1 disable, 0 always use GPS, 1 automatic, 2 always use OpticalFlow
+  if FLGP_ENABLE:get() < 0 then
+    return update, 100
+  elseif FLGP_ENABLE:get() < 1 then
     if source_prev ~= EKF_SRC_GPS then
         source_prev = EKF_SRC_GPS
         ahrs:set_posvelyaw_source_set(source_prev) -- switch to GPS

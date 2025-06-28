@@ -115,10 +115,10 @@ end
 -- main LED control function
 function led()
     -- check if LEDs are enabled
-    if led_enable:get() == 0 then
+    if led_enable:get() < 1 then
         leds_off()
         serialLED:send(chan)
-        return
+        return led, 150
     end
 
     -- not armed and prearm checks are failing: red lights

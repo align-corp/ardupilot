@@ -251,9 +251,10 @@ function update()
     end
 
     -- if we're using optical flow, check if we need to switch to optical flow + rangefinder
-    if (auto_source == EKF_SRC_OPTICALFLOW) and rngfnd_distance_m > 0 and rngfnd_distance_m < rangefinder_thresh_dist_ekf_m then
+    local ground_speed = ahrs:groundspeed_vector():length()
+    if (auto_source == EKF_SRC_OPTICALFLOW) and rngfnd_distance_m > 0 and rngfnd_distance_m < rangefinder_thresh_dist_ekf_m and ground_speed < 0.7 then
         auto_source = EKF_SRC_OPTICALFLOW_RNG
-    elseif (auto_source == EKF_SRC_OPTICALFLOW_RNG) and rngfnd_distance_m > rangefinder_thresh_dist_ekf_m + 0.5 then
+    elseif (auto_source == EKF_SRC_OPTICALFLOW_RNG) and (rngfnd_distance_m > rangefinder_thresh_dist_ekf_m + 0.5 or ground_speed > 1) then
         auto_source = EKF_SRC_OPTICALFLOW
     end
 

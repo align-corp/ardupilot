@@ -65,11 +65,11 @@ float NavEKF3_core::errorScore() const
 // this is needed to ensure the vehicle does not fly too high when using optical flow navigation
 bool NavEKF3_core::getHeightControlLimit(float &height) const
 {
-    // only ask for limiting if we are doing optical flow navigation
 #ifdef AP_NAV_EKF3_ALIGN_RNG_ALTITUDE_ALWAYS_LIMITED
     {
 #else
-    if (frontend->sources.useVelXYSource(AP_NavEKF_Source::SourceXY::OPTFLOW) && (PV_AidingMode == AID_RELATIVE) && flowDataValid) {
+    // only ask for limiting if we are doing optical flow navigation
+    if (frontend->sources.useVelXYSource(AP_NavEKF_Source::SourceXY::OPTFLOW)) {
 #endif
         // If are doing optical flow nav, ensure the height above ground is within range finder limits after accounting for vehicle tilt and control errors
         const auto *_rng = dal.rangefinder();
@@ -83,9 +83,8 @@ bool NavEKF3_core::getHeightControlLimit(float &height) const
             height -= terrainState;
         }
         return true;
-    } else {
-        return false;
     }
+    return false;
 }
 
 

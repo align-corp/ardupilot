@@ -35,6 +35,7 @@ local GPS_HDOP_USABLE = 120 -- HDOP below this value is considered good [cm]
 local GPS_MINSATS_USABLE = 12 -- number of satellites above this value is considered good
 local EKF_SRC_GPS = 0
 local EKF_SRC_OPTICALFLOW = 1
+local EKF_SRC_OPTICALFLOW_RNG = 2
 local EKF_SRC_UNDECIDED = -1
 local RNG_ROTATION_DOWN = 25
 local VOTE_COUNT_MAX = 20 -- when a vote counter reaches this number (i.e. 2sec) source may be switched
@@ -155,6 +156,7 @@ function update()
   -- get rangefinder distance
   local rangefinder_thresh_dist_m = rangefinder:max_distance_cm_orient(RNG_ROTATION_DOWN) * 0.0075
   local rangefinder_thresh_dist_fast_climb_m = rangefinder:max_distance_cm_orient(RNG_ROTATION_DOWN) * 0.006
+  local rangefinder_thresh_dist_ekf_m = rangefinder:max_distance_cm_orient(RNG_ROTATION_DOWN) * 0.005
   local rngfnd_distance_m = 0
   local rngfnd_out_of_range = rangefinder:status_orient(RNG_ROTATION_DOWN) == 3
   if rangefinder:has_data_orient(RNG_ROTATION_DOWN) then
@@ -204,7 +206,7 @@ function update()
   -- this is needed, otherwise EKF set to optical flow prevent vehicle to climb higher than 0.8*RNGFND_MAX_DIST
   if vehicle:get_mode() <= 2 then
       local althold_source_requested = EKF_SRC_UNDECIDED
-      if opticalflow_usable then
+      if opticalflow_usable and rngfnd_distance_m < rangefinder_thresh_dist_m - 0.5 then
           althold_source_requested = EKF_SRC_OPTICALFLOW
       else
           althold_source_requested = EKF_SRC_GPS
@@ -213,10 +215,6 @@ function update()
           source_prev = althold_source_requested
           ahrs:set_posvelyaw_source_set(source_prev) -- switch to GPS
           gcs:send_text(0, "alt_hold: switched to Source " .. string.format("%d", source_prev+1))
-          if althold_source_requested == EKF_SRC_GPS then
-              -- wait at least 2 seconds to switch back to OF, to prevent switching too often
-              return update, 2000
-          end
       end
       return update, 100
   end
@@ -236,9 +234,9 @@ function update()
     source_prev = EKF_SRC_GPS
     ahrs:set_posvelyaw_source_set(source_prev)
     gcs:send_text(4, "Fast climb detected, switch to GPS")
-    -- wait at least two second before switching back to auto mode, to prevent switching back
+    -- wait at least onw second before switching back to auto mode, to prevent switching back
     -- to optical flow while still climbing
-    return update, 2000
+    return update, 1000
   end
 
   -- auto source vote collation
@@ -251,11 +249,18 @@ function update()
     gps_vs_opticalflow_vote = VOTE_COUNT_MAX
   end
 
+  -- if we're using optical flow, check if we need to switch to optical flow + rangefinder
+  if (auto_source == EKF_SRC_OPTICALFLOW) and rngfnd_distance_m > 0 and rngfnd_distance_m < rangefinder_thresh_dist_ekf_m then
+    auto_source = EKF_SRC_OPTICALFLOW_RNG
+  elseif (auto_source == EKF_SRC_OPTICALFLOW_RNG) and rngfnd_distance_m > rangefinder_thresh_dist_ekf_m + 0.5 then
+    auto_source = EKF_SRC_OPTICALFLOW
+  end
+
   -- auto switching
   if (auto_source >= 0) and (auto_source ~= source_prev) then
-    source_prev = auto_source
-    ahrs:set_posvelyaw_source_set(source_prev)
-    gcs:send_text(4, "Auto switched to Source " .. string.format("%d", source_prev+1))
+      source_prev = auto_source
+      ahrs:set_posvelyaw_source_set(source_prev)
+      gcs:send_text(4, "Auto switched to Source " .. string.format("%d", source_prev+1))
   end
 
   return update, 100
@@ -282,14 +287,9 @@ function led(of_quality_acceptable, rng_over_threshold, rng_out_of_range)
     end
 end
 
-if FLGP_ENABLE:get() < 1 then
-    source_prev = EKF_SRC_GPS
-    ahrs:set_posvelyaw_source_set(source_prev)
-    gcs:send_text(4, "FLGP disabled, switched to Source " .. string.format("%d", source_prev+1))
-else
-    -- use optical flow for takeoff
-    source_prev = EKF_SRC_OPTICALFLOW
-    ahrs:set_posvelyaw_source_set(source_prev)
-    gcs:send_text(4, "Takeoff, switch to Source " .. string.format("%d", source_prev+1))
-end
+-- use optical flow for takeoff
+source_prev = EKF_SRC_OPTICALFLOW
+ahrs:set_posvelyaw_source_set(source_prev)
+gcs:send_text(4, "Takeoff, switch to Source " .. string.format("%d", source_prev+1))
+
 return update, 100

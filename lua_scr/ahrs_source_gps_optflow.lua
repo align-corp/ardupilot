@@ -195,7 +195,6 @@ function update()
         if (optical_flow_dangerous_count >= 10) then
             optical_flow_dangerous_count = 0
             gcs:send_text(MAV_SEVERITY.ALERT, "AltHold: OpticalFlow quality too low")
-            vehicle:set_mode(2) -- switch to AltHold
         end
     end
   end

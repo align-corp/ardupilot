@@ -171,84 +171,74 @@ function update()
 
     -- automatic selection logic --
 
-    -- if pilot is using roll or pitch, immediately switch to GPS
-    if gps_good and arming:is_armed() and source_prev == EKF_SRC_OPTICALFLOW and (math.abs(chan_roll:norm_input()) > 0.3 or math.abs(chan_pitch:norm_input()) > 0.3) then
-        gps_vs_opticalflow_vote = -VOTE_COUNT_MAX
-        optical_flow_dangerous_count = 0
-        -- if gps isn't good and opticalflow is usable, immediately switch to opticalflow (maybe we're moving inside a building)
-    elseif not gps_good and arming:is_armed() and source_prev == EKF_SRC_GPS and opticalflow_usable then
-        gps_vs_opticalflow_vote = VOTE_COUNT_MAX
-        optical_flow_dangerous_count = 0
+    -- altitude hold: don't use opticalflow if rangefinder is out of range
+    -- this is needed, otherwise EKF set to optical flow prevent vehicle to climb higher than 0.8*RNGFND_MAX_DIST
+    local auto_source = EKF_SRC_UNDECIDED
+    if vehicle:get_mode() <= 2 then
+        if not opticalflow_usable then
+            auto_source = EKF_SRC_GPS
+        elseif rngfnd_distance_m < rangefinder_thresh_dist_fast_climb_m then
+            auto_source = EKF_SRC_OPTICALFLOW
+        end
 
-        -- GPS vs opticalflow vote. "-1" to move towards GPS, "+1" to move to Non-GPS
-    elseif (gps_usable and not opticalflow_usable) or (gps_good and gps_fix == 6) then
-        -- vote for GPS if it's usable and opticalflow is unusable OR we're in RTK fix
-        gps_vs_opticalflow_vote = gps_vs_opticalflow_vote - 1
-        optical_flow_dangerous_count = 0
-    elseif opticalflow_usable then
-        -- vote for opticalflow if usable
-        gps_vs_opticalflow_vote = gps_vs_opticalflow_vote + 1
-        optical_flow_dangerous_count = 0
-    elseif opticalflow_dangerous and arming:is_armed() then
-        -- if we're in loiter and opticalflow quality is dangerously low switch to alt_hold and alert user
-        if (vehicle:get_mode() >= 5) then
+    -- modes that requires position
+    else
+        -- here we have a loooot of conditions:
+        -- 1 -- prevent EKF failsafe immediately switching to GPS if we're getting out of rangefinder range
+        local velocity_ned = ahrs:get_velocity_NED()
+        local climb_rate = 0
+        if velocity_ned ~= nil then
+            climb_rate = -velocity_ned:z() -- m/s
+        end
+        if (gps_usable) and
+            (rngfnd_distance_m > rangefinder_thresh_dist_fast_climb_m) and
+            (climb_rate > 0.3) and
+            (source_prev ~= EKF_SRC_GPS) then
+            gps_vs_opticalflow_vote = -VOTE_COUNT_MAX
+            source_prev = EKF_SRC_GPS
+            ahrs:set_posvelyaw_source_set(source_prev)
+            gcs:send_text(4, "Fast climb detected, switch to GPS")
+            -- wait at least two second before switching back to auto mode, to prevent switching back
+            -- to optical flow while still climbing
+            return update, 2000
+
+        -- 2 -- if pilot is using roll or pitch, immediately switch to GPS
+        elseif gps_good and arming:is_armed() and source_prev == EKF_SRC_OPTICALFLOW and (math.abs(chan_roll:norm_input()) > 0.3 or math.abs(chan_pitch:norm_input()) > 0.3) then
+            gps_vs_opticalflow_vote = -VOTE_COUNT_MAX
+            optical_flow_dangerous_count = 0
+
+        -- 3 -- if gps isn't good and opticalflow is usable, immediately switch to opticalflow (maybe we're moving inside a building)
+        elseif not gps_good and arming:is_armed() and source_prev == EKF_SRC_GPS and opticalflow_usable then
+            gps_vs_opticalflow_vote = VOTE_COUNT_MAX
+            optical_flow_dangerous_count = 0
+
+        -- 4 -- vote for GPS if it's usable and opticalflow is unusable OR we're in RTK fix
+        elseif (gps_usable and not opticalflow_usable) or (gps_good and gps_fix == 6) then
+            gps_vs_opticalflow_vote = gps_vs_opticalflow_vote - 1
+            optical_flow_dangerous_count = 0
+
+        -- 5 -- vote for opticalflow if usable
+        elseif opticalflow_usable then
+            gps_vs_opticalflow_vote = gps_vs_opticalflow_vote + 1
+            optical_flow_dangerous_count = 0
+
+        -- 6 -- if we're in loiter and opticalflow quality is dangerously low switch to alt_hold and alert user
+        elseif opticalflow_dangerous and arming:is_armed() then
             optical_flow_dangerous_count = optical_flow_dangerous_count + 1
             if (optical_flow_dangerous_count >= 10) then
                 optical_flow_dangerous_count = 0
                 gcs:send_text(MAV_SEVERITY.ALERT, "AltHold: OpticalFlow quality too low")
             end
         end
-    end
 
-    -- altitude hold: don't use opticalflow if rangefinder is out of range
-    -- this is needed, otherwise EKF set to optical flow prevent vehicle to climb higher than 0.8*RNGFND_MAX_DIST
-    if vehicle:get_mode() <= 2 then
-        local althold_source_requested = EKF_SRC_UNDECIDED
-        if opticalflow_usable then
-            althold_source_requested = EKF_SRC_OPTICALFLOW
-        else
-            althold_source_requested = EKF_SRC_GPS
+        -- auto source vote collation
+        if gps_vs_opticalflow_vote <= -VOTE_COUNT_MAX then
+            auto_source = EKF_SRC_GPS
+            gps_vs_opticalflow_vote = -VOTE_COUNT_MAX
+        elseif gps_vs_opticalflow_vote >= VOTE_COUNT_MAX then
+            auto_source = EKF_SRC_OPTICALFLOW
+            gps_vs_opticalflow_vote = VOTE_COUNT_MAX
         end
-        if source_prev ~= althold_source_requested then
-            source_prev = althold_source_requested
-            ahrs:set_posvelyaw_source_set(source_prev) -- switch to GPS
-            gcs:send_text(0, "alt_hold: switched to Source " .. string.format("%d", source_prev + 1))
-            if althold_source_requested == EKF_SRC_GPS then
-                -- wait at least 2 seconds to switch back to OF, to prevent switching too often
-                return update, 2000
-            end
-        end
-        return update, 100
-    end
-
-    -- prevent EKF failsafe immediately switching to GPS if we're getting out of rangefinder range
-    -- yes, this is cheating
-    local velocity_ned = ahrs:get_velocity_NED()
-    local climb_rate = 0
-    if velocity_ned ~= nil then
-        climb_rate = -velocity_ned:z() -- m/s
-    end
-    if (gps_usable) and
-        (rngfnd_distance_m > rangefinder_thresh_dist_fast_climb_m) and
-        (climb_rate > 0.3) and
-        (source_prev ~= EKF_SRC_GPS) then
-        gps_vs_opticalflow_vote = -VOTE_COUNT_MAX
-        source_prev = EKF_SRC_GPS
-        ahrs:set_posvelyaw_source_set(source_prev)
-        gcs:send_text(4, "Fast climb detected, switch to GPS")
-        -- wait at least two second before switching back to auto mode, to prevent switching back
-        -- to optical flow while still climbing
-        return update, 2000
-    end
-
-    -- auto source vote collation
-    local auto_source = EKF_SRC_UNDECIDED
-    if gps_vs_opticalflow_vote <= -VOTE_COUNT_MAX then
-        auto_source = EKF_SRC_GPS
-        gps_vs_opticalflow_vote = -VOTE_COUNT_MAX
-    elseif gps_vs_opticalflow_vote >= VOTE_COUNT_MAX then
-        auto_source = EKF_SRC_OPTICALFLOW
-        gps_vs_opticalflow_vote = VOTE_COUNT_MAX
     end
 
     -- auto switching

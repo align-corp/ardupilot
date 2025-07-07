@@ -43,6 +43,7 @@ local VOTE_COUNT_MAX = 20 -- when a vote counter reaches this number (i.e. 2sec)
 local source_prev = EKF_SRC_OPTICALFLOW -- opticalflow for takeoff
 local gps_vs_opticalflow_vote = 0       -- vote counter for GPS vs optical (-20 = GPS, +20 = optical flow)
 local optical_flow_dangerous_count = 0  -- count of dangerous optical flow quality
+local opticalflow_state_dangerous = false
 
 local PARAM_TABLE_KEY = 81
 PARAM_TABLE_PREFIX = "FLGP_"
@@ -68,7 +69,7 @@ assert(param:add_table(PARAM_TABLE_KEY, PARAM_TABLE_PREFIX, 5), 'ahrs-source-gps
 local FLGP_ENABLE = bind_add_param('ENABLE', 1, 1)
 
 -- EKF Source OpticalFlow Innovation Threshold
-local FLGP_FLOW_THRESH = bind_add_param('FLOW_THRESH', 2, 0.3)
+local FLGP_FLOW_THRESH = bind_add_param('FLOW_THRESH', 2, 0.5)
 
 -- OpticalFlow may be used if quality is above this threshold
 local FLGP_FLOW_QUAL = bind_add_param('FLOW_QUAL', 3, 60)
@@ -134,14 +135,15 @@ function update()
 
     -- check optical flow quality
     local opticalflow_quality_good = false
-    local opticalflow_dangerous = true
+    local opticalflow_quality_dangerous = true
     if (optical_flow) then
         opticalflow_quality_good = (optical_flow:enabled() and optical_flow:healthy() and optical_flow:quality() >= opticalflow_quality_thresh)
-        opticalflow_dangerous = optical_flow:quality() < opticalflow_quality_thresh - 30
+        opticalflow_quality_dangerous = optical_flow:quality() < opticalflow_quality_thresh - 30
     end
 
-    -- get opticalflow innovations from ahrs (only x and y values are valid)
-    local opticalflow_over_threshold = true
+    -- get opticalflow innovations from ahrs (only x and y values are valid, no variances available)
+    local opticalflow_innovation_good = false
+    local opticalflow_innovation_dangerous = false
     local opticalflow_xy_innov = 0
     local opticalflow_innov = Vector3f()
     local opticalflow_var = Vector3f()
@@ -149,7 +151,8 @@ function update()
     if (opticalflow_innov) then
         opticalflow_xy_innov = math.sqrt(opticalflow_innov:x() * opticalflow_innov:x() +
         opticalflow_innov:y() * opticalflow_innov:y())
-        opticalflow_over_threshold = (opticalflow_xy_innov == 0.0) or (opticalflow_xy_innov > opticalflow_innov_thresh)
+        opticalflow_innovation_good = opticalflow_xy_innov < opticalflow_innov_thresh
+        opticalflow_innovation_dangerous = opticalflow_xy_innov > opticalflow_innov_thresh * 2
     end
 
     -- get rangefinder distance
@@ -166,14 +169,16 @@ function update()
     led(opticalflow_quality_good, rngfnd_over_threshold, rngfnd_out_of_range)
 
     -- opticalflow is usable if quality and innovations are good and rangefinder is in range
-    local opticalflow_usable = opticalflow_quality_good and (not opticalflow_over_threshold) and
-    (not rngfnd_over_threshold)
+    local opticalflow_usable = opticalflow_quality_good and opticalflow_innovation_good and
+        (not rngfnd_over_threshold)
+    local opticalflow_dangerous = opticalflow_quality_dangerous or opticalflow_innovation_dangerous
 
     -- automatic selection logic --
 
-    -- altitude hold: don't use opticalflow if rangefinder is out of range
-    -- this is needed, otherwise EKF set to optical flow prevent vehicle to climb higher than 0.8*RNGFND_MAX_DIST
     local auto_source = EKF_SRC_UNDECIDED
+
+    -- altitude hold and stabilize: don't use opticalflow if rangefinder is out of range
+    -- this is needed, otherwise EKF set to optical flow prevent vehicle to climb higher than 0.8*RNGFND_MAX_DIST
     if vehicle:get_mode() <= 2 then
         if not opticalflow_usable then
             auto_source = EKF_SRC_GPS
@@ -228,6 +233,8 @@ function update()
             if (optical_flow_dangerous_count >= 10) then
                 optical_flow_dangerous_count = 0
                 gcs:send_text(MAV_SEVERITY.ALERT, "AltHold: OpticalFlow quality too low")
+                vehicle:set_mode(2)
+                opticalflow_state_dangerous = true
             end
         end
 
@@ -246,6 +253,17 @@ function update()
         source_prev = auto_source
         ahrs:set_posvelyaw_source_set(source_prev)
         gcs:send_text(4, "Auto switched to Source " .. string.format("%d", source_prev + 1))
+    end
+
+    -- if we switched to altitude_hold due to dangerous optical flow quality, switch back to loiter when quality is good
+    local loiter_opticalflow_ok = opticalflow_usable and source_prev == EKF_SRC_OPTICALFLOW
+    local loiter_gps_ok = gps_usable and source_prev == EKF_SRC_GPS
+    if opticalflow_state_dangerous and (loiter_opticalflow_ok or loiter_gps_ok) then
+        gcs:send_text(MAV_SEVERITY.WARNING, "Loiter: OpticalFlow quality recovered")
+        opticalflow_state_dangerous = false
+        if vehicle:get_mode() == 2 then
+            vehicle:set_mode(5)
+        end
     end
 
     return update, 100

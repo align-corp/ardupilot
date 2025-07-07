@@ -25,9 +25,6 @@ bool ModeAltHold::init(bool ignore_checks)
 // should be called at 100hz or more
 void ModeAltHold::run()
 {
-    // set vertical speed and acceleration limits
-    pos_control->set_max_speed_accel_z(-get_pilot_speed_dn(), g.pilot_speed_up, g.pilot_accel_z);
-
     // apply SIMPLE mode transform to pilot inputs
     update_simple_mode();
 
@@ -87,8 +84,19 @@ void ModeAltHold::run()
         copter.avoid.adjust_roll_pitch(target_roll, target_pitch, copter.aparm.angle_max);
 #endif
 
-        // get avoidance adjusted climb rate
+
+        // limit descent rate when we're near ground
+        int16_t max_speed_down = sqrt_controller(g2.land_alt_low-get_alt_above_ground_cm(), pos_control->get_pos_z_p().kP(), 
+                    pos_control->get_max_accel_z_cmss(), G_Dt);
+
+        // Constrain the demanded vertical velocity
+        uint16_t land_speed = abs(g.land_speed) > 0 ? abs(g.land_speed) : get_pilot_speed_dn();
+        max_speed_down = constrain_float(max_speed_down, -get_pilot_speed_dn(), -land_speed);
+
+        // get avoidance adjusted climb rate and constrain to max descent rate
         target_climb_rate = get_avoidance_adjusted_climbrate(target_climb_rate);
+        target_climb_rate = constrain_float(target_climb_rate, max_speed_down, g.pilot_speed_up);
+        pos_control->set_max_speed_accel_z(max_speed_down, g.pilot_speed_up, g.pilot_accel_z);
 
         // update the vertical offset based on the surface measurement
         copter.surface_tracking.update_surface_offset();

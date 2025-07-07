@@ -176,10 +176,21 @@ function update()
     -- automatic selection logic --
 
     local auto_source = EKF_SRC_UNDECIDED
+    local switch_to_loiter = false
+
+    -- if we switched to altitude_hold due to dangerous optical flow quality, switch back to loiter when quality is good
+    if opticalflow_state_dangerous then
+        if opticalflow_usable then
+            auto_source = EKF_SRC_OPTICALFLOW
+            switch_to_loiter = true
+        elseif gps_usable then
+            auto_source = EKF_SRC_GPS
+            switch_to_loiter = true
+        end
 
     -- altitude hold and stabilize: don't use opticalflow if rangefinder is out of range
     -- this is needed, otherwise EKF set to optical flow prevent vehicle to climb higher than 0.8*RNGFND_MAX_DIST
-    if vehicle:get_mode() <= 2 then
+    elseif vehicle:get_mode() <= 2 then
         if not opticalflow_usable then
             auto_source = EKF_SRC_GPS
         elseif rngfnd_distance_m < rangefinder_thresh_dist_fast_climb_m then
@@ -255,17 +266,14 @@ function update()
         gcs:send_text(4, "Auto switched to Source " .. string.format("%d", source_prev + 1))
     end
 
-    -- if we switched to altitude_hold due to dangerous optical flow quality, switch back to loiter when quality is good
-    local loiter_opticalflow_ok = opticalflow_usable and source_prev == EKF_SRC_OPTICALFLOW
-    local loiter_gps_ok = gps_usable and source_prev == EKF_SRC_GPS
-    if opticalflow_state_dangerous and (loiter_opticalflow_ok or loiter_gps_ok) then
-        gcs:send_text(MAV_SEVERITY.WARNING, "Loiter: OpticalFlow quality recovered")
+    -- switch back to loiter if opticalflow quality or gps is good
+    if switch_to_loiter then
         opticalflow_state_dangerous = false
+        gcs:send_text(MAV_SEVERITY.WARNING, "Loiter: OpticalFlow quality recovered")
         if vehicle:get_mode() == 2 then
             vehicle:set_mode(5)
         end
     end
-
     return update, 100
 end
 

@@ -44,6 +44,7 @@ local source_prev = EKF_SRC_OPTICALFLOW -- opticalflow for takeoff
 local gps_vs_opticalflow_vote = 0       -- vote counter for GPS vs optical (-20 = GPS, +20 = optical flow)
 local optical_flow_dangerous_count = 0  -- count of dangerous optical flow quality
 local opticalflow_state_dangerous = false
+local led_on_count = 0
 
 local PARAM_TABLE_KEY = 81
 PARAM_TABLE_PREFIX = "FLGP_"
@@ -286,10 +287,15 @@ function led(of_quality_acceptable, rng_over_threshold, rng_out_of_range)
         -- automatic mode
         if not arming:is_armed() then
             relay:off(0)
+            led_on_count = 0
         elseif rng_out_of_range and source_prev == EKF_SRC_GPS then
             relay:off(0)
+            led_on_count = 0
         elseif not of_quality_acceptable and not rng_over_threshold then
-            relay:on(0)
+            led_on_count = led_on_count + 1
+            if led_on_count > 8 then
+                relay:on(0)
+            end
         end
     elseif FLGP_LED:get() == 2 then
         -- always ON

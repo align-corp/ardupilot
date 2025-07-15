@@ -1,0 +1,18 @@
+include ../AP6/hwdef.dat
+
+# define custom Align frame code
+define ALIGN_FRAME ALIGN_M460
+
+# decrease arming delay
+define ARMING_DELAY_SEC 0.5f
+
+# Telemetry on Serial 1
+define DEFAULT_SERIAL1_BAUD 115
+
+# ESC Telemetry on Serial 5
+undef DEFAULT_SERIAL5_PROTOCOL
+define DEFAULT_SERIAL5_PROTOCOL SerialProtocol_ESCTelemetry
+define DEFAULT_SERIAL5_BAUD 115
+
+# list of files to put in ROMFS (Lua scripts)
+ROMFS scripts/motor_test.lua lua_scr/motor_test.lua

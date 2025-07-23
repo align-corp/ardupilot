@@ -70,7 +70,6 @@ function update()
 
         -- return if distance from home is < MINIMUM_RTL_DIST
         if distance_m < MINIMUM_RTL_DIST and alt < MINIMUM_RTL_DIST then
-            gcs:send_text(6, string.format("Distance from home = %.0f m, altitude = %.0f m, no RTH", distance_m, alt))
             return update, UPDATE_VOLTAGE_MS
         end
 
@@ -79,17 +78,11 @@ function update()
         local required_percent_down = alt * PERCENT_PER_METER_DOWN
         local required_percent = required_percent_horizontal + required_percent_down
 
-        -- Decide if RTL should be triggered
+        -- trigger RTL if battery is low
         if percent < (required_percent + MIN_SAFE_PERCENT) then
-            gcs:send_text(3, string.format("Low battery! %.1f%% remaining, %.1f%% needed for return",
-                                          percent, required_percent))
+            gcs:send_text(3, string.format("Low battery! %.1f%% remaining, start RTL", percent))
             vehicle:set_mode(RTL_MODE)
-        else
-            gcs:send_text(6, string.format("Battery OK: %.1f%% remaining, %.1f%% needed for return",
-                                          percent, required_percent))
         end
-    else
-        gcs:send_text(4, "Could not get home or current location")
     end
 
     return update, UPDATE_VOLTAGE_MS

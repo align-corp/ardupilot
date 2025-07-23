@@ -10,15 +10,15 @@ define ARMING_DELAY_SEC 0.5f
 # Telemetry on Serial 1
 define DEFAULT_SERIAL1_BAUD 115
 
-# MAVLink rangefinder on Serial2
+# MAVLink rangefinder on Serial2-3
 undef DEFAULT_SERIAL2_PROTOCOL
 define DEFAULT_SERIAL2_PROTOCOL SerialProtocol_MAVLink
 define DEFAULT_SERIAL2_BAUD 115
-
-# MAVLink rangefinder on Serial3
+define DEFAULT_SERIAL2_OPTIONS 1024
 undef DEFAULT_SERIAL3_PROTOCOL
 define DEFAULT_SERIAL3_PROTOCOL SerialProtocol_MAVLink
 define DEFAULT_SERIAL3_BAUD 115
+define DEFAULT_SERIAL3_OPTIONS 1024
 
 # PCU on Serial 4
 undef DEFAULT_SERIAL4_PROTOCOL

@@ -282,24 +282,24 @@ end
 function led(of_quality_acceptable, rng_over_threshold, rng_out_of_range)
     if FLGP_LED:get() == 0 then
         -- always OFF
-        relay:off(0)
+        relay:off(5)
     elseif FLGP_LED:get() == 1 then
         -- automatic mode
         if not arming:is_armed() then
-            relay:off(0)
+            relay:off(5)
             led_on_count = 0
         elseif rng_out_of_range and source_prev == EKF_SRC_GPS then
-            relay:off(0)
+            relay:off(5)
             led_on_count = 0
         elseif not of_quality_acceptable and not rng_over_threshold then
             led_on_count = led_on_count + 1
             if led_on_count > 8 then
-                relay:on(0)
+                relay:on(5)
             end
         end
     elseif FLGP_LED:get() == 2 then
         -- always ON
-        relay:on(0)
+        relay:on(5)
     end
 end
 

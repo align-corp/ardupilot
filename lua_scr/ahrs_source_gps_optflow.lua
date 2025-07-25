@@ -192,10 +192,17 @@ function update()
     -- altitude hold and stabilize: don't use opticalflow if rangefinder is out of range
     -- this is needed, otherwise EKF set to optical flow prevent vehicle to climb higher than 0.8*RNGFND_MAX_DIST
     elseif vehicle:get_mode() <= 2 then
-        if not opticalflow_usable then
+        if rngfnd_distance_m > rangefinder_thresh_dist_fast_climb_m then
+            -- immediately switch to GPS if we're over rangefinder_thresh_dist_fast_climb_m
             auto_source = EKF_SRC_GPS
-        elseif rngfnd_distance_m < rangefinder_thresh_dist_fast_climb_m then
-            auto_source = EKF_SRC_OPTICALFLOW
+            gps_vs_opticalflow_vote = -VOTE_COUNT_MAX
+        elseif opticalflow_usable then
+            -- vote for opticalflow, to prevent switching up and down between GPS and opticalflow
+            gps_vs_opticalflow_vote = gps_vs_opticalflow_vote + 1
+            if gps_vs_opticalflow_vote >= VOTE_COUNT_MAX then
+                auto_source = EKF_SRC_OPTICALFLOW
+                gps_vs_opticalflow_vote = VOTE_COUNT_MAX
+            end
         end
 
     -- modes that requires position

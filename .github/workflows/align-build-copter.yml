@@ -29,8 +29,10 @@ jobs:
             AP6-M4P,
             AP6-M4P-G3P,
             AP6-M450,
-            AP6-M450-gps,
+            AP6-M450-no-gps,
             AP6-M450-G3P,
+            AP6-M450-OF,
+            AP6-M450-A10-OF,
             AP6-SoH,
         ]
 

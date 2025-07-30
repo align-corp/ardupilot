@@ -78,6 +78,9 @@ local FLGP_FLOW_QUAL = bind_add_param('FLOW_QUAL', 3, 60)
 -- Down LED control 1:Automatic, 2:Always ON, 0:Always OFF
 local FLGP_LED = bind_add_param('LED', 5, 1)
 
+-- use SCR_USER6 for A10 control via RC switch
+local SCR_USER6 = bind_param('SCR_USER6')
+
 assert(optical_flow, 'could not access optical flow')
 
 -- get roll and pitch channels
@@ -103,6 +106,19 @@ function update()
             gcs:send_text(0, "FLGP disabled: switched to Source " .. string.format("%d", source_prev + 1))
         end
         return update, 100
+    end
+
+    -- use SCR_USER6 for A10 control via RC switch (pwm CH8)
+    if SCR_USER6:get() == 1 then
+        if rc:get_pwm(8) < 1300 then
+            -- always use GPS
+            if source_prev ~= EKF_SRC_GPS then
+                source_prev = EKF_SRC_GPS
+                ahrs:set_posvelyaw_source_set(source_prev) -- switch to GPS
+                gcs:send_text(0, "FLGP disabled: switched to Source " .. string.format("%d", source_prev + 1))
+            end
+        return update, 100
+        end
     end
 
     -- check optical flow quality threshold has been set

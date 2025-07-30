@@ -117,7 +117,7 @@ function update()
                 ahrs:set_posvelyaw_source_set(source_prev) -- switch to GPS
                 gcs:send_text(0, "FLGP disabled: switched to Source " .. string.format("%d", source_prev + 1))
             end
-        return update, 100
+            return update, 100
         end
     end
 

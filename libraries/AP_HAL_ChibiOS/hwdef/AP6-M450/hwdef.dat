@@ -1,7 +1,8 @@
+
 include ../AP6/hwdef.dat
 
 # define custom Align frame code
-define ALIGN_FRAME ALIGN_M450
+define ALIGN_FRAME ALIGN_M450_GPS
 
 # use flight mode switch for compass calibration
 define FLTMODE_SWITCH_COMPASS_CALIBRATION
@@ -34,3 +35,5 @@ define DEFAULT_SERIAL5_BAUD 115
 
 # list of files to put in ROMFS (Lua scripts)
 ROMFS scripts/battery_6s.lua lua_scr/battery_6s.lua
+ROMFS scripts/rng_auto.lua lua_scr/rng_auto.lua
+ROMFS scripts/led_4.lua lua_scr/led_4.lua

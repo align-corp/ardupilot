@@ -48,6 +48,7 @@ class AP_Mount_Scripting;
 class AP_Mount_Xacti;
 class AP_Mount_Viewpro;
 class AP_Mount_G3P;
+class AP_Mount_Skydroid_C13;
 
 /*
   This is a workaround to allow the MAVLink backend access to the
@@ -69,6 +70,7 @@ class AP_Mount
     friend class AP_Mount_Xacti;
     friend class AP_Mount_Viewpro;
     friend class AP_Mount_G3P;
+    friend class AP_Mount_Skydroid_C13;
 
 public:
     AP_Mount();
@@ -119,6 +121,9 @@ public:
 #endif
 #if HAL_MOUNT_G3P_ENABLED
         G3P = 30,
+#endif
+#if HAL_MOUNT_SKYDROID_C13_ENABLED
+        Skydroid_C13 = 31,
 #endif
     };
 

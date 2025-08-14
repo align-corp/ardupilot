@@ -16,6 +16,7 @@
 #include "AP_Mount_Xacti.h"
 #include "AP_Mount_Viewpro.h"
 #include "AP_Mount_G3P.h"
+#include "AP_Mount_Skydroid_C13.h"
 #include <stdio.h>
 #include <AP_Math/location.h>
 #include <SRV_Channel/SRV_Channel.h>
@@ -158,6 +159,13 @@ void AP_Mount::init()
             _num_instances++;
             break;
 #endif // HAL_MOUNT_G3P_ENABLED
+#if HAL_MOUNT_SKYDROID_C13_ENABLED
+        // check for Skydroid C13 gimbal
+        case Type::Skydroid_C13:
+            _backends[instance] = new AP_Mount_Skydroid_C13(*this, _params[instance], instance);
+            _num_instances++;
+            break;
+#endif // HAL_MOUNT_SKYDROID_C13_ENABLED
         }
 
         // init new instance

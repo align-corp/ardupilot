@@ -5,3 +5,7 @@
 #ifndef AP_FOLLOW_ENABLED
 #define AP_FOLLOW_ENABLED 1
 #endif
+
+#ifndef AP_FOLLOW_MOUNT_ENABLED
+#define AP_FOLLOW_MOUNT_ENABLED 1
+#endif

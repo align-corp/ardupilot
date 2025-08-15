@@ -1058,6 +1058,9 @@ private:
 #if MODE_TURTLE_ENABLED == ENABLED
     ModeTurtle mode_turtle;
 #endif
+#if MODE_TRACK_ENABLED == ENABLED
+    ModeTrack mode_track;
+#endif
 
     // mode.cpp
     Mode *mode_from_mode_num(const Mode::Number mode);

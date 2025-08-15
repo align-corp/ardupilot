@@ -39,7 +39,8 @@ public:
     void init() override;
 
     // update mount position - should be called periodically
-    void update() override;
+    void update() override {}
+    void update_fast() override;
 
     // return true if healthy
     bool healthy() const override;

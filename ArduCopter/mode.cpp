@@ -179,6 +179,12 @@ Mode *Copter::mode_from_mode_num(const Mode::Number mode)
             break;
 #endif
 
+#if MODE_TRACK_ENABLED == ENABLED
+        case Mode::Number::TRACK:
+            ret = &mode_track;
+            break;
+#endif
+
         default:
             break;
     }

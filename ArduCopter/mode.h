@@ -95,6 +95,7 @@ public:
         AUTOROTATE =   26,  // Autonomous autorotation
         AUTO_RTL =     27,  // Auto RTL, this is not a true mode, AUTO will report as this mode if entered to perform a DO_LAND_START Landing sequence
         TURTLE =       28,  // Flip over after crash
+        TRACK =        29,  // Follow a target provided by a supported camera
 
         // Mode number 127 reserved for the "drone show mode" in the Skybrush
         // fork at https://github.com/skybrush-io/ardupilot
@@ -1823,6 +1824,33 @@ protected:
     int32_t wp_bearing() const override;
 
     uint32_t last_log_ms;   // system time of last time desired velocity was logging
+};
+#endif
+
+#if AP_FOLLOW_MOUNT_ENABLED
+class ModeTrack : public ModeGuided {
+
+public:
+
+    // inherit constructor
+    using ModeGuided::Mode;
+    Number mode_number() const override { return Number::TRACK; }
+
+    bool init(bool ignore_checks) override;
+    void exit() override;
+    void run() override;
+
+    bool requires_GPS() const override { return true; }
+    bool has_manual_throttle() const override { return false; }
+    bool allows_arming(AP_Arming::Method method) const override { return false; }
+    bool is_autopilot() const override { return true; }
+
+    uint32_t last_log_ms;   // system time of last time desired velocity was logging
+    uint16_t distance_cm;   // distance from target in cm
+protected:
+
+    const char *name() const override { return "TRACK"; }
+    const char *name4() const override { return "TRAC"; }
 };
 #endif
 

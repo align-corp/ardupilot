@@ -5,8 +5,10 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_SerialManager/AP_SerialManager.h>
+#include <AP_Follow/AP_Follow_Mount.h>
 
 extern const AP_HAL::HAL& hal;
+const AP_Follow_Mount &follow = AP::follow_mount();
 
 #define AP_MOUNT_C13_DEBUG 1
 
@@ -42,7 +44,7 @@ void AP_Mount_Skydroid_C13::init()
 }
 
 // update mount position - should be called periodically
-void AP_Mount_Skydroid_C13::update()
+void AP_Mount_Skydroid_C13::update_fast()
 {
     // exit immediately if not initialised
     if (!_initialised) {
@@ -229,6 +231,18 @@ void AP_Mount_Skydroid_C13::process_packet()
                 _target_ned_offset_m.y = distance_m * cos(target_elevation) * sin(target_bearing);  // East
                 _target_ned_offset_m.z = -distance_m * sin(target_elevation);                       // Down
                 
+                // Update follow struct
+                AP_Follow_Mount::MountTracking tracking;
+                tracking.last_update_ms = _last_tracking_data_ms;
+                tracking.yaw_error_rad = target_bearing;
+                tracking.pitch_error_rad = target_elevation;
+                tracking.crop_width = tracking_data->target_width;
+                tracking.crop_height = tracking_data->target_height;
+                tracking.distance_cm = tracking_data->laser_distance * 10;
+                if (!follow.set_mount_tracking(tracking)) {
+                    debug("Error set_mount_tracking");
+                }
+                
 #if AP_MOUNT_C13_DEBUG
                 // Send tracking info to GCS every one second
                 static uint32_t last_tracking_report_ms = 0;
@@ -240,11 +254,11 @@ void AP_Mount_Skydroid_C13::process_packet()
                 }
 #endif
                 
-                // Here you could integrate with ArduPilot's guided mode for follow-me
-                // send_guided_position_target(_target_ned_offset_m);
-                
             } else if (tracking_data->status == 3) {
                 // Tracking error/lost
+                if (!follow.set_is_tracking(false)) {
+                    debug("Error set_mount_tracking");
+                }
                 debug("Skydroid: Target lost");
                 _tracking_active = false;
             }

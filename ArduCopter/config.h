@@ -199,6 +199,12 @@
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
+// Follow Mount - follow an object track by a supported camera
+#ifndef MODE_TRACK_ENABLED
+# define MODE_TRACK_ENABLED AP_FOLLOW_MOUNT_ENABLED
+#endif
+
+//////////////////////////////////////////////////////////////////////////////
 // Guided mode - control vehicle's position or angles from GCS
 #ifndef MODE_GUIDED_ENABLED
 # define MODE_GUIDED_ENABLED ENABLED

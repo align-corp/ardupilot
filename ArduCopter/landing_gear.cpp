@@ -12,6 +12,11 @@ void Copter::landinggear_update()
     }
 #endif
 
+    // don't automatic deploy/retract landing gear if in RTL or LAND
+    if (flightmode->is_landing()) {
+        return;
+    }
+
     // support height based triggering using rangefinder or altitude above ground
     int32_t height_cm = flightmode->get_alt_above_ground_cm();
 

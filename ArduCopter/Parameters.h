@@ -13,6 +13,9 @@
 #if MODE_FOLLOW_ENABLED == ENABLED
  # include <AP_Follow/AP_Follow.h>
 #endif
+#if MODE_TRACK_ENABLED == ENABLED
+ # include <AP_Follow/AP_Follow_Mount.h>
+#endif
 #if WEATHERVANE_ENABLED == ENABLED
  #include <AC_AttitudeControl/AC_WeatherVane.h>
 #endif
@@ -599,6 +602,11 @@ public:
 #if MODE_FOLLOW_ENABLED == ENABLED
     // follow
     AP_Follow follow;
+#endif
+
+#if MODE_TRACK_ENABLED == ENABLED
+    // follow mount
+    AP_Follow_Mount follow_mount;
 #endif
 
 #if USER_PARAMS_ENABLED == ENABLED

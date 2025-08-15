@@ -1190,6 +1190,11 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
 #endif
 
     // ID 60 is reserved for the SHIP_OPS
+#if AP_FOLLOW_MOUNT_ENABLED
+    // @Group: TRACK
+    // @Path: ../libraries/AP_Follow/AP_Follow_Mount.cpp
+    AP_SUBGROUPINFO(follow_mount, "TRACK", 60, ParametersG2, AP_Follow_Mount),
+#endif
 
     // extend to a new group
     AP_SUBGROUPEXTENSION("", 61, ParametersG2, var_info2),
@@ -1197,11 +1202,6 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // ID 62 is reserved for the SHOW_... parameters from the Skybrush fork at
     // https://github.com/skybrush-io/ardupilot
 
-#if AP_FOLLOW_MOUNT_ENABLED
-    // @Group: TRACK
-    // @Path: ../libraries/AP_Follow/AP_Follow_Mount.cpp
-    AP_SUBGROUPINFO(follow, "TRACK", 63, ParametersG2, AP_Follow_Mount),
-#endif
 
     AP_GROUPEND
 };

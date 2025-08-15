@@ -38,6 +38,11 @@ void Copter::landinggear_update()
         break;
     }
 
+    // don't automatic deploy/retract landing gear if in RTL or LAND
+    if (flightmode->is_landing()) {
+        return;
+    }
+
     landinggear.update(height_cm * 0.01f); // convert cm->m for update call
 }
 

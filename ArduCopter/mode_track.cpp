@@ -45,9 +45,9 @@ void ModeTrack::run()
     AP_Follow_Mount::MountTracking tracking;
     
     if(g2.follow_mount.have_target() && g2.follow_mount.get_mount_tracking(tracking)) {
+        const float yaw_err_cds = degrees(tracking.yaw_error_rad) * 100.0f;
         const float yaw_kp = g2.follow_mount.get_yaw_p().kP();
-        yaw_rate = tracking.yaw_error_rad * yaw_kp;
-
+        yaw_rate = yaw_err_cds * yaw_kp;
     }
 
     // log output at 10hz

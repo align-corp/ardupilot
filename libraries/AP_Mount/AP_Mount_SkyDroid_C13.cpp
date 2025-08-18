@@ -241,7 +241,7 @@ void AP_Mount_Skydroid_C13::process_packet()
                     debug("Error set_mount_tracking");
                 }
                 
-#if AP_MOUNT_C13_DEBUG
+#ifdef AP_MOUNT_C13_DEBUG
                 // Send tracking info to GCS every 5 seconds
                 static uint32_t last_tracking_report_ms = 0;
                 if (AP_HAL::millis() - last_tracking_report_ms >= 5000) {

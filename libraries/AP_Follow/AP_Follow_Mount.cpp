@@ -28,7 +28,8 @@
 extern const AP_HAL::HAL& hal;
 
 #define AP_FOLLOW_TIMEOUT_MS    3000    // position estimate timeout after 1 second
-#define AP_FOLLOW_POS_P_DEFAULT 0.1f    // position error gain default
+#define AP_FOLLOW_MOUNT_YAW_DEFAULT 0.8f
+#define AP_FOLLOW_MOUNT_X_DEFAULT 0.2f
 
 #if APM_BUILD_TYPE(APM_BUILD_ArduPlane)
 #define AP_FOLLOW_ALT_TYPE_DEFAULT 0
@@ -73,7 +74,7 @@ const AP_Param::GroupInfo AP_Follow_Mount::var_info[] = {
    already know that we should setup the proximity sensor
 */
 AP_Follow_Mount::AP_Follow_Mount() :
-        _p_x(AP_FOLLOW_POS_P_DEFAULT), _p_yaw(AP_FOLLOW_POS_P_DEFAULT)
+        _p_x(AP_FOLLOW_MOUNT_X_DEFAULT ), _p_yaw(AP_FOLLOW_MOUNT_YAW_DEFAULT )
 {
     _singleton = this;
     AP_Param::setup_object_defaults(this, var_info);

@@ -10,8 +10,6 @@
 extern const AP_HAL::HAL& hal;
 const AP_Follow_Mount &follow = AP::follow_mount();
 
-#define AP_MOUNT_C13_DEBUG 1
-
 #ifdef AP_MOUNT_C13_DEBUG
 #define debug(fmt, args ...)  do {hal.console->printf("%s:%d: " fmt "\n", __FUNCTION__, __LINE__, ## args); } while(0)
 #else
@@ -223,7 +221,7 @@ void AP_Mount_Skydroid_C13::process_packet()
                 float distance_m = tracking_data->laser_distance * 0.1f;
                 
                 // Target bearing relative to gimbal
-                float target_bearing = _current_angle_rad.z + h_offset_rad;
+                float target_bearing = -_current_angle_rad.z - h_offset_rad;
                 float target_elevation = _current_angle_rad.y + v_offset_rad;
                 
                 // Convert to NED offset from drone
@@ -244,9 +242,9 @@ void AP_Mount_Skydroid_C13::process_packet()
                 }
                 
 #if AP_MOUNT_C13_DEBUG
-                // Send tracking info to GCS every one second
+                // Send tracking info to GCS every 5 seconds
                 static uint32_t last_tracking_report_ms = 0;
-                if (AP_HAL::millis() - last_tracking_report_ms >= 1000) {
+                if (AP_HAL::millis() - last_tracking_report_ms >= 5000) {
                     debug("Tracking: dist %.1fm, bearing %.0f°, elevation%.0f°, width %u, height %u, conf %u%%",
                               distance_m, degrees(target_bearing), degrees(target_elevation),
                               tracking_data->target_width, tracking_data->target_height, tracking_data->confidence);

@@ -1836,6 +1836,7 @@ public:
     bool is_autopilot() const override { return true; }
 
     uint32_t last_log_ms;   // system time of last time desired velocity was logging
+    uint16_t distance_cm;   // distance from target in cm
 protected:
 
     const char *name() const override { return "TRACK"; }

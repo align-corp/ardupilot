@@ -1,0 +1,31 @@
+include ../AP6m/hwdef.dat
+
+# Simulation on Hardware
+include ../include/SimOnHW.inc
+AUTOBUILD_TARGETS Copter
+
+# define custom Align frame code
+define ALIGN_FRAME ALIGN_M3
+
+# use custom Align Status LED
+define ALIGN_RGB_STATUS_LED
+
+# decrease arming delay
+define ARMING_DELAY_SEC 0.5f
+
+# bootloader embedding / bootloader flashing not available
+define AP_BOOTLOADER_FLASHING_ENABLED 0
+
+# undef external I2C (LED connected)
+undef PB10
+undef PB11 
+
+#undef IMU to prevent INS_MAX_INSTANCES redefinition
+undef IMU
+
+# enable mount
+undef HAL_MOUNT_ENABLED
+define HAL_MOUNT_ENABLED 1
+
+# list of files to put in ROMFS (Lua scripts)
+ROMFS scripts/led_M3.lua lua_scr/led_M3.lua

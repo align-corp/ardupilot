@@ -21,5 +21,4 @@ PB11 EXTERN_GPIO93 OUTPUT LOW GPIO(93) # Power Enable
 # list of files to put in ROMFS (Lua scripts)
 ROMFS scripts/battery_6s.lua lua_scr/battery_6s.lua
 ROMFS scripts/rng_auto.lua lua_scr/rng_auto.lua
-ROMFS scripts/ahrs_source_gps_optflow.lua lua_scr/ahrs_source_gps_optflow.lua
 ROMFS scripts/led_M3.lua lua_scr/led_M3.lua

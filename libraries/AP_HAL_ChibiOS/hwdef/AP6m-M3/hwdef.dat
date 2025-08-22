@@ -12,12 +12,6 @@ define ARMING_DELAY_SEC 0.5f
 # bootloader embedding / bootloader flashing not available
 define AP_BOOTLOADER_FLASHING_ENABLED 0
 
-# external I2C for LED control (GPIO)
-undef PB10
-undef PB11 
-PB10 EXTERN_GPIO92 OUTPUT LOW GPIO(92) # Power Enable
-PB11 EXTERN_GPIO93 OUTPUT LOW GPIO(93) # Power Enable
-
 # list of files to put in ROMFS (Lua scripts)
 ROMFS scripts/battery_6s.lua lua_scr/battery_6s.lua
 ROMFS scripts/rng_auto.lua lua_scr/rng_auto.lua

@@ -41,7 +41,7 @@ void ModeTrack::run()
     // variables to be sent to velocity controller
     Vector3f desired_velocity_body_frame_cms;
     float yaw_rate = 0.0f;
-    const float max_speed_cms = MAX(wp_nav->get_default_speed_xy(), 200.0f);
+    const float max_speed_cms = MIN(wp_nav->get_default_speed_xy(), 400.0f);
 
     AP_Follow_Mount::MountTracking tracking;
     
@@ -62,8 +62,8 @@ void ModeTrack::run()
             const uint16_t x_pos_error_cm = tracking.distance_cm - distance_cm;
             const float x_kp = g2.follow_mount.get_forward_p().kP();
             desired_velocity_body_frame_cms.x = x_pos_error_cm * x_kp;
-            // constrain forward speed to 2 m/s
-            desired_velocity_body_frame_cms.x = constrain_float(desired_velocity_body_frame_cms.x, -200.0f, 200.0f);
+            // constrain forward speed
+            desired_velocity_body_frame_cms.x = constrain_float(desired_velocity_body_frame_cms.x, -max_speed_cms, max_speed_cms);
         }
     } else {
         // reset desired target distance
@@ -93,6 +93,13 @@ void ModeTrack::run()
             desired_velocity_body_frame_cms.z = pilot_climb_rate;
     }
 
+    // convert body frame velocity to NEU
+    Vector3f desired_velocity_neu_cms;
+    const float yaw_rad = AP::ahrs().get_yaw();
+    desired_velocity_neu_cms.x = desired_velocity_body_frame_cms.x * cosf(yaw_rad) - desired_velocity_body_frame_cms.y * sinf(yaw_rad);
+    desired_velocity_neu_cms.y = desired_velocity_body_frame_cms.x * sinf(yaw_rad) + desired_velocity_body_frame_cms.y * cosf(yaw_rad);
+    desired_velocity_neu_cms.z = desired_velocity_body_frame_cms.z;
+
     // log output at 10hz
     uint32_t now = AP_HAL::millis();
     bool log_request = false;
@@ -100,13 +107,6 @@ void ModeTrack::run()
         log_request = true;
         last_log_ms = now;
     }
-
-    // convert body frame velocity to NEU
-    Vector3f desired_velocity_neu_cms;
-    const float yaw_rad = AP::ahrs().get_yaw();
-    desired_velocity_neu_cms.x = desired_velocity_body_frame_cms.x * cosf(yaw_rad) - desired_velocity_body_frame_cms.y * sinf(yaw_rad);
-    desired_velocity_neu_cms.y = desired_velocity_body_frame_cms.x * sinf(yaw_rad) + desired_velocity_body_frame_cms.y * cosf(yaw_rad);
-    desired_velocity_neu_cms.z = desired_velocity_body_frame_cms.z;
 
     // re-use guided mode's velocity controller (takes NEU)
     ModeGuided::set_velocity(desired_velocity_neu_cms, false, 0.0f, true, yaw_rate, false, log_request);

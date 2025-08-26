@@ -19,18 +19,14 @@ jobs:
       matrix:
         copter: [
             AP6-M460,
-            AP6-M460-G3P,
             AP6-M460-A10,
             AP6-M490,
-            AP6-M490-G3P,
             AP6-M490-A10,
             AP6-M6T22,
             AP6-M4T12,
             AP6-M4P,
-            AP6-M4P-G3P,
             AP6-M450,
             AP6-M450-no-gps,
-            AP6-M450-G3P,
             AP6-M450-OF,
             AP6-M450-A10-OF,
             AP6-SoH,
@@ -68,13 +64,8 @@ jobs:
       matrix:
         heli: [
             AP6-E1,
-            AP6-E1-G3P,
             AP6-E1v2,
-            AP6-E1v2-G3P,
             AP6-E2,
-            AP6-E2-G3P,
-            AP6-TB70,
-            AP6-TB70-AT12,
         ]
 
     steps:

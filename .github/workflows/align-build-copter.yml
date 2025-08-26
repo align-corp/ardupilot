@@ -46,6 +46,7 @@ jobs:
           git config --global --add safe.directory ${GITHUB_WORKSPACE}
           PATH="/usr/lib/ccache:/opt/gcc-arm-none-eabi-10/bin:$PATH"
           PATH="/github/home/.local/bin:$PATH"
+          python3 Tools/scripts/align_params_modifier.py
           ./waf configure --board ${{matrix.copter}}
           ./waf clean
           ./waf copter
@@ -79,6 +80,7 @@ jobs:
           git config --global --add safe.directory ${GITHUB_WORKSPACE}
           PATH="/usr/lib/ccache:/opt/gcc-arm-none-eabi-10/bin:$PATH"
           PATH="/github/home/.local/bin:$PATH"
+          python3 Tools/scripts/align_params_modifier.py
           ./waf configure --board ${{matrix.heli}}
           ./waf clean
           ./waf heli

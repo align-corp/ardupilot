@@ -5,21 +5,20 @@
 ----------------------------------------------
 local BATTERY_CELLS = 6
 local VOLTAGE_TO_PERCENT_TABLE = {
-    {3.3, 0},
-    {3.4, 9},
-    {3.5, 26},
-    {3.6, 44},
-    {3.7, 59},
-    {3.8, 70},
+    {3.4, 0},
+    {3.5, 4},
+    {3.6, 11},
+    {3.7, 42},
+    {3.8, 65},
     {3.9, 79},
     {4.0, 90},
     {4.1, 100}
 }
 
 -- %/m = 1/(SPEED[m/s]*36*BATT_CAPACITY[Ah]/CRUISE_CURRENT[A])
-local PERCENT_PER_METER = 0.015  -- Battery percentage consumed per meter of travel
+local PERCENT_PER_METER = 0.012 -- Battery percentage consumed per meter of travel
 local PERCENT_PER_METER_DOWN = 0.03  -- Battery percentage consumed per meter of travel
-local MIN_SAFE_PERCENT = 5    -- Minimum battery percentage needed to return home
+local MIN_SAFE_PERCENT = 7    -- Minimum battery percentage needed to return home
 local MINIMUM_RTL_DIST = 30  -- Minimum distance from home to trigger RTL
 
 ----------------------------------------------

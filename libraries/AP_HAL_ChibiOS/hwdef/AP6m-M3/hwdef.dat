@@ -16,3 +16,4 @@ define AP_BOOTLOADER_FLASHING_ENABLED 0
 ROMFS scripts/battery_6s.lua lua_scr/battery_6s.lua
 ROMFS scripts/rng_auto.lua lua_scr/rng_auto.lua
 ROMFS scripts/led_M3.lua lua_scr/led_M3.lua
+ROMFS scripts/rtl_dist.lua lua_scr/rtl_dist_M3.lua

@@ -62,6 +62,8 @@ bool AP_BoardLED_Align::init(void)
     /* hal.gpio->pinMode(HAL_GPIO_B_LED_PIN, HAL_GPIO_OUTPUT); */
     /* hal.gpio->pinMode(HAL_GPIO_C_LED_PIN, HAL_GPIO_OUTPUT); */
     /* hal.gpio->pinMode(HAL_GPIO_D_LED_PIN, HAL_GPIO_OUTPUT); */
+    _check_voltage_ms = 0;
+    AP_Notify::flags.align_led_priority = true;
     return true;
 }
 
@@ -82,8 +84,6 @@ void AP_BoardLED_Align::update(void)
         case State::START:
             // Set turning off flag
             AP_Notify::flags.powering_off = false;
-            _state = State::TURNING_ON;
-            break;
 
             // Turn all LED off
             hal.gpio->write(HAL_GPIO_A_LED_PIN, HAL_GPIO_LED_OFF);
@@ -95,7 +95,7 @@ void AP_BoardLED_Align::update(void)
             if (hal.gpio->read(HAL_GPIO_BUTTON_PIN) == HAL_GPIO_BUTTON_PRESSED) {
                 _state = State::LED1_ON;
             } else {
-                _state = State::TURNING_OFF;
+                _state = State::CHECK_VOLTAGE;
             }
             break;
 
@@ -107,7 +107,7 @@ void AP_BoardLED_Align::update(void)
             if (hal.gpio->read(HAL_GPIO_BUTTON_PIN) == HAL_GPIO_BUTTON_PRESSED) {
                 _state = State::LED2_ON;
             } else {
-                _state = State::TURNING_OFF;
+                _state = State::CHECK_VOLTAGE;
             }
             break;
 
@@ -119,7 +119,7 @@ void AP_BoardLED_Align::update(void)
             if (hal.gpio->read(HAL_GPIO_BUTTON_PIN) == HAL_GPIO_BUTTON_PRESSED) {
                 _state = State::LED3_ON;
             } else {
-                _state = State::TURNING_OFF;
+                _state = State::CHECK_VOLTAGE;
             }
             break;
 
@@ -131,7 +131,7 @@ void AP_BoardLED_Align::update(void)
             if (hal.gpio->read(HAL_GPIO_BUTTON_PIN) == HAL_GPIO_BUTTON_PRESSED) {
                 _state = State::LED4_ON;
             } else {
-                _state = State::TURNING_OFF;
+                _state = State::CHECK_VOLTAGE;
             }
             break;
 
@@ -142,8 +142,10 @@ void AP_BoardLED_Align::update(void)
             // Check button
             if (hal.gpio->read(HAL_GPIO_BUTTON_PIN) == HAL_GPIO_BUTTON_PRESSED) {
                 _state = State::TURNING_ON;
+                // we don't need anymore LED priority
+                AP_Notify::flags.align_led_priority = false;
             } else {
-                _state = State::TURNING_OFF;
+                _state = State::CHECK_VOLTAGE;
             }
             break;
 
@@ -265,7 +267,27 @@ void AP_BoardLED_Align::update(void)
             break;
 
         case State::DIE_HERE:
-            // Do nothing
+            // turn ON if button is pressed again (useful only if USB is connected)
+            if (hal.gpio->read(HAL_GPIO_BUTTON_PIN) == HAL_GPIO_BUTTON_PRESSED) {
+                // Turn main systems ON
+                AP_Notify::flags.powering_off = false;
+                hal.gpio->write(HAL_GPIO_MAIN_POWER_PIN, !HAL_GPIO_POWER_OFF); 
+                _state = State::START;
+            }
+            break;
+
+        case State::CHECK_VOLTAGE:
+            // Update LED based on battery voltage
+            if (_check_voltage_ms == 0) {
+                _check_voltage_ms = now_ms;
+            } else if (now_ms - _check_voltage_ms > 3000) {
+                // turn off after 3 seconds
+                _check_voltage_ms = 0;
+                _state = State::TURNING_OFF;
+                // we don't need anymore LED priority
+                AP_Notify::flags.align_led_priority = false;
+            }
+            set_led_from_voltage();
             break;
 
         default:

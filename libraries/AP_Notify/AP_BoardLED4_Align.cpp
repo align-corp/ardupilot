@@ -34,12 +34,20 @@ static_assert((HAL_GPIO_A_LED_PIN != HAL_GPIO_B_LED_PIN) &&
 #define HAL_GPIO_BUTTON_PRESSED 1
 #endif
 
-#ifndef LED_BATT_VOLT_MAX
-#define LED_BATT_VOLT_MAX 25.2f // 4.2 * 6
+#ifndef ALIGN_LED_BATT_80
+#define ALIGN_LED_BATT_80 23.4f
 #endif
 
-#ifndef LED_BATT_VOLT_MIN
-#define LED_BATT_VOLT_MIN 21.6f // 3.6 * 6
+#ifndef ALIGN_LED_BATT_60
+#define ALIGN_LED_BATT_60 22.6f
+#endif
+
+#ifndef ALIGN_LED_BATT_40
+#define ALIGN_LED_BATT_40 22.2f
+#endif
+
+#ifndef ALIGN_LED_BATT_20
+#define ALIGN_LED_BATT_20 21.6f
 #endif
 
 extern const AP_HAL::HAL& hal;
@@ -267,7 +275,6 @@ void AP_BoardLED_Align::update(void)
 
 void AP_BoardLED_Align::set_led_from_voltage()
 {
-    const float volt_step = (LED_BATT_VOLT_MAX - LED_BATT_VOLT_MIN) / 4.0f;
     float voltage = batt.voltage(0);
 
     // control LED based on battery voltage
@@ -275,7 +282,7 @@ void AP_BoardLED_Align::set_led_from_voltage()
     /*     // battery monitor is not ready */
     /*     return; */
     /* } */
-    if (voltage < LED_BATT_VOLT_MIN) {
+    if (voltage < ALIGN_LED_BATT_20) {
         // toggle works only if first all LEDs are ON
         if (led_flash_first) {
             led_flash_first = false;
@@ -290,19 +297,19 @@ void AP_BoardLED_Align::set_led_from_voltage()
             hal.gpio->toggle(HAL_GPIO_C_LED_PIN);
             hal.gpio->toggle(HAL_GPIO_D_LED_PIN);
         }
-    } else if (voltage < LED_BATT_VOLT_MIN + volt_step) {
+    } else if (voltage < ALIGN_LED_BATT_40) {
         led_flash_first = true;
         hal.gpio->write(HAL_GPIO_A_LED_PIN, HAL_GPIO_LED_ON);
         hal.gpio->write(HAL_GPIO_B_LED_PIN, HAL_GPIO_LED_OFF);
         hal.gpio->write(HAL_GPIO_C_LED_PIN, HAL_GPIO_LED_OFF);
         hal.gpio->write(HAL_GPIO_D_LED_PIN, HAL_GPIO_LED_OFF);
-    } else if (voltage < LED_BATT_VOLT_MIN + 2 * volt_step) {
+    } else if (voltage < ALIGN_LED_BATT_60) {
         led_flash_first = true;
         hal.gpio->write(HAL_GPIO_A_LED_PIN, HAL_GPIO_LED_ON);
         hal.gpio->write(HAL_GPIO_B_LED_PIN, HAL_GPIO_LED_ON);
         hal.gpio->write(HAL_GPIO_C_LED_PIN, HAL_GPIO_LED_OFF);
         hal.gpio->write(HAL_GPIO_D_LED_PIN, HAL_GPIO_LED_OFF);
-    } else if (voltage < LED_BATT_VOLT_MIN + 3 * volt_step) {
+    } else if (voltage < ALIGN_LED_BATT_80) {
         led_flash_first = true;
         hal.gpio->write(HAL_GPIO_A_LED_PIN, HAL_GPIO_LED_ON);
         hal.gpio->write(HAL_GPIO_B_LED_PIN, HAL_GPIO_LED_ON);

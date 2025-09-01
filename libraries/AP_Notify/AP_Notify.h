@@ -142,7 +142,7 @@ public:
         bool temp_cal_running;    // true if a temperature calibration is running
         bool gyro_calibrated;     // true if calibrated gyro/acc
 #ifdef ALIGN_BATTERY_PANEL
-        bool align_turning_off;   // true if align vehicle is turning off
+        bool align_led_priority;  // true if LED require priority to ensure smooth animation
 #endif
     };
 

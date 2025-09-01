@@ -64,6 +64,8 @@ bool AP_BoardLED_Align::init(void)
     /* hal.gpio->pinMode(HAL_GPIO_D_LED_PIN, HAL_GPIO_OUTPUT); */
     _check_voltage_ms = 0;
     AP_Notify::flags.align_led_priority = true;
+    _state = State::START;
+    _last_update_ms = 0;
     return true;
 }
 
@@ -85,6 +87,15 @@ void AP_BoardLED_Align::update(void)
             // Set turning off flag
             AP_Notify::flags.powering_off = false;
 
+            // Check if this is a watchdog reset or a software reset
+            if (hal.util->was_watchdog_reset() || hal.util->was_software_reset()) {
+                // Skip manual sequence for reboot only near reboot
+                if (now_ms < 5000) {
+                    _state = State::ON;
+                    AP_Notify::flags.align_led_priority = false;
+                    break;
+                }
+            }
             // Turn all LED off
             hal.gpio->write(HAL_GPIO_A_LED_PIN, HAL_GPIO_LED_OFF);
             hal.gpio->write(HAL_GPIO_B_LED_PIN, HAL_GPIO_LED_OFF);

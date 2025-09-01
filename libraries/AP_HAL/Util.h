@@ -23,6 +23,9 @@ public:
     // return true if the reason for the reboot was a watchdog reset
     virtual bool was_watchdog_reset() const { return false; }
 
+    // return true if the reason for the reboot was a software reset
+    virtual bool was_software_reset() const { return false; }
+
     // return true if safety was off and this was a watchdog reset
     bool was_watchdog_safety_off() const {
         return was_watchdog_reset() && persistent_data.safety_state == SAFETY_ARMED;

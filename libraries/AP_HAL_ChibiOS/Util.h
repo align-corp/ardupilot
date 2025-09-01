@@ -74,6 +74,9 @@ public:
     // return true if the reason for the reboot was a watchdog reset
     bool was_watchdog_reset() const override;
 
+    // return true if the reason for the reboot was a software reset
+    bool was_software_reset() const override;
+
 #if CH_DBG_ENABLE_STACK_CHECK == TRUE
     // request information on running threads
     void thread_info(ExpandingString &str) override;

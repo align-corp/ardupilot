@@ -44,8 +44,12 @@ void Copter::init_ardupilot()
     battery.init();
 
 #ifdef ALIGN_BATTERY_PANEL
-    // update battery information ASAP
-    battery.read();
+    // update battery information and LED to ensure smooth animation
+    while (notify.flags.align_led_priority) {
+        battery.read();
+        notify.update();
+        hal.scheduler->delay(10);
+    }
 #endif
 
     // Init RSSI

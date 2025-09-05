@@ -12,6 +12,7 @@ define AP_BOOTLOADER_FLASHING_ENABLED 0
 # list of files to put in ROMFS (Lua scripts)
 ROMFS scripts/battery_6s.lua lua_scr/battery_6s.lua
 ROMFS scripts/rng_auto.lua lua_scr/rng_auto.lua
+ROMFS scripts/arm_check.lua lua_scr/arm_check.lua
 
 # Use I2C port for landing gear controller
 define AP_LANDINGGEAR_GPIO

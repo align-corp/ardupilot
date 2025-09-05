@@ -32,3 +32,4 @@ define HAL_INS_NUM_HARMONIC_NOTCH_FILTERS 3
 ROMFS scripts/heli_arm.lua lua_scr/heli_arm.lua
 ROMFS scripts/rng_auto.lua lua_scr/rng_auto.lua
 ROMFS scripts/battery_12s.lua lua_scr/battery_12s.lua
+ROMFS scripts/arm_check.lua lua_scr/arm_check.lua

@@ -20,3 +20,4 @@ define DEFAULT_SERIAL3_BAUD 115
 # list of files to put in ROMFS (Lua scripts)
 ROMFS scripts/rng_auto.lua lua_scr/rng_auto.lua
 ROMFS scripts/agricolture_level.lua lua_scr/agricolture_level.lua
+ROMFS scripts/arm_check.lua lua_scr/arm_check.lua

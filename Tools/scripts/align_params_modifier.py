@@ -19,6 +19,7 @@ BASE_FILES_CONFIG = {
     ],
     "libraries/AP_HAL_ChibiOS/hwdef/AP6-M460/defaults.parm": [
         ("A10", "libraries/AP_HAL_ChibiOS/hwdef/AP6-M460-A10/defaults.parm"),
+        (["DSHOT", "AP6m"], "libraries/AP_HAL_ChibiOS/hwdef/AP6m-M460/defaults.parm"),
     ],
     "libraries/AP_HAL_ChibiOS/hwdef/AP6-M490/defaults.parm": [
         ("A10", "libraries/AP_HAL_ChibiOS/hwdef/AP6-M490-A10/defaults.parm"),
@@ -129,12 +130,32 @@ FLTMODE6 2
     },
 
     "DSHOT": {
-        "remove": ["MOT_SPIN_MAX"],
+        "remove": ["MOT_SPIN_MAX",
+                   "RELAY1_FUNCTION", "RELAY1_PIN", "RELAY2_FUNCTION",
+                   "RELAY2_PIN", "RELAY3_FUNCTION", "RELAY3_PIN",
+                   "RELAY4_FUNCTION", "RELAY4_PIN",
+                   "SERVO8_FUNCTION", "SERVO9_FUNCTION", "SERVO10_FUNCTION",
+                   "SERVO11_FUNCTION", "SERVO12_FUNCTION"],
         "add": """
 # DSHOT
 MOT_PWM_TYPE 5
 SERVO_DSHOT_ESC 1
 SERVO_DSHOT_RATE 2
+INS_HNTCH_MODE 3
+INS_HNTCH_OPTS 2
+INS_HNTCH_REF 1
+"""
+    },
+
+    "AP6m": {
+        "remove": ["BATT_MONITOR", "BATT_AMP_MULT", "BATT_AMP_OFFSET", "BATT_VLT_OFFSET",
+                   "SERVO12_FUNCTION", "SERVO16_FUNCTION"],
+        "add": """
+# AP6m
+NTF_LED_TYPES 257
+SERVO5_FUNCTION 28
+SERVO6_FUNCTION 120
+SERVO7_FUNCTION 94
 """
     },
 }

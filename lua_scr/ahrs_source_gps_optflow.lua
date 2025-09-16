@@ -86,6 +86,7 @@ assert(optical_flow, 'could not access optical flow')
 -- get roll and pitch channels
 local chan_roll = rc:get_channel(1)
 local chan_pitch = rc:get_channel(2)
+local chan_yaw = rc:get_channel(4)
 
 -- the main update function
 function update()
@@ -242,8 +243,9 @@ function update()
             -- to optical flow while still climbing
             return update, 2000
 
-        -- 2 -- if pilot is using roll or pitch, immediately switch to GPS
-        elseif gps_good and arming:is_armed() and source_prev == EKF_SRC_OPTICALFLOW and (math.abs(chan_roll:norm_input()) > 0.3 or math.abs(chan_pitch:norm_input()) > 0.3) then
+        -- 2 -- if pilot is using roll, pitch or yaw, immediately switch to GPS
+        elseif gps_good and arming:is_armed() and source_prev == EKF_SRC_OPTICALFLOW and
+            (math.abs(chan_roll:norm_input()) > 0.3 or math.abs(chan_pitch:norm_input()) > 0.3 or math.abs(chan_yaw:norm_input()) > 0.3) then
             gps_vs_opticalflow_vote = -VOTE_COUNT_MAX
             optical_flow_dangerous_count = 0
 

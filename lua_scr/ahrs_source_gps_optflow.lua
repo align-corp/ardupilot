@@ -237,7 +237,7 @@ function update()
             gps_vs_opticalflow_vote = -VOTE_COUNT_MAX
             source_prev = EKF_SRC_GPS
             ahrs:set_posvelyaw_source_set(source_prev)
-            gcs:send_text(4, "Fast climb detected, switch to GPS")
+            gcs:send_text(MAV_SEVERITY.INFO, "Fast climb detected, switch to GPS")
             -- wait at least two second before switching back to auto mode, to prevent switching back
             -- to optical flow while still climbing
             return update, 2000
@@ -287,7 +287,7 @@ function update()
     if (auto_source >= 0) and (auto_source ~= source_prev) then
         source_prev = auto_source
         ahrs:set_posvelyaw_source_set(source_prev)
-        gcs:send_text(4, "Auto switched to Source " .. string.format("%d", source_prev + 1))
+        gcs:send_text(MAV_SEVERITY.INFO, "Auto switched to Source " .. string.format("%d", source_prev + 1))
     end
 
     -- switch back to loiter if opticalflow quality or gps is good
@@ -329,11 +329,11 @@ end
 if FLGP_ENABLE:get() < 1 then
     source_prev = EKF_SRC_GPS
     ahrs:set_posvelyaw_source_set(source_prev)
-    gcs:send_text(4, "FLGP disabled, switched to Source " .. string.format("%d", source_prev + 1))
+    gcs:send_text(MAV_SEVERITY.INFO, "FLGP disabled, switched to Source " .. string.format("%d", source_prev + 1))
 else
     -- use optical flow for takeoff
     source_prev = EKF_SRC_OPTICALFLOW
     ahrs:set_posvelyaw_source_set(source_prev)
-    gcs:send_text(4, "Takeoff, switch to Source " .. string.format("%d", source_prev + 1))
+    gcs:send_text(MAV_SEVERITY.INFO, "Takeoff, switch to Source " .. string.format("%d", source_prev + 1))
 end
 return update, 100

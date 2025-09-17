@@ -29,10 +29,10 @@
 -- luacheck: only 0
 
 -- constants
-local GPS_HDOP_GOOD = 100     -- HDOP below this value is considered good [cm]
+local GPS_HDOP_GOOD = 95      -- HDOP below this value is considered good [cm]
 local GPS_MINSATS_GOOD = 17   -- number of satellites above this value is considered good
-local GPS_HDOP_USABLE = 120   -- HDOP below this value is considered good [cm]
-local GPS_MINSATS_USABLE = 12 -- number of satellites above this value is considered good
+local GPS_HDOP_USABLE = 120   -- HDOP below this value is considered usable [cm]
+local GPS_MINSATS_USABLE = 12 -- number of satellites above this value is considered usable
 local EKF_SRC_GPS = 0
 local EKF_SRC_OPTICALFLOW = 1
 local EKF_SRC_UNDECIDED = -1
@@ -254,8 +254,8 @@ function update()
             gps_vs_opticalflow_vote = VOTE_COUNT_MAX
             optical_flow_dangerous_count = 0
 
-        -- 4 -- vote for GPS if it's usable and opticalflow is unusable OR we're in RTK fix
-        elseif (gps_usable and not opticalflow_usable) or (gps_good and gps_fix == 6) then
+        -- 4 -- vote for GPS if it's good. Prioritize GPS over OF
+        elseif gps_good then
             gps_vs_opticalflow_vote = gps_vs_opticalflow_vote - 1
             optical_flow_dangerous_count = 0
 

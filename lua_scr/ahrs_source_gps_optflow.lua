@@ -185,7 +185,7 @@ function update()
     local rngfnd_over_threshold = (rngfnd_distance_m == 0) or (rngfnd_distance_m > rangefinder_thresh_dist_m)
 
     -- update led
-    led(opticalflow_quality_good, rngfnd_over_threshold, rngfnd_out_of_range)
+    led(opticalflow_quality_good, rngfnd_over_threshold, rngfnd_out_of_range, gps_good)
 
     -- opticalflow is usable if quality and innovations are good and rangefinder is in range
     local opticalflow_usable = opticalflow_quality_good and opticalflow_innovation_good and
@@ -311,7 +311,7 @@ function update()
 end
 
 -- LED control
-function led(of_quality_acceptable, rng_over_threshold, rng_out_of_range)
+function led(of_quality_acceptable, rng_over_threshold, rng_out_of_range, gps_good)
     if FLGP_LED:get() == 0 then
         -- always OFF
         relay:off(5)
@@ -321,6 +321,9 @@ function led(of_quality_acceptable, rng_over_threshold, rng_out_of_range)
             relay:off(5)
             led_on_count = 0
         elseif rng_out_of_range and source_prev == EKF_SRC_GPS then
+            relay:off(5)
+            led_on_count = 0
+        elseif gps_good and source_prev == EKF_SRC_GPS then
             relay:off(5)
             led_on_count = 0
         elseif not of_quality_acceptable and not rng_over_threshold then

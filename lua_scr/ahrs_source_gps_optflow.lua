@@ -45,6 +45,7 @@ local gps_vs_opticalflow_vote = 0       -- vote counter for GPS vs optical (-20 
 local optical_flow_dangerous_count = 0  -- count of dangerous optical flow quality
 local opticalflow_state_dangerous = false
 local led_on_count = 0
+local last_send_ekf_source = uint32_t(0)
 
 local PARAM_TABLE_KEY = 81
 PARAM_TABLE_PREFIX = "FLGP_"
@@ -285,12 +286,18 @@ function update()
         end
     end
 
+    local send_to_gcs_now = false
+
     -- auto switching
     if (auto_source >= 0) and (auto_source ~= source_prev) then
         source_prev = auto_source
+        send_to_gcs_now = true
         ahrs:set_posvelyaw_source_set(source_prev)
         gcs:send_text(MAV_SEVERITY.INFO, "Auto switched to Source " .. string.format("%d", source_prev + 1))
     end
+
+    -- send ekf source to GCS
+    send_ekf_source_to_gcs(send_to_gcs_now)
 
     -- switch back to loiter if opticalflow quality or gps is good
     if switch_to_loiter then
@@ -325,6 +332,14 @@ function led(of_quality_acceptable, rng_over_threshold, rng_out_of_range)
     elseif FLGP_LED:get() == 2 then
         -- always ON
         relay:on(5)
+    end
+end
+
+-- send ekf source to GCS at 1 Hz or when changed 
+function send_ekf_source_to_gcs(send_now)
+    if send_now or (last_send_ekf_source + 1000 < millis()) then
+        last_send_ekf_source = millis()
+        gcs:send_named_float("EKF_SOURCE", source_prev)
     end
 end
 

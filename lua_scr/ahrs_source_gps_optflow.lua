@@ -107,6 +107,8 @@ function update()
             ahrs:set_posvelyaw_source_set(source_prev) -- switch to optical flow
             gcs:send_text(0, "FLGP disabled: switched to Source " .. string.format("%d", source_prev + 1))
         end
+        -- manual control for LED
+        led(true, true, false, true)
         return update, 100
     end
 

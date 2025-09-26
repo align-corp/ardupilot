@@ -29,15 +29,17 @@
 -- luacheck: only 0
 
 -- constants
+local GPS_HDOP_VERY_GOOD = 80    -- HDOP below this value is considered very good [cm]
+local GPS_MINSATS_VERY_GOOD = 18 -- number of satellites above this value is considered very good
 local GPS_HDOP_GOOD = 95      -- HDOP below this value is considered good [cm]
-local GPS_MINSATS_GOOD = 17   -- number of satellites above this value is considered good
+local GPS_MINSATS_GOOD = 16   -- number of satellites above this value is considered good
 local GPS_HDOP_USABLE = 120   -- HDOP below this value is considered usable [cm]
 local GPS_MINSATS_USABLE = 12 -- number of satellites above this value is considered usable
 local EKF_SRC_GPS = 0
 local EKF_SRC_OPTICALFLOW = 1
 local EKF_SRC_UNDECIDED = -1
 local RNG_ROTATION_DOWN = 25
-local VOTE_COUNT_MAX = 20 -- when a vote counter reaches this number (i.e. 2sec) source may be switched
+local VOTE_COUNT_MAX = 100 -- when a vote counter reaches this number (i.e. 2sec) source may be switched
 
 -- variables
 local source_prev = EKF_SRC_OPTICALFLOW -- opticalflow for takeoff
@@ -84,13 +86,9 @@ local SCR_USER6 = bind_param('SCR_USER6')
 
 assert(optical_flow, 'could not access optical flow')
 
--- get roll and pitch channels
-local chan_roll = rc:get_channel(1)
-local chan_pitch = rc:get_channel(2)
-local chan_yaw = rc:get_channel(4)
-
 -- the main update function
 function update()
+    local optical_flow_always = false
     -- enable check: -1 disable, 0 always use GPS, 1 automatic, 2 always use OpticalFlow
     if FLGP_ENABLE:get() < 0 then
         return update, 100
@@ -102,14 +100,7 @@ function update()
         end
         return update, 100
     elseif FLGP_ENABLE:get() > 1 then
-        if source_prev ~= EKF_SRC_OPTICALFLOW then
-            source_prev = EKF_SRC_OPTICALFLOW
-            ahrs:set_posvelyaw_source_set(source_prev) -- switch to optical flow
-            gcs:send_text(0, "FLGP disabled: switched to Source " .. string.format("%d", source_prev + 1))
-        end
-        -- manual control for LED
-        led(true, true, false, true)
-        return update, 100
+        optical_flow_always = true
     end
 
     -- use SCR_USER6 for A10 control via RC switch (pwm CH8)
@@ -145,12 +136,16 @@ function update()
     local gps_fix = gps:status(gps:primary_sensor())
     local gps_usable = false
     local gps_good = false
+    local gps_very_good = false
     if gps_hdop ~= nil and gps_nsats ~= nil and gps_fix ~= nil then
         gps_usable = (gps_hdop <= GPS_HDOP_USABLE) and
             (gps_nsats >= GPS_MINSATS_USABLE) and
             (gps_fix >= 3)
         gps_good = (gps_hdop <= GPS_HDOP_GOOD) and
             (gps_nsats >= GPS_MINSATS_GOOD) and
+            (gps_fix >= 3)
+        gps_very_good = (gps_hdop <= GPS_HDOP_VERY_GOOD) and
+            (gps_nsats >= GPS_MINSATS_VERY_GOOD) and
             (gps_fix >= 3)
     end
 
@@ -186,9 +181,6 @@ function update()
     end
     local rngfnd_over_threshold = (rngfnd_distance_m == 0) or (rngfnd_distance_m > rangefinder_thresh_dist_m)
 
-    -- update led
-    led(opticalflow_quality_good, rngfnd_over_threshold, rngfnd_out_of_range, gps_good)
-
     -- opticalflow is usable if quality and innovations are good and rangefinder is in range
     local opticalflow_usable = opticalflow_quality_good and opticalflow_innovation_good and
         (not rngfnd_over_threshold)
@@ -212,11 +204,11 @@ function update()
     -- altitude hold and stabilize: don't use opticalflow if rangefinder is out of range
     -- this is needed, otherwise EKF set to optical flow prevent vehicle to climb higher than 0.8*RNGFND_MAX_DIST
     elseif vehicle:get_mode() <= 2 then
-        if rngfnd_distance_m > rangefinder_thresh_dist_fast_climb_m then
+        if rngfnd_distance_m > rangefinder_thresh_dist_fast_climb_m or gps_very_good then
             -- immediately switch to GPS if we're over rangefinder_thresh_dist_fast_climb_m
             auto_source = EKF_SRC_GPS
             gps_vs_opticalflow_vote = -VOTE_COUNT_MAX
-        elseif opticalflow_usable then
+        elseif opticalflow_usable and not gps_good then
             -- vote for opticalflow, to prevent switching up and down between GPS and opticalflow
             gps_vs_opticalflow_vote = gps_vs_opticalflow_vote + 1
             if gps_vs_opticalflow_vote >= VOTE_COUNT_MAX then
@@ -228,7 +220,7 @@ function update()
     -- modes that requires position
     else
         -- here we have a loooot of conditions:
-        -- 1 -- prevent EKF failsafe immediately switching to GPS if we're getting out of rangefinder range
+        --==-- prevent EKF failsafe immediately switching to GPS if we're getting out of rangefinder range
         local velocity_ned = ahrs:get_velocity_NED()
         local climb_rate = 0
         if velocity_ned ~= nil then
@@ -237,7 +229,8 @@ function update()
         if (gps_usable) and
             (rngfnd_distance_m > rangefinder_thresh_dist_fast_climb_m) and
             (climb_rate > 0.3) and
-            (source_prev ~= EKF_SRC_GPS) then
+            (source_prev ~= EKF_SRC_GPS) and
+            not optical_flow_always then
             gps_vs_opticalflow_vote = -VOTE_COUNT_MAX
             source_prev = EKF_SRC_GPS
             ahrs:set_posvelyaw_source_set(source_prev)
@@ -246,28 +239,22 @@ function update()
             -- to optical flow while still climbing
             return update, 2000
 
-        -- 2 -- if pilot is using roll, pitch or yaw, immediately switch to GPS
-        elseif gps_good and arming:is_armed() and source_prev == EKF_SRC_OPTICALFLOW and
-            (math.abs(chan_roll:norm_input()) > 0.3 or math.abs(chan_pitch:norm_input()) > 0.3 or math.abs(chan_yaw:norm_input()) > 0.3) then
-            gps_vs_opticalflow_vote = -VOTE_COUNT_MAX
+        --==-- vote for GPS if it's very good. Prioritize GPS over OF when signal reception is very good
+        elseif gps_very_good then
+            gps_vs_opticalflow_vote = gps_vs_opticalflow_vote - 1
             optical_flow_dangerous_count = 0
 
-        -- 3 -- if gps isn't good and opticalflow is usable, immediately switch to opticalflow (maybe we're moving inside a building)
+        --==-- if gps isn't good and opticalflow is usable, immediately switch to opticalflow (maybe we're moving inside a building)
         elseif not gps_good and arming:is_armed() and source_prev == EKF_SRC_GPS and opticalflow_usable then
             gps_vs_opticalflow_vote = VOTE_COUNT_MAX
             optical_flow_dangerous_count = 0
 
-        -- 4 -- vote for GPS if it's good. Prioritize GPS over OF
-        elseif gps_good then
-            gps_vs_opticalflow_vote = gps_vs_opticalflow_vote - 1
-            optical_flow_dangerous_count = 0
-
-        -- 5 -- vote for opticalflow if usable
+        --==-- vote for opticalflow if usable
         elseif opticalflow_usable then
             gps_vs_opticalflow_vote = gps_vs_opticalflow_vote + 1
             optical_flow_dangerous_count = 0
 
-        -- 6 -- if we're in loiter and opticalflow quality is dangerously low switch to alt_hold and alert user
+        --==-- if we're in loiter and opticalflow quality is dangerously low switch to alt_hold and alert user
         elseif opticalflow_dangerous and arming:is_armed() then
             optical_flow_dangerous_count = optical_flow_dangerous_count + 1
             if (optical_flow_dangerous_count >= 10) then
@@ -279,7 +266,10 @@ function update()
         end
 
         -- auto source vote collation
-        if gps_vs_opticalflow_vote <= -VOTE_COUNT_MAX then
+        if optical_flow_always then
+            auto_source = EKF_SRC_OPTICALFLOW
+            gps_vs_opticalflow_vote = VOTE_COUNT_MAX
+        elseif gps_vs_opticalflow_vote <= -VOTE_COUNT_MAX then
             auto_source = EKF_SRC_GPS
             gps_vs_opticalflow_vote = -VOTE_COUNT_MAX
         elseif gps_vs_opticalflow_vote >= VOTE_COUNT_MAX then
@@ -289,6 +279,34 @@ function update()
     end
 
     local send_to_gcs_now = false
+
+    -- update led
+    if FLGP_LED:get() == 0 then
+        -- always OFF
+        relay:off(5)
+    elseif FLGP_LED:get() == 1 then
+        local turn_off_led = false
+        -- automatic mode
+        if not arming:is_armed() then
+            turn_off_led = true
+        elseif rngfnd_out_of_range and auto_source == EKF_SRC_GPS then
+            turn_off_led = true
+        elseif gps_very_good and auto_source == EKF_SRC_GPS then
+            turn_off_led = true
+        elseif not opticalflow_quality_good and not rngfnd_over_threshold then
+            relay:on(5)
+            led_on_count = 0
+        end
+        if turn_off_led then
+            led_on_count = led_on_count + 1
+            if led_on_count > 8 then
+                relay:off(5)
+            end
+        end
+    elseif FLGP_LED:get() == 2 then
+        -- always ON
+        relay:on(5)
+    end
 
     -- auto switching
     if (auto_source >= 0) and (auto_source ~= source_prev) then
@@ -313,32 +331,6 @@ function update()
 end
 
 -- LED control
-function led(of_quality_acceptable, rng_over_threshold, rng_out_of_range, gps_good)
-    if FLGP_LED:get() == 0 then
-        -- always OFF
-        relay:off(5)
-    elseif FLGP_LED:get() == 1 then
-        -- automatic mode
-        if not arming:is_armed() then
-            relay:off(5)
-            led_on_count = 0
-        elseif rng_out_of_range and source_prev == EKF_SRC_GPS then
-            relay:off(5)
-            led_on_count = 0
-        elseif gps_good and source_prev == EKF_SRC_GPS then
-            relay:off(5)
-            led_on_count = 0
-        elseif not of_quality_acceptable and not rng_over_threshold then
-            led_on_count = led_on_count + 1
-            if led_on_count > 8 then
-                relay:on(5)
-            end
-        end
-    elseif FLGP_LED:get() == 2 then
-        -- always ON
-        relay:on(5)
-    end
-end
 
 -- send ekf source to GCS at 1 Hz or when changed 
 function send_ekf_source_to_gcs(send_now)

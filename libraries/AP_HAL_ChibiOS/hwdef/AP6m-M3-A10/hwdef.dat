@@ -1,7 +1,10 @@
 include ../AP6m/hwdef.dat
 
 # define custom Align frame code
-define ALIGN_FRAME ALIGN_M3
+define ALIGN_FRAME ALIGN_M3_A10
+
+# use flight mode switch for compass calibration
+define FLTMODE_SWITCH_COMPASS_CALIBRATION
 
 # use custom Align Status LED
 define ALIGN_RGB_STATUS_LED

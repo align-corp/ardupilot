@@ -36,7 +36,8 @@ CONFIGURATIONS = {
     "A10": {
         "remove": ["PRX1_TYPE", "RNGFND1_TYPE", "RNGFND2_TYPE",
                    "MNT1_TYPE", "MNT1_RC_RATE", "CAM1_TYPE",
-                   "RC9_OPTION", "RC11_OPTION", "RC12_OPTION", "RC13_OPTION"],
+                   "RC7_OPTION", "RC9_OPTION", "RC11_OPTION",
+                   "RC12_OPTION", "RC13_OPTION"],
         "add": """
 # A10
 FLTMODE6 6

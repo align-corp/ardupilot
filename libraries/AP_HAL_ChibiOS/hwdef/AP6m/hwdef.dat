@@ -2,7 +2,9 @@
 # for AP6 hardware
 
 # define frames
-define ALIGN_M3         0x03070001
+define ALIGN_M3         0x04070001
+define ALIGN_M3_OF      0x04070101
+define ALIGN_M3_A10     0x04070002
 
 # USB setup
 USB_VENDOR 0x2A58 # ALIGN Corporation Limited

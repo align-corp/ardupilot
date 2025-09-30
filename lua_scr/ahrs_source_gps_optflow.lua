@@ -39,11 +39,11 @@ local EKF_SRC_GPS = 0
 local EKF_SRC_OPTICALFLOW = 1
 local EKF_SRC_UNDECIDED = -1
 local RNG_ROTATION_DOWN = 25
-local VOTE_COUNT_MAX = 100 -- when a vote counter reaches this number (i.e. 2sec) source may be switched
+local VOTE_COUNT_MAX = 100 -- when a vote counter reaches this number (i.e. 10sec) source may be switched
 
 -- variables
 local source_prev = EKF_SRC_OPTICALFLOW -- opticalflow for takeoff
-local gps_vs_opticalflow_vote = 0       -- vote counter for GPS vs optical (-20 = GPS, +20 = optical flow)
+local gps_vs_opticalflow_vote = 0       -- vote counter for GPS vs optical (-100 = GPS, +100 = optical flow)
 local optical_flow_dangerous_count = 0  -- count of dangerous optical flow quality
 local opticalflow_state_dangerous = false
 local led_on_count = 0
@@ -293,7 +293,8 @@ function update()
             turn_off_led = true
         elseif gps_very_good and auto_source == EKF_SRC_GPS then
             turn_off_led = true
-        elseif not opticalflow_quality_good and not rngfnd_over_threshold then
+        elseif not opticalflow_quality_good and not rngfnd_over_threshold and
+            (gps_hdop > GPS_HDOP_GOOD-5 or gps_nsats <= GPS_MINSATS_GOOD+1 or auto_source == EKF_SRC_OPTICALFLOW) then
             relay:on(5)
             led_on_count = 0
         end

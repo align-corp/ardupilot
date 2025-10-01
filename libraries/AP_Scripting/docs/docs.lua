@@ -3193,6 +3193,10 @@ function ahrs:get_pitch() end
 function ahrs:get_roll() end
 
 -- desc
+---@return boolean
+function ahrs:get_gps_position_valid() end
+
+-- desc
 ---@class AC_AttitudeControl
 AC_AttitudeControl = {}
 

@@ -96,6 +96,7 @@ function update()
         if source_prev ~= EKF_SRC_GPS then
             source_prev = EKF_SRC_GPS
             ahrs:set_posvelyaw_source_set(source_prev) -- switch to GPS
+            send_ekf_source_to_gcs(true)
             gcs:send_text(0, "FLGP disabled: switched to Source " .. string.format("%d", source_prev + 1))
         end
         return update, 100
@@ -131,22 +132,19 @@ function update()
     end
 
     -- check if GPS is usable or if it's good
+    local ahrs_happy_about_gps = ahrs:get_gps_position_valid()
     local gps_hdop = gps:get_hdop(gps:primary_sensor())
     local gps_nsats = gps:num_sats(gps:primary_sensor())
-    local gps_fix = gps:status(gps:primary_sensor())
     local gps_usable = false
     local gps_good = false
     local gps_very_good = false
-    if gps_hdop ~= nil and gps_nsats ~= nil and gps_fix ~= nil then
+    if gps_hdop ~= nil and gps_nsats ~= nil then
         gps_usable = (gps_hdop <= GPS_HDOP_USABLE) and
-            (gps_nsats >= GPS_MINSATS_USABLE) and
-            (gps_fix >= 3)
+            (gps_nsats >= GPS_MINSATS_USABLE) and ahrs_happy_about_gps
         gps_good = (gps_hdop <= GPS_HDOP_GOOD) and
-            (gps_nsats >= GPS_MINSATS_GOOD) and
-            (gps_fix >= 3)
+            (gps_nsats >= GPS_MINSATS_GOOD) and ahrs_happy_about_gps
         gps_very_good = (gps_hdop <= GPS_HDOP_VERY_GOOD) and
-            (gps_nsats >= GPS_MINSATS_VERY_GOOD) and
-            (gps_fix >= 3)
+            (gps_nsats >= GPS_MINSATS_VERY_GOOD) and ahrs_happy_about_gps
     end
 
     -- check optical flow quality
@@ -154,7 +152,7 @@ function update()
     local opticalflow_quality_dangerous = true
     if (optical_flow) then
         opticalflow_quality_good = (optical_flow:enabled() and optical_flow:healthy() and optical_flow:quality() >= opticalflow_quality_thresh)
-        opticalflow_quality_dangerous = optical_flow:quality() < opticalflow_quality_thresh - 30
+        opticalflow_quality_dangerous = optical_flow:quality() < opticalflow_quality_thresh/2
     end
 
     -- get opticalflow innovations from ahrs (only x and y values are valid, no variances available)
@@ -191,34 +189,32 @@ function update()
     local auto_source = EKF_SRC_UNDECIDED
     local switch_to_loiter = false
 
-    -- if we switched to altitude_hold due to dangerous optical flow quality, switch back to loiter when quality is good
-    if opticalflow_state_dangerous then
-        if opticalflow_usable then
-            auto_source = EKF_SRC_OPTICALFLOW
-            switch_to_loiter = true
-        elseif gps_usable then
-            auto_source = EKF_SRC_GPS
-            switch_to_loiter = true
-        end
-
     -- altitude hold and stabilize: don't use opticalflow if rangefinder is out of range
     -- this is needed, otherwise EKF set to optical flow prevent vehicle to climb higher than 0.8*RNGFND_MAX_DIST
-    elseif vehicle:get_mode() <= 2 then
+    if vehicle:get_mode() <= 2 then
         if rngfnd_distance_m > rangefinder_thresh_dist_fast_climb_m or gps_very_good then
             -- immediately switch to GPS if we're over rangefinder_thresh_dist_fast_climb_m
             auto_source = EKF_SRC_GPS
-            gps_vs_opticalflow_vote = -VOTE_COUNT_MAX
+            gps_vs_opticalflow_vote = 0
+            if gps_usable and opticalflow_state_dangerous then
+                switch_to_loiter = true
+            end
         elseif opticalflow_usable and not gps_good then
             -- vote for opticalflow, to prevent switching up and down between GPS and opticalflow
             gps_vs_opticalflow_vote = gps_vs_opticalflow_vote + 1
-            if gps_vs_opticalflow_vote >= VOTE_COUNT_MAX then
+            if gps_vs_opticalflow_vote >= 10 then
                 auto_source = EKF_SRC_OPTICALFLOW
                 gps_vs_opticalflow_vote = VOTE_COUNT_MAX
+                -- optical flow quality and quality is recovered
+                if opticalflow_state_dangerous then
+                    switch_to_loiter = true
+                end
             end
         end
 
     -- modes that requires position
     else
+        opticalflow_state_dangerous = false
         -- here we have a loooot of conditions:
         --==-- prevent EKF failsafe immediately switching to GPS if we're getting out of rangefinder range
         local velocity_ned = ahrs:get_velocity_NED()
@@ -226,9 +222,9 @@ function update()
         if velocity_ned ~= nil then
             climb_rate = -velocity_ned:z() -- m/s
         end
-        if (gps_usable) and
-            (rngfnd_distance_m > rangefinder_thresh_dist_fast_climb_m) and
-            (climb_rate > 0.3) and
+        if gps_usable and
+            rngfnd_distance_m > rangefinder_thresh_dist_fast_climb_m and
+            (climb_rate > 0.3 or rc:get_pwm(3) > 1800) and
             (source_prev ~= EKF_SRC_GPS) and
             not optical_flow_always then
             gps_vs_opticalflow_vote = -VOTE_COUNT_MAX
@@ -255,13 +251,14 @@ function update()
             optical_flow_dangerous_count = 0
 
         --==-- if we're in loiter and opticalflow quality is dangerously low switch to alt_hold and alert user
-        elseif opticalflow_dangerous and arming:is_armed() then
+        elseif opticalflow_dangerous and arming:is_armed() and source_prev == EKF_SRC_OPTICALFLOW then
             optical_flow_dangerous_count = optical_flow_dangerous_count + 1
             if (optical_flow_dangerous_count >= 10) then
                 optical_flow_dangerous_count = 0
                 gcs:send_text(MAV_SEVERITY.ALERT, "AltHold: OpticalFlow quality too low")
                 vehicle:set_mode(2)
                 opticalflow_state_dangerous = true
+                gps_vs_opticalflow_vote = 0
             end
         end
 
@@ -323,15 +320,14 @@ function update()
     -- switch back to loiter if opticalflow quality or gps is good
     if switch_to_loiter then
         opticalflow_state_dangerous = false
-        gcs:send_text(MAV_SEVERITY.WARNING, "Loiter: OpticalFlow quality recovered")
-        if vehicle:get_mode() == 2 then
-            vehicle:set_mode(5)
-        end
+        gcs:send_text(MAV_SEVERITY.WARNING, "OpticalFlow quality recovered")
+        -- don't actually switch to loiter
+        -- if vehicle:get_mode() == 2 then
+        --     vehicle:set_mode(5)
+        -- end
     end
     return update, 100
 end
-
--- LED control
 
 -- send ekf source to GCS at 1 Hz or when changed 
 function send_ekf_source_to_gcs(send_now)
@@ -344,6 +340,7 @@ end
 if FLGP_ENABLE:get() < 1 then
     source_prev = EKF_SRC_GPS
     ahrs:set_posvelyaw_source_set(source_prev)
+    send_ekf_source_to_gcs(true)
     gcs:send_text(MAV_SEVERITY.INFO, "FLGP disabled, switched to Source " .. string.format("%d", source_prev + 1))
 else
     -- use optical flow for takeoff

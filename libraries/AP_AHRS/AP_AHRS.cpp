@@ -2323,6 +2323,15 @@ bool AP_AHRS::get_filter_status(nav_filter_status &status) const
     return false;
 }
 
+bool AP_AHRS::get_gps_position_valid() const
+{
+    nav_filter_status filt_status;
+    if (!get_filter_status(filt_status)) {
+        return false;
+    }
+    return filt_status.flags.gps_quality_good;
+}
+
 // write optical flow data to EKF
 void  AP_AHRS::writeOptFlowMeas(const uint8_t rawFlowQuality, const Vector2f &rawFlowRates, const Vector2f &rawGyroRates, const uint32_t msecFlowMeas, const Vector3f &posOffset, float heightOverride)
 {

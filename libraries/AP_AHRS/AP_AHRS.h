@@ -324,6 +324,7 @@ public:
 
     // get_filter_status - returns filter status as a series of flags
     bool get_filter_status(nav_filter_status &status) const;
+    bool get_gps_position_valid() const;
 
     // get compass offset estimates
     // true if offsets are valid

@@ -5,6 +5,8 @@ on:
   push:
     tags:
       - 'v*'
+    branches:
+      - dev
 
 concurrency:
   group: ci-${{github.workflow}}-${{ github.ref }}

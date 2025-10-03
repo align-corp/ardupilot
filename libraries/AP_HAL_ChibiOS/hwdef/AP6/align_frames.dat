@@ -10,6 +10,7 @@ define ALIGN_M4T12_RTK      0x03040002
 define ALIGN_M4P            0x03050001
 define ALIGN_M450           0x03060001
 define ALIGN_M450_OF        0x03060101
+define ALIGN_M450_A10       0x03060002
 define ALIGN_M450_A10_OF    0x03060102
 define ALIGN_M450_NO_GPS    0x03060003
 define ALIGN_E1             0x03400001

@@ -50,6 +50,10 @@ static_assert((HAL_GPIO_A_LED_PIN != HAL_GPIO_B_LED_PIN) &&
 #define ALIGN_LED_BATT_20 21.6f
 #endif
 
+#ifndef ALIGN_LED_BATT_DISARMED_DIFF
+#define ALIGN_LED_BATT_DISARMED_DIFF 0.42f
+#endif
+
 extern const AP_HAL::HAL& hal;
 const AP_BattMonitor &batt = AP::battery();
 
@@ -314,6 +318,10 @@ void AP_BoardLED_Align::update(void)
 void AP_BoardLED_Align::set_led_from_voltage()
 {
     float voltage = batt.voltage(0);
+
+    if (!AP_Notify::flags.flying) {
+        voltage -= ALIGN_LED_BATT_DISARMED_DIFF;
+    }
 
     // control LED based on battery voltage
     /* if (voltage < 1.0f) { */

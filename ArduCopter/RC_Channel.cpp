@@ -687,6 +687,25 @@ bool RC_Channel_Copter::do_aux_function(const aux_func_t ch_option, const AuxSwi
     }
 #endif
 
+    // Emergency Stop for copter requires minimum throttle
+    case AUX_FUNC::MOTOR_ESTOP:
+        switch (ch_flag) {
+        case AuxSwitchPos::HIGH: {
+            if (!copter.arming.is_armed() || !copter.channel_throttle->get_control_in()) {
+                SRV_Channels::set_emergency_stop(true);
+            }
+            break;
+        }
+        case AuxSwitchPos::MIDDLE:
+            // nothing
+            break;
+        case AuxSwitchPos::LOW: {
+            SRV_Channels::set_emergency_stop(false);
+            break;
+        }
+        }
+        break;
+
     default:
         return RC_Channel::do_aux_function(ch_option, ch_flag);
     }

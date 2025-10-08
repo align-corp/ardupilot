@@ -53,12 +53,13 @@ jobs:
           ./waf configure --board ${{matrix.copter}}
           ./waf clean
           ./waf copter
+          cp build/${{matrix.copter}}/bin/arducopter.apj ${{matrix.copter}}.apj
 
       - name: upload apj
         uses: actions/upload-artifact@v4
         with:
           name: ${{matrix.copter}}
-          path: build/${{matrix.copter}}/bin/arducopter.apj
+          path: ${{matrix.copter}}.apj
 
   build-heli:
     runs-on: ubuntu-22.04
@@ -87,18 +88,25 @@ jobs:
           ./waf configure --board ${{matrix.heli}}
           ./waf clean
           ./waf heli
+          cp build/${{matrix.heli}}/bin/arducopter-heli.apj ${{matrix.heli}}.apj
 
       - name: upload apj
         uses: actions/upload-artifact@v4
         with:
           name: ${{matrix.heli}}
-          path: build/${{matrix.heli}}/bin//arducopter-heli.apj
+          path: ${{matrix.heli}}.apj
   
-  upload:
+  release:
+    permissions:
+      contents: write
     runs-on: ubuntu-22.04
     needs: [build-copter, build-heli]
 
     steps:
+      - name: checkout for release
+        if: github.ref_type == 'tag'
+        uses: actions/checkout@v4
+
       - name: create align-build dir
         run: mkdir -p align-build
 
@@ -107,15 +115,23 @@ jobs:
         with:
           path: align-build
 
-      - name: create ZIP align-build
-        run: |
-          zip -r align-build/align-build-copter.zip align-build/
-
-      - name: upload ZIP align-build
+      - name: upload align-build
         uses: actions/upload-artifact@v4
         with:
           name: align-build-copter
-          path: align-build/align-build-copter.zip
+          path: align-build
+
+      - name: create release
+        if: github.ref_type == 'tag'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          zip -r align-build.zip align-build
+          gh release create ${{ github.ref_name }} \
+            --title "Release ${{ github.ref_name }}" \
+            --notes "Automated release for ${{ github.ref_name }}" \
+            align-build/*/*.apj \
+            align-build.zip
 
       - name: cleanup
         if: always()

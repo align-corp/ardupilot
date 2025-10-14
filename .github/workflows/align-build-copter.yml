@@ -49,6 +49,8 @@ jobs:
       
       - name: align build
         shell: bash
+        env:
+          CPPFLAGS: ${{ startsWith(github.ref, 'refs/heads/dev') && '-DALIGN_DEV_VERSION' || '' }}
         run: |
           git config --global --add safe.directory ${GITHUB_WORKSPACE}
           PATH="/usr/lib/ccache:/opt/gcc-arm-none-eabi-10/bin:$PATH"
@@ -84,6 +86,8 @@ jobs:
       
       - name: align build
         shell: bash
+        env:
+          CPPFLAGS: ${{ startsWith(github.ref, 'refs/heads/dev') && '-DALIGN_DEV_VERSION' || '' }}
         run: |
           git config --global --add safe.directory ${GITHUB_WORKSPACE}
           PATH="/usr/lib/ccache:/opt/gcc-arm-none-eabi-10/bin:$PATH"

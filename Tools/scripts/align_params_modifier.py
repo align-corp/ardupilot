@@ -29,6 +29,14 @@ BASE_FILES_CONFIG = {
         (["OF","OF-M450"], "libraries/AP_HAL_ChibiOS/hwdef/AP6-M450-OF/defaults.parm"),
         (["DSHOT","A10","NO-GPS"], "libraries/AP_HAL_ChibiOS/hwdef/AP6-M450-no-gps/defaults.parm"),
     ],
+    "libraries/AP_HAL_ChibiOS/hwdef/AP6-M460/defaults.parm": [
+        ("AP5", "libraries/AP_HAL_ChibiOS/hwdef/AP5-M460/defaults.parm"),
+        ("AP3", "libraries/AP_HAL_ChibiOS/hwdef/AP3-M460/defaults.parm"),
+    ],
+    "libraries/AP_HAL_ChibiOS/hwdef/AP6-M490/defaults.parm": [
+        ("AP5", "libraries/AP_HAL_ChibiOS/hwdef/AP5-M490/defaults.parm"),
+        ("AP3", "libraries/AP_HAL_ChibiOS/hwdef/AP3-M490/defaults.parm"),
+    ],
 }
 
 # Configuration rules
@@ -137,6 +145,22 @@ FLTMODE6 2
 MOT_PWM_TYPE 5
 SERVO_DSHOT_ESC 1
 SERVO_DSHOT_RATE 2
+"""
+    },
+
+    "AP5": {
+        "remove": ["AHRS_ORIENTATION"],
+        "add": """
+# AP5
+"""
+    },
+
+    "AP3": {
+        "remove": ["AHRS_ORIENTATION", "MNT1_TYPE", "MNT1_RC_RATE", "RC11_OPTION",
+                   "RC13_OPTION", "RC9_OPTION", "CAM1_TYPE"],
+        "add": """
+# AP3
+RC9_OPTION 19
 """
     },
 }

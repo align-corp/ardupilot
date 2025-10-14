@@ -36,6 +36,10 @@ jobs:
             AP6m-M3,
             AP6m-M3-A10,
             AP6m-M3-OF,
+            AP3-M460,
+            AP3-M490,
+            AP5-M460,
+            AP5-M490,
         ]
 
     steps:

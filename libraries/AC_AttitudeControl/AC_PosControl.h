@@ -52,6 +52,8 @@ public:
     /// get_shaping_jerk_xy_cmsss - gets the jerk limit of the xy kinematic path generation in cm/s/s/s
     float get_shaping_jerk_xy_cmsss() const { return _shaping_jerk_xy*100.0; }
 
+    /// get_shaping_jerk_xy_cmsss - gets the jerk limit of the xy kinematic path generation in cm/s/s/s
+    float get_shaping_jerk_z_cmsss() const { return _shaping_jerk_z*100.0; }
 
     ///
     /// 3D position shaper

@@ -17,6 +17,10 @@ bool ModeRTL::init(bool ignore_checks)
             return false;
         }
     }
+
+    // reset altitude stick mixing
+    wp_nav->reset_alt_stick_mix();
+
     // initialise waypoint and spline controller
     wp_nav->wp_and_spline_init(g.rtl_speed_cms);
     _state = SubMode::STARTING;
@@ -173,6 +177,11 @@ void ModeRTL::climb_return_run()
     // set motors to full range
     motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
 
+    // stick mixing
+    if ((copter.g2.rtl_options & (uint32_t)Options::AltitudeStickMix) != 0) {
+        wp_nav->set_alt_stick_mix(altitude_stick_mix_cms(), G_Dt);
+    }
+
     // run waypoint controller
     copter.failsafe_terrain_set_status(wp_nav->update_wpnav());
 
@@ -217,6 +226,11 @@ void ModeRTL::loiterathome_run()
 
     // run waypoint controller
     copter.failsafe_terrain_set_status(wp_nav->update_wpnav());
+
+    // avoid discontinuities caused by stick mixing, but don't allow altitude control
+    if ((copter.g2.rtl_options & (uint32_t)Options::AltitudeStickMix) != 0) {
+        wp_nav->set_alt_stick_mix(0.0f, G_Dt);
+    }
 
     // WP_Nav has set the vertical position control targets
     // run the vertical position controller and set output throttle

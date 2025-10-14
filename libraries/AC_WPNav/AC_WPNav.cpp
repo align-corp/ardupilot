@@ -241,6 +241,28 @@ void AC_WPNav::set_speed_down(float speed_down_cms)
     update_track_with_speed_accel_limits();
 }
 
+void AC_WPNav::set_alt_stick_mix(float speed_cms, float dt) {
+    // calculate current speed and limit target
+    float vel_target = _mission_target_vel.z;
+    float speed_limited_cms = constrain_float(speed_cms, -get_default_speed_down()-vel_target, get_default_speed_up()-vel_target);
+
+    // calculate position error
+    shape_vel_accel(speed_limited_cms, 0.0f, _altitude_stick_mix_vel_cms, _altitude_stick_mix_accel_cmss,
+         -_pos_control.get_max_accel_z_cmss(), _pos_control.get_max_accel_z_cmss(),
+         _pos_control.get_shaping_jerk_z_cmsss(), dt, true);
+
+    // update velocity and position offset from limited acceleration
+    _altitude_stick_mix_vel_cms += _altitude_stick_mix_accel_cmss * dt;
+    _altitude_stick_mix_cm += _altitude_stick_mix_vel_cms * dt;
+}
+
+void AC_WPNav::reset_alt_stick_mix() {
+    _mission_target_vel.z = 0.0f;
+    _altitude_stick_mix_cm = 0.0f;
+    _altitude_stick_mix_vel_cms = 0.0f;
+    _altitude_stick_mix_accel_cmss = 0.0f;
+}
+
 /// set roll stick mixing from a norm roll input (-1.0, 1.0)
 bool AC_WPNav::set_roll_stick_mix(float roll_norm, float dt) {
     const float max_speed_cms = MAX(get_default_speed_xy(), 500.0f);
@@ -506,6 +528,9 @@ void AC_WPNav::get_wp_stopping_point(Vector3f& stopping_point) const
     _pos_control.get_stopping_point_xy_cm(stop.xy());
     _pos_control.get_stopping_point_z_cm(stop.z);
     stopping_point = stop.tofloat();
+
+    // return stopping point without stick mixing to avoid discontinuities
+    stopping_point.z -= _altitude_stick_mix_cm;
 }
 
 /// advance_wp_target_along_track - move target location along track from origin to destination
@@ -580,6 +605,9 @@ bool AC_WPNav::advance_wp_target_along_track(float dt)
     target_vel *= vel_scaler_dt;
     target_accel *= sq(vel_scaler_dt);
     target_accel += accel_offset;
+    
+    // update mission target vel global
+    _mission_target_vel = target_vel;
 
     // add stick mixing value
     target_pos.x += _roll_stick_mix_cm.x;
@@ -587,8 +615,10 @@ bool AC_WPNav::advance_wp_target_along_track(float dt)
     target_pos.z += _altitude_stick_mix_cm;
     target_vel.x += _roll_stick_mix_vel_cms.x;
     target_vel.y += _roll_stick_mix_vel_cms.y;
+    target_vel.z += _altitude_stick_mix_vel_cms;
     target_accel.x += _roll_stick_mix_accel_cmss.x;
     target_accel.y += _roll_stick_mix_accel_cmss.y;
+    target_accel.z += _altitude_stick_mix_accel_cmss;
 
     // convert final_target.z to altitude above the ekf origin
     target_pos.z += _pos_control.get_pos_offset_z_cm();
@@ -606,7 +636,12 @@ bool AC_WPNav::advance_wp_target_along_track(float dt)
                 _flags.reached_destination = true;
             } else {
                 // regular waypoints also require the copter to be within the waypoint radius
-                const Vector3f dist_to_dest = curr_pos - _destination;
+                // add stick mixing value
+                Vector3f curr_pos_minus_stick_mix;
+                curr_pos_minus_stick_mix.x = curr_pos.x - _roll_stick_mix_cm.x;
+                curr_pos_minus_stick_mix.y = curr_pos.y - _roll_stick_mix_cm.y;
+                curr_pos_minus_stick_mix.z = curr_pos.z - _altitude_stick_mix_cm;
+                const Vector3f dist_to_dest = curr_pos_minus_stick_mix - _destination;
                 if (dist_to_dest.length_squared() <= sq(_wp_radius_cm)) {
                     _flags.reached_destination = true;
                 }

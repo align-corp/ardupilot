@@ -73,9 +73,8 @@ public:
     void set_speed_down(float speed_down_cms);
 
     /// altitude stick mixing. Warning: altitude speed set point must be constrained.
-    //TODO: input shape altitude and feed vel and acc to pos controller
-    void set_alt_stick_mix(float speed_cms, float dt) {_altitude_stick_mix_cm += speed_cms * dt; }
-    void reset_alt_stick_mix() {_altitude_stick_mix_cm = 0.0f; }
+    void set_alt_stick_mix(float speed_cms, float dt);
+    void reset_alt_stick_mix();
 
     /// roll stick mixing
     bool set_roll_stick_mix(float roll_norm, float dt);
@@ -301,7 +300,10 @@ protected:
     float       _rangefinder_terrain_offset_cm; // latest rangefinder based terrain offset (e.g. terrain's height above EKF origin)
 
     // altitude stick mixing
-    float       _altitude_stick_mix_cm = 0;
+    float       _altitude_stick_mix_cm;
+    float       _altitude_stick_mix_vel_cms;
+    float       _altitude_stick_mix_accel_cmss;
+    Vector3f    _mission_target_vel;
 
     // roll stick mixing
     Vector2p       _roll_stick_mix_cm;

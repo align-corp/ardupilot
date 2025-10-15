@@ -1,0 +1,16 @@
+include ../AP6/hwdef.dat
+
+# define custom Align frame code
+define ALIGN_FRAME ALIGN_AP6_TB40_A10
+
+# use flight mode switch for compass calibration
+define FLTMODE_SWITCH_COMPASS_CALIBRATION
+
+# use custom Align Status LED
+define ALIGN_RGB_STATUS_LED
+
+# 3 notch filters
+define HAL_INS_NUM_HARMONIC_NOTCH_FILTERS 3
+
+# list of files to put in ROMFS (Lua scripts)
+ROMFS scripts/heli_arm.lua lua_scr/heli_arm.lua

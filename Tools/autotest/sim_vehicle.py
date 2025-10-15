@@ -187,8 +187,13 @@ def under_cygwin():
     return os.path.exists("/usr/bin/cygstart")
 
 
-def under_macos():
-    return sys.platform == 'darwin'
+def under_macos_terminal():
+    # If we're using tmux we don't need special routines
+    return (
+        sys.platform == 'darwin' and
+        os.environ.get('DISPLAY') and
+        not os.environ.get('TMUX')
+    )
 
 
 def under_vagrant():
@@ -314,7 +319,7 @@ def kill_tasks():
 
         if under_cygwin():
             return kill_tasks_cygwin(victim_names)
-        if under_macos() and os.environ.get('DISPLAY'):
+        if under_macos_terminal():
             # use special macos kill routine if Display is on
             return kill_tasks_macos()
 
@@ -614,7 +619,7 @@ def run_in_terminal_window(name, cmd, **kw):
     runme.extend(cmd)
     progress_cmd("Run " + name, runme)
 
-    if under_macos() and os.environ.get('DISPLAY'):
+    if under_macos_terminal():
         # on MacOS record the window IDs so we can close them later
         out = subprocess.Popen(runme, stdout=subprocess.PIPE, **kw).communicate()[0]
         out = out.decode('utf-8')

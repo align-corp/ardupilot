@@ -22,6 +22,10 @@
 // auto_init - initialise auto controller
 bool ModeAuto::init(bool ignore_checks)
 {
+    // reset stick mixing
+    wp_nav->reset_alt_stick_mix();
+    wp_nav->reset_roll_stick_mix();
+
     auto_RTL = false;
     if (mission.num_commands() > 1 || ignore_checks) {
         // reject switching to auto mode if landed with motors armed but first command is not a takeoff (reduce chance of flips)
@@ -56,10 +60,6 @@ bool ModeAuto::init(bool ignore_checks)
         // reset flag indicating if pilot has applied roll or pitch inputs during landing
         copter.ap.land_repo_active = false;
 
-        // reset stick mixing
-        wp_nav->reset_alt_stick_mix();
-        wp_nav->reset_roll_stick_mix();
-
 #if AC_PRECLAND_ENABLED
         // initialise precland state machine
         copter.precland_statemachine.init();
@@ -82,6 +82,10 @@ void ModeAuto::exit()
 #endif  // HAL_MOUNT_ENABLED
 
     auto_RTL = false;
+
+    // reset stick mixing
+    wp_nav->reset_alt_stick_mix();
+    wp_nav->reset_roll_stick_mix();
 }
 
 // auto_run - runs the auto controller
@@ -1017,46 +1021,14 @@ void ModeAuto::wp_run()
     // run waypoint controller
     copter.failsafe_terrain_set_status(wp_nav->update_wpnav());
 
-    // stick mixing only if not in radio failsafe
-    if (!copter.failsafe.radio) {
-        // stick mixing for altitude
-        if ((copter.g2.auto_options & (uint32_t)Options::AltitudeStickMix) != 0) {
-            // constrain speed down to 1 m/s. If PILOT_SPEED_DOWN is less than 1 m/s constrain to PILOT_SPEED_DOWN*0.8
-            float speed_down = (get_pilot_speed_dn() > 125) ? 100 : get_pilot_speed_dn()*0.8f;
-            // constrain speed down based on rangefinder altitude (if available)
-            if (copter.rangefinder_alt_ok()) {
-                int32_t rng_alt = get_alt_above_ground_cm();
-                if (rng_alt < 250) {
-                    speed_down = 0.0f;  // do not allow negative speed
-                } else if (rng_alt < g2.land_alt_low) {
-                    speed_down = (abs(g.land_speed) > 0) ? abs(g.land_speed) : speed_down*0.7; // slow down
-                }
-            }
-            float pilot_climb_rate = get_pilot_desired_climb_rate(channel_throttle->get_control_in());
-            pilot_climb_rate = constrain_float(pilot_climb_rate, -speed_down, g.pilot_speed_up);
-            wp_nav->set_alt_stick_mix(pilot_climb_rate, G_Dt);
-        }
+    // stick mixing for altitude
+    if ((copter.g2.auto_options & (uint32_t)Options::AltitudeStickMix) != 0) {
+        wp_nav->set_alt_stick_mix(altitude_stick_mix_cms(), G_Dt);
+    }
 
-        // stick mixing for roll
-        static bool is_roll_stick_mixing = false;
-        if ((copter.g2.auto_options & (uint32_t)Options::RollStickMix) != 0) {
-            float pilot_roll_norm = channel_roll->norm_input();
-            pilot_roll_norm = fabsf(pilot_roll_norm) > 0.1f ? pilot_roll_norm : 0.0f;
-            if (wp_nav->set_roll_stick_mix(pilot_roll_norm, G_Dt)) {
-                // use pilot rate for yaw
-                if (!is_roll_stick_mixing) {
-                    // lock yaw heading
-                    auto_yaw.set_mode(AutoYaw::Mode::HOLD);
-                    is_roll_stick_mixing = true;
-                }
-            } else {
-                if (is_roll_stick_mixing) {
-                    // use default yaw mode
-                    auto_yaw.set_mode_to_default(false);
-                    is_roll_stick_mixing = false;
-                }
-            }
-        }
+    // stick mixing for roll
+    if ((copter.g2.auto_options & (uint32_t)Options::RollStickMix) != 0) {
+        roll_stick_mix_run();
     }
 
     // WP_Nav has set the vertical position control targets
@@ -1097,8 +1069,15 @@ void ModeAuto::rtl_run()
 //      called by auto_run at 100hz or more
 void ModeAuto::circle_run()
 {
+    float desired_cmbrate_cms = 0.0f;
+    // stick mixing for altitude
+    if ((copter.g2.auto_options & (uint32_t)Options::AltitudeStickMix) != 0) {
+        desired_cmbrate_cms = altitude_stick_mix_cms();
+        wp_nav->set_alt_stick_mix(desired_cmbrate_cms, G_Dt);
+    }
+
     // call circle controller
-    copter.failsafe_terrain_set_status(copter.circle_nav->update());
+    copter.failsafe_terrain_set_status(copter.circle_nav->update(desired_cmbrate_cms));
 
     // WP_Nav has set the vertical position control targets
     // run the vertical position controller and set output throttle

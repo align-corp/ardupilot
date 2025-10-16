@@ -814,6 +814,48 @@ void Mode::land_run_horizontal_control()
 
 }
 
+// run altitude stick mix
+float Mode::altitude_stick_mix_cms() {
+    if (!rc().has_valid_input()) {
+        return 0.0f;
+    }
+
+    float max_speed_down = get_pilot_speed_dn();
+    int32_t rng_alt = get_alt_above_ground_cm();
+    // limit speed down: use hardcoded values for safety
+    if (rng_alt < 400) {
+        max_speed_down = 0.0f;  
+    } else if (rng_alt < 800) {
+        max_speed_down = 70.0f;
+    }
+    float pilot_climb_rate = get_pilot_desired_climb_rate(channel_throttle->get_control_in());
+    pilot_climb_rate = constrain_float(pilot_climb_rate, -max_speed_down, g.pilot_speed_up);
+    return pilot_climb_rate;
+}
+
+// run roll stick mix
+void Mode::roll_stick_mix_run() {
+    if (rc().has_valid_input()) {
+        static bool is_roll_stick_mixing = false;
+        float pilot_roll_norm = channel_roll->norm_input();
+        pilot_roll_norm = fabsf(pilot_roll_norm) > 0.1f ? pilot_roll_norm : 0.0f;
+        if (wp_nav->set_roll_stick_mix(pilot_roll_norm, G_Dt)) {
+            // use pilot rate for yaw
+            if (!is_roll_stick_mixing) {
+                // lock yaw heading
+                auto_yaw.set_mode(AutoYaw::Mode::HOLD);
+                is_roll_stick_mixing = true;
+            }
+        } else {
+            if (is_roll_stick_mixing) {
+                // use default yaw mode
+                auto_yaw.set_mode_to_default(false);
+                is_roll_stick_mixing = false;
+            }
+        }
+    }
+}
+
 // run normal or precision landing (if enabled)
 // pause_descent is true if vehicle should not descend
 void Mode::land_run_normal_or_precland(bool pause_descent)

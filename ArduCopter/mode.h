@@ -201,6 +201,10 @@ protected:
         land_run_vertical_control(pause_descent);
     }
 
+    // stick mixing
+    float altitude_stick_mix_cms();
+    void roll_stick_mix_run();
+
 #if AC_PAYLOAD_PLACE_ENABLED
     // payload place flight behaviour:
     static PayloadPlace payload_place;

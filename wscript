@@ -441,7 +441,14 @@ configuration in order to save typing.
                  type='int',
                  default=0,
                  help='zero time on boot in microseconds')
-    
+
+    g.add_option('--dev',
+                 action='store_true',
+                 default=False,
+                 help='Enable dev version (adds -DALIGN_DEV_VERSION)',
+                 )
+
+
 def _collect_autoconfig_files(cfg):
     for m in sys.modules.values():
         paths = []
@@ -480,6 +487,13 @@ def configure(cfg):
 
     _set_build_context_variant(cfg.env.BOARD)
     cfg.setenv(cfg.env.BOARD)
+
+    # Enable dev defines if requested
+    if getattr(cfg.options, 'dev', False):
+        # Pass -DALIGN_DEV_VERSION to all C/C++ compilation tasks
+        cfg.env.append_value('DEFINES', 'ALIGN_DEV_VERSION')
+        # Also make it available to config headers if needed
+        cfg.define('ALIGN_DEV_VERSION', 1)
 
     if cfg.options.signed_fw:
         cfg.env.AP_SIGNED_FIRMWARE = True

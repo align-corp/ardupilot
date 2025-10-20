@@ -18,8 +18,9 @@ bool ModeRTL::init(bool ignore_checks)
         }
     }
 
-    // reset altitude stick mixing
+    // reset stick mixing
     wp_nav->reset_alt_stick_mix();
+    wp_nav->reset_roll_stick_mix();
 
     // initialise waypoint and spline controller
     wp_nav->wp_and_spline_init(g.rtl_speed_cms);
@@ -177,9 +178,19 @@ void ModeRTL::climb_return_run()
     // set motors to full range
     motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
 
-    // stick mixing
+    // stick mixing for altitude
     if ((copter.g2.rtl_options & (uint32_t)Options::AltitudeStickMix) != 0) {
         wp_nav->set_alt_stick_mix(altitude_stick_mix_cms(), G_Dt);
+    }
+
+    // stick mixing for roll
+    // this destination is with offset. If we reached it,
+    // go back to true home before going to next stage
+    bool destination_reached = wp_nav->reached_wp_destination();
+    if ((copter.g2.rtl_options & (uint32_t)Options::RollStickMix) != 0) {
+        _state_complete = !roll_stick_mix_run(destination_reached) && destination_reached;
+    } else {
+        _state_complete = destination_reached;
     }
 
     // run waypoint controller
@@ -191,9 +202,6 @@ void ModeRTL::climb_return_run()
 
     // call attitude controller with auto yaw
     attitude_control->input_thrust_vector_heading(pos_control->get_thrust_vector(), auto_yaw.get_heading());
-
-    // check if we've completed this stage of RTL
-    _state_complete = wp_nav->reached_wp_destination();
 }
 
 // loiterathome_start - initialise return to home
@@ -227,7 +235,7 @@ void ModeRTL::loiterathome_run()
     // run waypoint controller
     copter.failsafe_terrain_set_status(wp_nav->update_wpnav());
 
-    // avoid discontinuities caused by stick mixing, but don't allow altitude control
+    // avoid discontinuities caused by stick mixing
     if ((copter.g2.rtl_options & (uint32_t)Options::AltitudeStickMix) != 0) {
         wp_nav->set_alt_stick_mix(0.0f, G_Dt);
     }

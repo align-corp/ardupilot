@@ -834,26 +834,21 @@ float Mode::altitude_stick_mix_cms() {
 }
 
 // run roll stick mix
-void Mode::roll_stick_mix_run() {
-    if (rc().has_valid_input()) {
-        static bool is_roll_stick_mixing = false;
-        float pilot_roll_norm = channel_roll->norm_input();
+bool Mode::roll_stick_mix_run(bool stop) {
+    float pilot_roll_norm = 0.0f;
+    if (rc().has_valid_input() and !stop) {
+        pilot_roll_norm = channel_roll->norm_input();
         pilot_roll_norm = fabsf(pilot_roll_norm) > 0.1f ? pilot_roll_norm : 0.0f;
-        if (wp_nav->set_roll_stick_mix(pilot_roll_norm, G_Dt)) {
-            // use pilot rate for yaw
-            if (!is_roll_stick_mixing) {
-                // lock yaw heading
-                auto_yaw.set_mode(AutoYaw::Mode::HOLD);
-                is_roll_stick_mixing = true;
-            }
-        } else {
-            if (is_roll_stick_mixing) {
-                // use default yaw mode
-                auto_yaw.set_mode_to_default(false);
-                is_roll_stick_mixing = false;
-            }
-        }
     }
+    bool overriding_roll = wp_nav->set_roll_stick_mix(pilot_roll_norm, G_Dt);
+    if (overriding_roll) {
+        // pilot is overriding roll, lock yaw heading
+        auto_yaw.set_mode(AutoYaw::Mode::HOLD);
+    } else {
+        // restore default yaw mode
+        auto_yaw.set_mode_to_default(false);
+    }
+    return overriding_roll;
 }
 
 // run normal or precision landing (if enabled)

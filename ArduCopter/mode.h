@@ -203,7 +203,7 @@ protected:
 
     // stick mixing
     float altitude_stick_mix_cms();
-    void roll_stick_mix_run();
+    bool roll_stick_mix_run(bool stop = false);
 
 #if AC_PAYLOAD_PLACE_ENABLED
     // payload place flight behaviour:
@@ -1465,7 +1465,8 @@ private:
     enum class Options : int32_t {
         // First pair of bits are still available, pilot yaw was mapped to bit 2 for symmetry with auto
         IgnorePilotYaw    = (1U << 2),
-        AltitudeStickMix  = (1 << 4U),
+        RollStickMix      = (1U << 3),
+        AltitudeStickMix  = (1U << 4),
     };
 
 };

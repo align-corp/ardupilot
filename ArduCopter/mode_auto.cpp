@@ -1028,7 +1028,7 @@ void ModeAuto::wp_run()
 
     // stick mixing for roll
     if ((copter.g2.auto_options & (uint32_t)Options::RollStickMix) != 0) {
-        roll_stick_mix_run();
+        IGNORE_RETURN(roll_stick_mix_run());
     }
 
     // WP_Nav has set the vertical position control targets
@@ -1076,6 +1076,11 @@ void ModeAuto::circle_run()
         wp_nav->set_alt_stick_mix(desired_cmbrate_cms, G_Dt);
     }
 
+    // reset stick mixing for roll
+    if ((copter.g2.auto_options & (uint32_t)Options::RollStickMix) != 0) {
+        IGNORE_RETURN(roll_stick_mix_run(true));
+    }
+
     // call circle controller
     copter.failsafe_terrain_set_status(copter.circle_nav->update(desired_cmbrate_cms));
 
@@ -1105,6 +1110,11 @@ void ModeAuto::loiter_run()
     if (is_disarmed_or_landed()) {
         make_safe_ground_handling();
         return;
+    }
+
+    // avoid discontinuities caused by stick mixing
+    if ((copter.g2.auto_options & (uint32_t)Options::RollStickMix) != 0) {
+        IGNORE_RETURN(roll_stick_mix_run(true));
     }
 
     // set motors to full range

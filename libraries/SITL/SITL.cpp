@@ -1405,14 +1405,20 @@ float SIM::measure_distance_at_angle_bf(const Location &location, float angle) c
         intersectionsfile = fopen("/tmp/intersections.scr", "a");
     }
 #endif
-
     const float radius_cm = 100.0f;
     float min_dist_cm = 1000000.0;
     const uint8_t num_post_offset = 10;
     for (int8_t x=-num_post_offset; x<num_post_offset; x++) {
+#define SITL_PRX_USE_LINE
+#ifdef SITL_PRX_USE_LINE
+        {
+        Location post_location = post_origin;
+        post_location.offset(x, 40);
+#else
         for (int8_t y=-num_post_offset; y<num_post_offset; y++) {
             Location post_location = post_origin;
             post_location.offset(x*10+3, y*10+2);
+#endif
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
             if (postfile != nullptr) {
                 ::fprintf(postfile, "map circle %f %f %f blue\n", post_location.lat*1e-7, post_location.lng*1e-7, radius_cm/100.0);

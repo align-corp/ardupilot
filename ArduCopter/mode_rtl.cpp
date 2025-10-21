@@ -83,6 +83,9 @@ void ModeRTL::run(bool disarm_on_land)
             return_start();
             break;
         case SubMode::RETURN_HOME:
+            return_slow_start();
+            break;
+        case SubMode::RETURN_HOME_SLOW:
             loiterathome_start();
             break;
         case SubMode::LOITER_AT_HOME:
@@ -110,11 +113,15 @@ void ModeRTL::run(bool disarm_on_land)
         FALLTHROUGH;
 
     case SubMode::INITIAL_CLIMB:
-        climb_return_run();
+        climb_run();
         break;
 
     case SubMode::RETURN_HOME:
-        climb_return_run();
+        return_run();
+        break;
+
+    case SubMode::RETURN_HOME_SLOW:
+        return_slow_run();
         break;
 
     case SubMode::LOITER_AT_HOME:
@@ -150,6 +157,29 @@ void ModeRTL::climb_start()
     auto_yaw.set_mode(AutoYaw::Mode::HOLD);
 }
 
+void ModeRTL::climb_run()
+{
+    // if not armed set throttle to zero and exit immediately
+    if (is_disarmed_or_landed()) {
+        make_safe_ground_handling();
+        return;
+    }
+
+    // set motors to full range
+    motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
+
+    // run waypoint controller
+    copter.failsafe_terrain_set_status(wp_nav->update_wpnav());
+
+    // WP_Nav has set the vertical position control targets
+    // run the vertical position controller and set output throttle
+    pos_control->update_z_controller();
+
+    // call attitude controller with auto yaw
+    attitude_control->input_thrust_vector_heading(pos_control->get_thrust_vector(), auto_yaw.get_heading());
+    _state_complete = wp_nav->reached_wp_destination();
+}
+
 // rtl_return_start - initialise return to home
 void ModeRTL::return_start()
 {
@@ -163,11 +193,14 @@ void ModeRTL::return_start()
 
     // initialise yaw to point home (maybe)
     auto_yaw.set_mode_to_default(true);
+
+    // use loiter time for roll stick mix
+    _loiter_start_time = millis();
 }
 
 // rtl_climb_return_run - implements the initial climb, return home and descent portions of RTL which all rely on the wp controller
 //      called by rtl_run at 100hz or more
-void ModeRTL::climb_return_run()
+void ModeRTL::return_run()
 {
     // if not armed set throttle to zero and exit immediately
     if (is_disarmed_or_landed()) {
@@ -184,13 +217,60 @@ void ModeRTL::climb_return_run()
     }
 
     // stick mixing for roll
-    // this destination is with offset. If we reached it,
-    // go back to true home before going to next stage
-    bool destination_reached = wp_nav->reached_wp_destination();
+    if ((copter.g2.rtl_options & (uint32_t)Options::RollStickMix) != 0 &&
+        (millis() - _loiter_start_time) >= 5000) {
+        IGNORE_RETURN(roll_stick_mix_run());
+    }
+
+    // run waypoint controller
+    copter.failsafe_terrain_set_status(wp_nav->update_wpnav());
+
+    // WP_Nav has set the vertical position control targets
+    // run the vertical position controller and set output throttle
+    pos_control->update_z_controller();
+
+    // call attitude controller with auto yaw
+    attitude_control->input_thrust_vector_heading(pos_control->get_thrust_vector(), auto_yaw.get_heading());
+
+    // slow down if we're approaching home and change state
+    float slow_down_dist = g.rtl_speed_cms.cast_to_float() * 12;
+    _state_complete = (wp_nav->get_wp_distance_to_destination() < slow_down_dist ||
+                       wp_nav->reached_wp_destination());
+}
+
+// rtl_return_start - initialise return to home
+void ModeRTL::return_slow_start()
+{
+    _state = SubMode::RETURN_HOME_SLOW;
+    _state_complete = false;
+
+    if (g.rtl_speed_cms.get() > 500) {
+        set_speed_xy(g.rtl_speed_cms.cast_to_float()*0.5f);
+    }
+}
+
+void ModeRTL::return_slow_run()
+{
+    // if not armed set throttle to zero and exit immediately
+    if (is_disarmed_or_landed()) {
+        make_safe_ground_handling();
+        return;
+    }
+
+    // set motors to full range
+    motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
+
+    // stick mixing for altitude
+    if ((copter.g2.rtl_options & (uint32_t)Options::AltitudeStickMix) != 0) {
+        wp_nav->set_alt_stick_mix(altitude_stick_mix_cms(), G_Dt);
+    }
+
+    // set roll stick mix back to 0 offset, 
+    // until real home is reached
     if ((copter.g2.rtl_options & (uint32_t)Options::RollStickMix) != 0) {
-        _state_complete = !roll_stick_mix_run(destination_reached) && destination_reached;
+        _state_complete = !roll_stick_mix_run(true) && wp_nav->reached_wp_destination();
     } else {
-        _state_complete = destination_reached;
+        _state_complete = wp_nav->reached_wp_destination();
     }
 
     // run waypoint controller
@@ -556,6 +636,7 @@ bool ModeRTL::get_wp(Location& destination) const
     case SubMode::STARTING:
     case SubMode::INITIAL_CLIMB:
     case SubMode::RETURN_HOME:
+    case SubMode::RETURN_HOME_SLOW:
     case SubMode::LOITER_AT_HOME:
     case SubMode::FINAL_DESCENT:
         return wp_nav->get_oa_wp_destination(destination);

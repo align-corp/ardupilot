@@ -1390,6 +1390,7 @@ public:
         STARTING,
         INITIAL_CLIMB,
         RETURN_HOME,
+        RETURN_HOME_SLOW,
         LOITER_AT_HOME,
         FINAL_DESCENT,
         LAND
@@ -1431,7 +1432,10 @@ private:
 
     void climb_start();
     void return_start();
-    void climb_return_run();
+    void climb_run();
+    void return_run();
+    void return_slow_start();
+    void return_slow_run();
     void loiterathome_start();
     void loiterathome_run();
     void build_path();

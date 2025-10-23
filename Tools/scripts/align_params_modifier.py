@@ -17,12 +17,6 @@ BASE_FILES_CONFIG = {
         ("A10", "libraries/AP_HAL_ChibiOS/hwdef/AP6m-M3-A10/defaults.parm"),
         (["OF","OF-M3"], "libraries/AP_HAL_ChibiOS/hwdef/AP6m-M3-OF/defaults.parm"),
     ],
-    "libraries/AP_HAL_ChibiOS/hwdef/AP6-M460/defaults.parm": [
-        ("A10", "libraries/AP_HAL_ChibiOS/hwdef/AP6-M460-A10/defaults.parm"),
-    ],
-    "libraries/AP_HAL_ChibiOS/hwdef/AP6-M490/defaults.parm": [
-        ("A10", "libraries/AP_HAL_ChibiOS/hwdef/AP6-M490-A10/defaults.parm"),
-    ],
     "libraries/AP_HAL_ChibiOS/hwdef/AP6-M450/defaults.parm": [
         (["A10","OF","OF-M450"], "libraries/AP_HAL_ChibiOS/hwdef/AP6-M450-A10-OF/defaults.parm"),
         ("A10", "libraries/AP_HAL_ChibiOS/hwdef/AP6-M450-A10/defaults.parm"),
@@ -30,10 +24,12 @@ BASE_FILES_CONFIG = {
         (["DSHOT","A10","NO-GPS"], "libraries/AP_HAL_ChibiOS/hwdef/AP6-M450-no-gps/defaults.parm"),
     ],
     "libraries/AP_HAL_ChibiOS/hwdef/AP6-M460/defaults.parm": [
+        ("A10", "libraries/AP_HAL_ChibiOS/hwdef/AP6-M460-A10/defaults.parm"),
         ("AP5", "libraries/AP_HAL_ChibiOS/hwdef/AP5-M460/defaults.parm"),
         ("AP3", "libraries/AP_HAL_ChibiOS/hwdef/AP3-M460/defaults.parm"),
     ],
     "libraries/AP_HAL_ChibiOS/hwdef/AP6-M490/defaults.parm": [
+        ("A10", "libraries/AP_HAL_ChibiOS/hwdef/AP6-M490-A10/defaults.parm"),
         ("AP5", "libraries/AP_HAL_ChibiOS/hwdef/AP5-M490/defaults.parm"),
         ("AP3", "libraries/AP_HAL_ChibiOS/hwdef/AP3-M490/defaults.parm"),
     ],

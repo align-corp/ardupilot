@@ -13,102 +13,106 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  build-copter:
+  build:
     runs-on: ubuntu-22.04
     container: ardupilot/ardupilot-dev-chibios:v0.1.3
     strategy:
-      fail-fast: false  # don't cancel if a job from the matrix fails
+      fail-fast: true
       matrix:
-        copter: [
-            AP6-M460,
-            AP6-M460-A10,
-            AP6-M490,
-            AP6-M490-A10,
-            AP6-M6T22,
-            AP6-M4T12,
-            AP6-M4P,
-            AP6-M450,
-            AP6-M450-no-gps,
-            AP6-M450-OF,
-            AP6-M450-A10-OF,
-            AP6-M450-A10,
-            AP6-SoH,
-            AP6m-M3,
-            AP6m-M3-A10,
-            AP6m-M3-OF,
-            AP3-M460,
-            AP3-M490,
-            AP5-M460,
-            AP5-M490,
-        ]
+        include:
+          # Copters
+          - type: copter
+            board: AP6-M460
+          - type: copter
+            board: AP6-M460-A10
+          - type: copter
+            board: AP6-M490
+          - type: copter
+            board: AP6-M490-A10
+          - type: copter
+            board: AP6-M6T22
+          - type: copter
+            board: AP6-M4T12
+          - type: copter
+            board: AP6-M4P
+          - type: copter
+            board: AP6-M450
+          - type: copter
+            board: AP6-M450-no-gps
+          - type: copter
+            board: AP6-M450-OF
+          - type: copter
+            board: AP6-M450-A10-OF
+          - type: copter
+            board: AP6-M450-A10
+          - type: copter
+            board: AP6-SoH
+          - type: copter
+            board: AP6m-M3
+          - type: copter
+            board: AP6m-M3-A10
+          - type: copter
+            board: AP6m-M3-OF
+          - type: copter
+            board: AP3-M460
+          - type: copter
+            board: AP3-M490
+          - type: copter
+            board: AP5-M460
+          - type: copter
+            board: AP5-M490
+
+          # Helis
+          - type: heli
+            board: AP6-E1
+          - type: heli
+            board: AP6-E1v2
+          - type: heli
+            board: AP6-E2
 
     steps:
       - uses: actions/checkout@v4
         with:
           submodules: 'recursive'
-      
-      - name: align build
+
+      - name: Build and package ${{ matrix.board }}
         shell: bash
         env:
           CPPFLAGS: ${{ startsWith(github.ref, 'refs/heads/dev') && '-DALIGN_DEV_VERSION' || '' }}
         run: |
           git config --global --add safe.directory ${GITHUB_WORKSPACE}
-          PATH="/usr/lib/ccache:/opt/gcc-arm-none-eabi-10/bin:$PATH"
-          PATH="/github/home/.local/bin:$PATH"
-          python3 Tools/scripts/align_params_modifier.py
-          ./waf configure --board ${{matrix.copter}}
-          ./waf clean
-          ./waf copter
-          cp build/${{matrix.copter}}/bin/arducopter.apj ${{matrix.copter}}.apj
+          export PATH="/usr/lib/ccache:/opt/gcc-arm-none-eabi-10/bin:/github/home/.local/bin:$PATH"
 
-      - name: upload apj
+          python3 Tools/scripts/align_params_modifier.py
+
+          # Validate defaults file exists
+          if [ ! -f "libraries/AP_HAL_ChibiOS/hwdef/${{ matrix.board }}/defaults.parm" ]; then
+            echo "❌ Error: default parameter file not found for ${{ matrix.board }}"
+            exit 1
+          fi
+
+          # Build target depending on firmware type
+          ./waf configure --board ${{ matrix.board }}
+          ./waf clean
+          if [ "${{ matrix.type }}" == "heli" ]; then
+            ./waf heli
+            cp build/${{ matrix.board }}/bin/arducopter-heli.apj ${{ matrix.board }}.apj
+          else
+            ./waf copter
+            cp build/${{ matrix.board }}/bin/arducopter.apj ${{ matrix.board }}.apj
+          fi
+
+      - name: Upload firmware artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ${{matrix.copter}}
-          path: ${{matrix.copter}}.apj
-
-  build-heli:
-    runs-on: ubuntu-22.04
-    container: ardupilot/ardupilot-dev-chibios:v0.1.3
-    strategy:
-      fail-fast: false  # don't cancel if a job from the matrix fails
-      matrix:
-        heli: [
-            AP6-E1,
-            AP6-E1v2,
-            AP6-E2,
-        ]
-
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          submodules: 'recursive'
-      
-      - name: align build
-        shell: bash
-        env:
-          CPPFLAGS: ${{ startsWith(github.ref, 'refs/heads/dev') && '-DALIGN_DEV_VERSION' || '' }}
-        run: |
-          git config --global --add safe.directory ${GITHUB_WORKSPACE}
-          PATH="/usr/lib/ccache:/opt/gcc-arm-none-eabi-10/bin:$PATH"
-          PATH="/github/home/.local/bin:$PATH"
-          python3 Tools/scripts/align_params_modifier.py
-          ./waf configure --board ${{matrix.heli}}
-          ./waf clean
-          ./waf heli
-          cp build/${{matrix.heli}}/bin/arducopter-heli.apj ${{matrix.heli}}.apj
-
-      - name: upload apj
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{matrix.heli}}
-          path: ${{matrix.heli}}.apj
+          name: ${{ matrix.board }}
+          path: ${{ matrix.board }}.apj
   
   release:
     permissions:
       contents: write
     runs-on: ubuntu-22.04
-    needs: [build-copter, build-heli]
+    needs: build
 
     steps:
       - name: checkout for release

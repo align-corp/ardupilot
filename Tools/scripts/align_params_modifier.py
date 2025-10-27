@@ -14,7 +14,7 @@ import os
 # Base files with their respective operations
 BASE_FILES_CONFIG = {
     "libraries/AP_HAL_ChibiOS/hwdef/AP6m-M3/defaults.parm": [
-        ("A10", "libraries/AP_HAL_ChibiOS/hwdef/AP6m-M3-A10/defaults.parm"),
+        (["A10","A10-M3"], "libraries/AP_HAL_ChibiOS/hwdef/AP6m-M3-A10/defaults.parm"),
         (["OF","OF-M3"], "libraries/AP_HAL_ChibiOS/hwdef/AP6m-M3-OF/defaults.parm"),
     ],
     "libraries/AP_HAL_ChibiOS/hwdef/AP6-M450/defaults.parm": [
@@ -37,7 +37,6 @@ BASE_FILES_CONFIG = {
 
 # Configuration rules
 CONFIGURATIONS = {
-    # AP6-M460 variants
     "A10": {
         "remove": ["PRX1_TYPE", "RNGFND1_TYPE", "RNGFND2_TYPE",
                    "MNT1_TYPE", "MNT1_RC_RATE", "CAM1_TYPE",
@@ -53,6 +52,15 @@ PILOT_SPEED_UP 250
 PILOT_Y_RATE 60
 RC9_OPTION 19
 SCR_USER6 1 # OF
+"""
+    },
+
+    "A10-M3": {
+        "remove": ["ATC_RAT_YAW_I", "ATC_RAT_YAW_P"],
+        "add": """
+# A10-M3
+ATC_RAT_YAW_I 0.03
+ATC_RAT_YAW_P 0.3
 """
     },
 

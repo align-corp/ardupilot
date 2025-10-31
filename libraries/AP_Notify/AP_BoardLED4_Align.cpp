@@ -329,19 +329,15 @@ void AP_BoardLED_Align::set_led_from_voltage()
     /*     return; */
     /* } */
     if (voltage < ALIGN_LED_BATT_20) {
-        // toggle works only if first all LEDs are ON
+        // flash LED A
         if (led_flash_first) {
             led_flash_first = false;
             hal.gpio->write(HAL_GPIO_A_LED_PIN, HAL_GPIO_LED_ON);
-            hal.gpio->write(HAL_GPIO_B_LED_PIN, HAL_GPIO_LED_ON);
-            hal.gpio->write(HAL_GPIO_C_LED_PIN, HAL_GPIO_LED_ON);
-            hal.gpio->write(HAL_GPIO_D_LED_PIN, HAL_GPIO_LED_ON);
+            hal.gpio->write(HAL_GPIO_B_LED_PIN, HAL_GPIO_LED_OFF);
+            hal.gpio->write(HAL_GPIO_C_LED_PIN, HAL_GPIO_LED_OFF);
+            hal.gpio->write(HAL_GPIO_D_LED_PIN, HAL_GPIO_LED_OFF);
         } else {
-            // flash all LEDs
             hal.gpio->toggle(HAL_GPIO_A_LED_PIN);
-            hal.gpio->toggle(HAL_GPIO_B_LED_PIN);
-            hal.gpio->toggle(HAL_GPIO_C_LED_PIN);
-            hal.gpio->toggle(HAL_GPIO_D_LED_PIN);
         }
     } else if (voltage < ALIGN_LED_BATT_40) {
         led_flash_first = true;

@@ -426,10 +426,15 @@ bool AP_Mount_G3P::send_packet_dv(uint8_t cmd_id1, uint8_t cmd_id2, uint8_t data
 // send target pitch and yaw rates to gimbal
 void AP_Mount_G3P::send_target_rates(float pitch_rads, float roll_rads, float yaw_rads)
 {
-    //TODO: constrain rate
-    int16_t yaw_strange = -floorf(yaw_rads*10430.376f+0.5f);
-    int16_t roll_strange = floorf(roll_rads*10430.376f+0.5f);
-    int16_t pitch_strange = floorf(pitch_rads*10430.376f+0.5f);
+    // constrain rate
+    pitch_rads = constrain_float(pitch_rads, -M_PI, M_PI);
+    roll_rads = constrain_float(roll_rads, -M_PI, M_PI);
+    yaw_rads = constrain_float(yaw_rads, -M_PI, M_PI);
+
+    // convert from (-PI, PI) to (-INT16_MAX, INT16_MAX)
+    int16_t pitch_strange = floorf(pitch_rads*INT16_MAX/M_PI);
+    int16_t roll_strange = floorf(roll_rads*INT16_MAX/M_PI);
+    int16_t yaw_strange = -floorf(yaw_rads*INT16_MAX/M_PI);
     const uint8_t yaw_roll_pitch_rate[] = { HIGHBYTE(yaw_strange),
                                             LOWBYTE(yaw_strange),
                                             HIGHBYTE(roll_strange),
@@ -460,17 +465,17 @@ void AP_Mount_G3P::send_target_angles(float pitch_rad, float yaw_rad, bool yaw_i
 
     // use simple P controller to convert pitch angle error (in radians) to a target rate scalar (-100 to +100)
     const float pitch_err_rad = (pitch_rad - _current_angle_rad.y);
-    float pitch_rate_rads = constrain_float(pitch_err_rad * AP_MOUNT_G3P_PITCH_P, -2.0f, 2.0f);
+    const float pitch_rate_rads = pitch_err_rad * AP_MOUNT_G3P_PITCH_P;
 
-    // convert yaw angle to body-frame the use simple P controller to convert yaw angle error to a target rate scalar (-100 to +100)
+    // convert yaw angle to body-frame and use simple P controller to convert yaw angle error to a target rate scalar (-100 to +100)
     float yaw_rate_rads;
-    float yaw_err_rad = 0.0f;
+    float yaw_err_rad = 1.0f; // don't switch to RC targeting if sending rate yaw
     if (yaw_send_rate) {
         yaw_rate_rads = yaw_rad;
     } else {
         const float yaw_bf_rad = yaw_is_ef ? wrap_PI(yaw_rad - AP::ahrs().get_yaw()) : yaw_rad;
         yaw_err_rad = (yaw_bf_rad - _current_angle_rad.z);
-        yaw_rate_rads = constrain_float(yaw_err_rad * AP_MOUNT_G3P_YAW_P, -2.0f, 2.0f);
+        yaw_rate_rads = yaw_err_rad * AP_MOUNT_G3P_YAW_P;
     }
 
     // send calculated rates

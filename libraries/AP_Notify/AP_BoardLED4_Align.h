@@ -55,7 +55,6 @@ private:
     } _state;
     uint32_t _last_update_ms;
     uint32_t _check_voltage_ms;
-    bool led_flash_first = true;
 
 #endif
 };

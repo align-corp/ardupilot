@@ -290,10 +290,12 @@ void AP_ToneAlarm::update()
         play_tone(AP_NOTIFY_TONE_LOUD_NEG_FEEDBACK);
     }
 
+#if 0
     // notify the user when a waypoint completes
     if (AP_Notify::events.waypoint_complete) {
         play_tone(AP_NOTIFY_TONE_LOUD_WP_COMPLETE);
     }
+#endif
 
     // notify the user when their mode change was successful
     if (AP_Notify::events.user_mode_change) {
@@ -340,6 +342,7 @@ void AP_ToneAlarm::update()
         }
     }
 
+#if 0
     // notify the user when GCS failsafe is triggered
     if (flags.failsafe_gcs != AP_Notify::flags.failsafe_gcs) {
         flags.failsafe_gcs = AP_Notify::flags.failsafe_gcs;
@@ -370,6 +373,7 @@ void AP_ToneAlarm::update()
             }
         }
     }
+#endif
 
     // check if arming status has changed
     if (flags.armed != AP_Notify::flags.armed) {
@@ -386,6 +390,7 @@ void AP_ToneAlarm::update()
         }
     }
 
+#if 0
     // check if battery status has changed
     if (flags.failsafe_battery != AP_Notify::flags.failsafe_battery) {
         flags.failsafe_battery = AP_Notify::flags.failsafe_battery;
@@ -403,6 +408,7 @@ void AP_ToneAlarm::update()
             play_tone(AP_NOTIFY_TONE_LOUD_ATTENTION_NEEDED);
         }
     }
+#endif
 
     // lost vehicle tone
     if (flags.vehicle_lost != AP_Notify::flags.vehicle_lost) {

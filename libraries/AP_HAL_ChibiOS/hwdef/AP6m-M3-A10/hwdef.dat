@@ -12,9 +12,6 @@ define ALIGN_RGB_STATUS_LED
 # decrease arming delay
 define ARMING_DELAY_SEC 0.5f
 
-# bootloader embedding / bootloader flashing not available
-define AP_BOOTLOADER_FLASHING_ENABLED 0
-
 # list of files to put in ROMFS (Lua scripts)
 ROMFS scripts/battery_6s.lua lua_scr/battery_6s.lua
 ROMFS scripts/led_M3.lua lua_scr/led_M3.lua

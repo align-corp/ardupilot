@@ -143,6 +143,7 @@ public:
         bool gyro_calibrated;     // true if calibrated gyro/acc
 #ifdef ALIGN_BATTERY_PANEL
         bool align_led_priority;  // true if LED require priority to ensure smooth animation
+        bool align_buzz_on;
 #endif
     };
 

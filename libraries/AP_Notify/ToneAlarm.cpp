@@ -132,7 +132,7 @@ bool AP_ToneAlarm::init()
     }
 #endif
 
-#ifndef HAL_BUILD_AP_PERIPH
+#if !defined(HAL_BUILD_AP_PERIPH) && !defined(ALIGN_BATTERY_PANEL)
     play_tone(AP_NOTIFY_TONE_STARTUP);
 #endif
     return true;
@@ -199,6 +199,15 @@ void AP_ToneAlarm::update()
         return;
     }
 
+#ifdef ALIGN_BATTERY_PANEL
+    // align startup
+    if (AP_Notify::flags.align_buzz_on) {
+        AP_Notify::flags.align_buzz_on = false;
+        play_tone(AP_NOTIFY_TONE_STARTUP);
+        return;
+    }
+#endif
+
     check_cont_tone();
 
     if (AP_Notify::flags.powering_off) {
@@ -208,6 +217,11 @@ void AP_ToneAlarm::update()
         flags.powering_off = AP_Notify::flags.powering_off;
         return;
     }
+#ifdef ALIGN_BATTERY_PANEL
+    else if (flags.powering_off) {
+        flags.powering_off = false;
+    }
+#endif
 
     if (AP_Notify::flags.compass_cal_running != flags.compass_cal_running) {
         if (AP_Notify::flags.compass_cal_running) {

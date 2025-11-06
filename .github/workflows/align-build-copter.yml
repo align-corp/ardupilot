@@ -46,6 +46,8 @@ jobs:
           - type: copter
             board: AP6-M450-A10
           - type: copter
+            board: AP6-M450-A10-ds
+          - type: copter
             board: AP6-SoH
           - type: copter
             board: AP6m-M3

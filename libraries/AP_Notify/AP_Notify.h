@@ -194,6 +194,9 @@ public:
     // handle RGB from Scripting
     static void handle_rgb_id(uint8_t r, uint8_t g, uint8_t b, uint8_t id);
 
+    // get powering off flag for scripting
+    static bool is_powering_off() { return flags.powering_off; }
+
 #if AP_NOTIFY_MAVLINK_PLAY_TUNE_SUPPORT_ENABLED
     // handle a PLAY_TUNE message
     static void handle_play_tune(const mavlink_message_t &msg);

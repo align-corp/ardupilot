@@ -1450,6 +1450,10 @@ function FWVersion:minor() end
 ---@return integer
 function FWVersion:major() end
 
+-- get field
+---@return uint32_t_ud
+function FWVersion:os_sw_version() end
+
 --get APM_BUILD_? value from AP_Vehicle/AP_Vehicle_Type.h that is checked against APM_BUILD_TYPE()
 ---@return integer
 ---| '1' # Rover
@@ -2764,6 +2768,10 @@ function notify:handle_rgb(red, green, blue, rate_hz) end
 -- desc
 ---@param tune string
 function notify:play_tune(tune) end
+
+-- desc
+---@return boolean
+function notify:is_powering_off() end
 
 
 -- desc

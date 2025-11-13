@@ -27,6 +27,7 @@ local RTL_MODE = 6
 local AUTO_MODE = 3
 local GUIDED_MODE = 4
 local LAND = 9
+local FOLLOW_MODE = 23
 
 -- color constants
 local RED = 0
@@ -139,7 +140,7 @@ function led()
             set_all_leds(WHITE_LOW, GREEN)
         end
     -- AUTO or GUIDED: 2 white blinks on blue background
-    elseif vehicle:get_mode() == AUTO_MODE or vehicle:get_mode() == GUIDED_MODE then
+    elseif vehicle:get_mode() == AUTO_MODE or vehicle:get_mode() == GUIDED_MODE or vehicle:get_mode() == FOLLOW_MODE then
         if count == 0 or count == 2 then
             set_all_leds(WHITE_HIGH, WHITE_HIGH)
         else

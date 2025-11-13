@@ -19,8 +19,12 @@
 | `0x03030001` | AP6  | M6T22 | no  | none |
 | `0x03010001` | AP6  | M460  | no  | none |
 | `0x03010002` | AP6  | M460  | no  | A10  |
+| `0x03010003` | AP6  | M460  | no  | DSHOT |
+| `0x03010004` | AP6  | M460  | no  | A10-DSHOT |
 | `0x03020001` | AP6  | M490  | no  | none |
 | `0x03020002` | AP6  | M490  | no  | A10  |
+| `0x03020003` | AP6  | M490  | no  | DSHOT |
+| `0x03020004` | AP6  | M490  | no  | A10-DSHOT |
 | `0x03030001` | AP6  | M6T22 | no  | none |
 | `0x03040001` | AP6  | M4T12 | no  | none |      
 | `0x03040002` | AP6  | M4T12 | no  | RTK  |

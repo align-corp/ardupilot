@@ -84,7 +84,7 @@ bool AP_RangeFinder_TOFSenseF_I2C::init(void)
 
     _dev->get_semaphore()->give();
 
-    _dev->register_periodic_callback(100000,
+    _dev->register_periodic_callback(50000,
                                      FUNCTOR_BIND_MEMBER(&AP_RangeFinder_TOFSenseF_I2C::timer, void));
 
     return true;
@@ -124,7 +124,7 @@ bool AP_RangeFinder_TOFSenseF_I2C::get_reading(uint32_t &reading_mm, uint16_t &s
     return ret;
 }
 
-//  timer called at 10Hz
+//  timer called at 20Hz
 void AP_RangeFinder_TOFSenseF_I2C::timer(void)
 {
     uint32_t dist_mm;
@@ -136,9 +136,12 @@ void AP_RangeFinder_TOFSenseF_I2C::timer(void)
         if (status == 1) {
             // healthy data
             distance_mm = dist_mm;
-            new_distance = true;
-            state.last_reading_ms = AP_HAL::millis();
+        } else {
+            // status == 0 means out of range on MT15
+            distance_mm = params.max_distance_cm * 10 + 5000;
         }
+        state.last_reading_ms = AP_HAL::millis();
+        new_distance = true;
     }
 }
 

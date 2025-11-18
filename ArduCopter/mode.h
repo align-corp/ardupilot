@@ -697,6 +697,9 @@ private:
     // True if we have entered AUTO to perform a DO_LAND_START landing sequence and we should report as AUTO RTL mode
     bool auto_RTL;
 
+    // climb rate in circle mode (spiral mode)
+    uint8_t circle_climb_rate_dms;
+
 #if AP_SCRIPTING_ENABLED
     // nav_script_time command variables
     struct {

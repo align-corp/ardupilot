@@ -26,6 +26,9 @@ bool ModeAuto::init(bool ignore_checks)
     wp_nav->reset_alt_stick_mix();
     wp_nav->reset_roll_stick_mix();
 
+    // reset circle climb speed
+    circle_climb_rate_dms = 0;
+
     auto_RTL = false;
     if (mission.num_commands() > 1 || ignore_checks) {
         // reject switching to auto mode if landed with motors armed but first command is not a takeoff (reduce chance of flips)
@@ -1069,7 +1072,10 @@ void ModeAuto::circle_run()
 {
     float desired_cmbrate_cms = 0.0f;
     // stick mixing for altitude
-    if ((copter.g2.auto_options & (uint32_t)Options::AltitudeStickMix) != 0) {
+    if (circle_climb_rate_dms > 0) {
+        desired_cmbrate_cms = MIN(circle_climb_rate_dms*10, wp_nav->get_default_speed_up());
+        wp_nav->set_alt_stick_mix(desired_cmbrate_cms, G_Dt);
+    } else if ((copter.g2.auto_options & (uint32_t)Options::AltitudeStickMix) != 0) {
         desired_cmbrate_cms = altitude_stick_mix_cms();
         wp_nav->set_alt_stick_mix(desired_cmbrate_cms, G_Dt);
     }
@@ -1109,6 +1115,7 @@ void ModeAuto::loiter_run()
     if ((copter.g2.auto_options & (uint32_t)Options::RollStickMix) != 0) {
         IGNORE_RETURN(roll_stick_mix_run(true));
     }
+    wp_nav->set_alt_stick_mix(0, G_Dt);
 
     // set motors to full range
     motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
@@ -1670,7 +1677,7 @@ void ModeAuto::do_loiter_unlimited(const AP_Mission::Mission_Command& cmd)
 // do_circle - initiate moving in a circle
 void ModeAuto::do_circle(const AP_Mission::Mission_Command& cmd)
 {
-    const Location circle_center = loc_from_cmd(cmd, copter.current_loc);
+    Location circle_center = loc_from_cmd(cmd, copter.current_loc);
 
     // calculate radius
     uint16_t circle_radius_m = HIGHBYTE(cmd.p1); // circle radius held in high byte of p1
@@ -1682,6 +1689,14 @@ void ModeAuto::do_circle(const AP_Mission::Mission_Command& cmd)
 
     // true if circle should be ccw
     const bool circle_direction_ccw = cmd.content.location.loiter_ccw;
+
+    // climb rate to spiral up
+    // we use 6 MSB of location.alt to specify climb rate
+    // horrible, but storage is limited
+    if (cmd.content.location.loiter_xtrack) {
+        circle_climb_rate_dms = (cmd.content.location.alt >> 18) & 0x3F;
+        circle_center.alt &= 0x1FFFF;
+    }
 
     // move to edge of circle (verify_circle) will ensure we begin circling once we reach the edge
     circle_movetoedge_start(circle_center, circle_radius_m, circle_direction_ccw);
@@ -2220,7 +2235,11 @@ bool ModeAuto::verify_circle(const AP_Mission::Mission_Command& cmd)
     const float turns = cmd.get_loiter_turns();
 
     // check if we have completed circling
-    return fabsf(copter.circle_nav->get_angle_total()/float(M_2PI)) >= turns;
+    if (fabsf(copter.circle_nav->get_angle_total()/float(M_2PI)) >= turns) {
+        circle_climb_rate_dms = 0;
+        return true;
+    }
+    return false;
 }
 
 // verify_spline_wp - check if we have reached the next way point using spline

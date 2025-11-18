@@ -997,6 +997,11 @@ MAV_MISSION_RESULT AP_Mission::mavlink_int_to_mission_cmd(const mavlink_mission_
     cmd.id = packet.command;
     cmd.content.location = {};
 
+#if APM_BUILD_TYPE(APM_BUILD_ArduCopter)
+    // climb rate for MAV_CMD_NAV_LOITER_TURNS
+    uint8_t climb_rate_dm = 0;
+#endif
+
     MAV_MISSION_RESULT param_check = sanity_check_params(packet);
     if (param_check != MAV_MISSION_ACCEPTED) {
         return param_check;
@@ -1060,7 +1065,18 @@ MAV_MISSION_RESULT AP_Mission::mavlink_int_to_mission_cmd(const mavlink_mission_
         }
         cmd.p1 |= (radius_m<<8);   // store radius in high byte of p1
         cmd.content.location.loiter_ccw = (packet.param3 < 0);
+
+#if APM_BUILD_TYPE(APM_BUILD_ArduCopter)
+        // mavlink param 2 for enabling vertical speed
+        // use 6 last bits of Location.alt
+        if (packet.param2 > 0 && packet.z <= 1310.71) {
+            climb_rate_dm = packet.param2 < 0x3F ? (uint8_t)(packet.param2) : 0x3F;
+        }
+        // copter doesn't use xtrack param, use it for vertical speed
+        cmd.content.location.loiter_xtrack = climb_rate_dm > 0;
+#else
         cmd.content.location.loiter_xtrack = (packet.param4 > 0); // 0 to xtrack from center of waypoint, 1 to xtrack from tangent exit location
+#endif
     }
     break;
 
@@ -1402,6 +1418,13 @@ MAV_MISSION_RESULT AP_Mission::mavlink_int_to_mission_cmd(const mavlink_mission_
 
         cmd.content.location.alt = packet.z * 100.0f;       // convert packet's alt (m) to cmd alt (cm)
 
+#if APM_BUILD_TYPE(APM_BUILD_ArduCopter)
+        // store climb rate in altitude bit 18-24
+        if (climb_rate_dm > 0 && cmd.id == MAV_CMD_NAV_LOITER_TURNS) {
+            cmd.content.location.alt |= climb_rate_dm << 18;
+        }
+#endif
+
         switch (packet.frame) {
 
         case MAV_FRAME_MISSION:
@@ -1538,6 +1561,10 @@ bool AP_Mission::mission_cmd_to_mavlink_int(const AP_Mission::Mission_Command& c
     packet.frame = 0;
     packet.autocontinue = 1;
 
+#if APM_BUILD_TYPE(APM_BUILD_ArduCopter)
+    bool circle_climbrate = false;
+#endif
+
     // command specific conversions from mission command to mavlink packet
     switch (cmd.id) {
     case 0:
@@ -1575,7 +1602,15 @@ bool AP_Mission::mission_cmd_to_mavlink_int(const AP_Mission::Mission_Command& c
         if (cmd.type_specific_bits & (1U<<1)) {
             packet.param1 /= 256.0;
         }
+#if APM_BUILD_TYPE(APM_BUILD_ArduCopter)
+        if (cmd.content.location.loiter_xtrack) {
+            uint8_t climb_rate = cmd.content.location.alt >> 18;
+            packet.param2 = climb_rate & 0x3F;
+            circle_climbrate = true;
+        }
+#else
         packet.param4 = cmd.content.location.loiter_xtrack; // 0 to xtrack from center of waypoint, 1 to xtrack from tangent exit location
+#endif
         break;
 
     case MAV_CMD_NAV_LOITER_TIME:                       // MAV ID: 19
@@ -1904,7 +1939,17 @@ bool AP_Mission::mission_cmd_to_mavlink_int(const AP_Mission::Mission_Command& c
         packet.x = cmd.content.location.lat;
         packet.y = cmd.content.location.lng;
 
+#if APM_BUILD_TYPE(APM_BUILD_ArduCopter)
+        uint32_t alt_cm = cmd.content.location.alt;
+        if (circle_climbrate) {
+            // we use 6 MSB of location.alt to specify climb rate
+            // horrible, but storage is limited
+            alt_cm &= 0x1FFFF;
+        }
+        packet.z = alt_cm * 0.01f;   // cmd alt in cm to m
+#else
         packet.z = cmd.content.location.alt * 0.01f;   // cmd alt in cm to m
+#endif
         if (cmd.content.location.relative_alt) {
             packet.frame = MAV_FRAME_GLOBAL_RELATIVE_ALT;
         } else {

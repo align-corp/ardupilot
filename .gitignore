@@ -182,6 +182,7 @@ libraries/AP_HAL_ChibiOS/hwdef/AP6-M450-no-gps/defaults.parm
 libraries/AP_HAL_ChibiOS/hwdef/AP6-M450-A10-ds/defaults.parm
 libraries/AP_HAL_ChibiOS/hwdef/AP6-M460-A10/defaults.parm
 libraries/AP_HAL_ChibiOS/hwdef/AP6-M490-A10/defaults.parm
+libraries/AP_HAL_ChibiOS/hwdef/AP6-M490-ds/defaults.parm
 libraries/AP_HAL_ChibiOS/hwdef/AP6m-M3-A10/defaults.parm
 libraries/AP_HAL_ChibiOS/hwdef/AP6m-M3-OF/defaults.parm
 libraries/AP_HAL_ChibiOS/hwdef/AP3-M460/defaults.parm

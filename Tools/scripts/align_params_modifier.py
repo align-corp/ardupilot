@@ -34,6 +34,9 @@ BASE_FILES_CONFIG = {
         ("AP5", "libraries/AP_HAL_ChibiOS/hwdef/AP5-M490/defaults.parm"),
         ("AP3", "libraries/AP_HAL_ChibiOS/hwdef/AP3-M490/defaults.parm"),
     ],
+    "libraries/AP_HAL_ChibiOS/hwdef/AP6-M460-ds/defaults.parm": [
+        ("M490", "libraries/AP_HAL_ChibiOS/hwdef/AP6-M490-ds/defaults.parm"),
+    ],
 }
 
 # Configuration rules
@@ -173,6 +176,24 @@ SR4_EXT_STAT 2
 SR4_POSITION 3
 SR4_RAW_SENS 2
 SR4_RC_CHAN 50
+"""
+    },
+
+    "M490": {
+        "remove": [],
+        "add": """
+# M490 PID
+ATC_ANG_PIT_P 14
+ATC_ANG_RLL_P 10
+ATC_ANG_YAW_P 4.8
+ATC_RAT_PIT_D 0.015
+ATC_RAT_PIT_I 0.25
+ATC_RAT_PIT_P 0.25
+ATC_RAT_RLL_D 0.01
+ATC_RAT_RLL_I 0.15
+ATC_RAT_RLL_P 0.15
+ATC_RAT_YAW_I 0.1
+ATC_RAT_YAW_P 1
 """
     },
 }

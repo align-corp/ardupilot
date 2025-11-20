@@ -1,0 +1,8 @@
+include ../AP6m/hwdef.dat
+include ../AP6m-MR25/common.dat
+
+# define custom Align frame code
+define ALIGN_FRAME ALIGN_MR25
+
+# list of files to put in ROMFS (Lua scripts)
+ROMFS scripts/arm_check.lua lua_scr/arm_check.lua

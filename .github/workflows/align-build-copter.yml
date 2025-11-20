@@ -26,9 +26,13 @@ jobs:
           - type: copter
             board: AP6-M460-A10
           - type: copter
+            board: AP6-M460-ds
+          - type: copter
             board: AP6-M490
           - type: copter
             board: AP6-M490-A10
+          - type: copter
+            board: AP6-M490-ds
           - type: copter
             board: AP6-M6T22
           - type: copter

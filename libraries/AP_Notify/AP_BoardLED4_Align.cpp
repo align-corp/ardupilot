@@ -148,6 +148,10 @@ void AP_BoardLED_Align::update(void)
                 _state = State::TURNING_ON;
                 // we don't need anymore LED priority
                 AP_Notify::flags.align_led_priority = false;
+#if defined(HAL_GPIO_E_LED_PIN) && defined(HAL_GPIO_F_LED_PIN)
+                // update MR25 status LED to signal user can release button
+                set_mr25_status_led();
+#endif
             } else {
                 _state = State::CHECK_VOLTAGE;
             }
@@ -173,12 +177,15 @@ void AP_BoardLED_Align::update(void)
 
         case State::ON:
             // Update LED based on battery voltage every one second
-            if (_check_voltage_ms == 0) {
+            if (now_ms - _check_voltage_ms > 1000 || _check_voltage_ms == 0) {
                 _check_voltage_ms = now_ms;
                 set_led_from_voltage();
-            } else if (now_ms - _check_voltage_ms > 1000) {
-                set_led_from_voltage();
+#if defined(HAL_GPIO_E_LED_PIN) && defined(HAL_GPIO_F_LED_PIN)
+                // update MR25 status LED
+                set_mr25_status_led();
+#endif
             }
+
 
             // Do nothing if drone is armed
             if (AP_Notify::flags.armed) {
@@ -309,6 +316,25 @@ void AP_BoardLED_Align::update(void)
             break;
     }
 }
+
+#if defined(HAL_GPIO_E_LED_PIN) && defined(HAL_GPIO_F_LED_PIN)
+void AP_BoardLED_Align::set_mr25_status_led() {
+    // update status light for MR25
+    if (AP_Notify::flags.compass_cal_running) {
+        // orange status light
+        hal.gpio->write(HAL_GPIO_E_LED_PIN, HAL_GPIO_LED_ON);
+        hal.gpio->write(HAL_GPIO_F_LED_PIN, HAL_GPIO_LED_ON);
+    } else if (AP_Notify::flags.pre_arm_check) {
+        // set green status light
+        hal.gpio->write(HAL_GPIO_E_LED_PIN, HAL_GPIO_LED_OFF);
+        hal.gpio->write(HAL_GPIO_F_LED_PIN, HAL_GPIO_LED_ON);
+    } else {
+        // set red status light
+        hal.gpio->write(HAL_GPIO_E_LED_PIN, HAL_GPIO_LED_ON);
+        hal.gpio->write(HAL_GPIO_F_LED_PIN, HAL_GPIO_LED_OFF);
+    }
+}
+#endif
 
 void AP_BoardLED_Align::set_led_from_voltage()
 {

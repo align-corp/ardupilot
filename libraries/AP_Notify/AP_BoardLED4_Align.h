@@ -35,6 +35,10 @@ private:
 
     void set_led_from_voltage();
 
+#if defined(HAL_GPIO_E_LED_PIN) && defined(HAL_GPIO_F_LED_PIN)
+    void set_mr25_status_led();
+#endif
+
     enum class State : uint8_t {
         START,
         LED1_ON,

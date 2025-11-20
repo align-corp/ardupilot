@@ -11,6 +11,9 @@ if [ -f $src ]; then
     cp $src "Tools/bootloaders/AP6m-M3_bl.bin"
     cp $src "Tools/bootloaders/AP6m-M3-OF_bl.bin"
     cp $src "Tools/bootloaders/AP6m-M3-A10_bl.bin"
+    cp $src "Tools/bootloaders/AP6m-MR25_bl.bin"
+    cp $src "Tools/bootloaders/AP6m-MR25-A10_bl.bin"
+    cp $src "Tools/bootloaders/AP6m-MR25-no-gps_bl.bin"
     echo "Update bootloader for AP6m"
 else
     echo "Bootloader doesn't exist"

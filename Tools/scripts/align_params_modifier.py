@@ -29,6 +29,12 @@ BASE_FILES_CONFIG = {
         (["M450", "A10","NO-GPS"], "libraries/AP_HAL_ChibiOS/hwdef/AP6-M450-nogps-ds/defaults.parm"),
     ],
 
+    # MR25 4in1
+    "libraries/AP_HAL_ChibiOS/hwdef/AP6m-MR25/defaults.parm": [
+        ("A10", "libraries/AP_HAL_ChibiOS/hwdef/AP6m-MR25-A10/defaults.parm"),
+    (["A10","NO-GPS"], "libraries/AP_HAL_ChibiOS/hwdef/AP6m-MR25-no-gps/defaults.parm"),
+    ],
+
     # M450 old ESC
     "libraries/AP_HAL_ChibiOS/hwdef/AP6-M450/defaults.parm": [
         (["A10","OF","OF-M450"], "libraries/AP_HAL_ChibiOS/hwdef/AP6-M450-A10-OF/defaults.parm"),
@@ -144,11 +150,10 @@ SERVO6_FUNCTION 7
         "remove": [],
         "add": """
 # NO GPS
+AHRS_GPS_USE 0
 BATT_FS_CRT_ACT 0
 BATT_FS_LOW_ACT 0
-COMPASS_USE 0
-COMPASS_USE2 0
-COMPASS_USE3 0
+COMPASS_ENABLE 0
 EK3_SRC1_POSXY 0
 EK3_SRC1_VELXY 0
 EK3_SRC1_VELZ 0
@@ -156,6 +161,7 @@ EK3_SRC1_YAW 0
 FLTMODE1 2
 FLTMODE4 2
 FLTMODE6 2
+GPS_TYPE 0
 """
     },
 

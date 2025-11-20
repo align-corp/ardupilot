@@ -308,6 +308,18 @@ void AP_BoardLED_Align::update(void)
         default:
             break;
     }
+
+#if defined(HAL_GPIO_E_LED_PIN) && defined(HAL_GPIO_F_LED_PIN)
+    // update status light for MR25
+    if (AP_Notify::flags.compass_cal_running) {
+        // orange status light
+    }
+    else if (AP_Notify::flags.pre_arm_check) {
+        // set green status light
+    } else {
+        // set red status light
+    }
+#endif
 }
 
 void AP_BoardLED_Align::set_led_from_voltage()

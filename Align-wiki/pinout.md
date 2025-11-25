@@ -21,7 +21,7 @@
 9. LED 2
 10. LED 3
 
-### UART/I2C (G3P)
+### SERIAL/I2C (G3P)
 Warning: Chinese ublox GPS only without rangefinders
 1. GCS Telemetry
 2. Rangefinder MT15 (forward)
@@ -32,7 +32,7 @@ Warning: Chinese ublox GPS only without rangefinders
 7. G3P DV
 8. (I2C) Rangefinder MT15 (downward, configure as I2C)
 
-### UART/I2C (A10)
+### SERIAL/I2C (A10)
 1. GCS Telemetry
 2. 
 3. 
@@ -57,7 +57,7 @@ Warning: Chinese ublox GPS only without rangefinders
 10. RPM fan cooler
 11. RPM HW feedback
 
-### UART
+### SERIAL
 1. GCS Telemetry
 2. Rangefinder NoopLoop (forward)
 3. Rangefinder NoopLoop (downward)
@@ -94,8 +94,11 @@ Warning: Chinese ublox GPS only without rangefinders
 10. GPIO OUTPUT - engine
 
 ## GM22/45
-### UART
-- UART4 TX (GPIO 1) axis 0 UP
-- UART4 RX (GPIO 2) axis 0 DOWN
-- UART5 TX (GPIO 3) axis 1 UP
-- UART5 RX (GPIO 4) axis 1 DOWN
+### SERIAL
+1. GCS Telemetry
+2.
+3.
+4. TX (GPIO 1) axis 0 UP, RX (GPIO 2) axis 0 DOWN
+5. TX (GPIO 3) axis 1 UP, RX (GPIO 4) axis 1 DOWN
+6. GPS 1
+7. GPS 2

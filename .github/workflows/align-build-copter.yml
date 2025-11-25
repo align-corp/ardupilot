@@ -42,7 +42,9 @@ jobs:
           - type: copter
             board: AP6-M450
           - type: copter
-            board: AP6-M450-no-gps
+            board: AP6-M450-ds
+          - type: copter
+            board: AP6-M450-nogps-ds
           - type: copter
             board: AP6-M450-OF
           - type: copter

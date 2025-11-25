@@ -20,11 +20,11 @@
 | `0x03010001` | AP6  | M460  | no  | none |
 | `0x03010002` | AP6  | M460  | no  | A10  |
 | `0x03010003` | AP6  | M460  | no  | DSHOT |
-| `0x03010004` | AP6  | M460  | no  | A10-DSHOT |
+| `0x03010004` | AP6  | M460  | no  | A10 - DSHOT |
 | `0x03020001` | AP6  | M490  | no  | none |
 | `0x03020002` | AP6  | M490  | no  | A10  |
 | `0x03020003` | AP6  | M490  | no  | DSHOT |
-| `0x03020004` | AP6  | M490  | no  | A10-DSHOT |
+| `0x03020004` | AP6  | M490  | no  | A10 - DSHOT |
 | `0x03030001` | AP6  | M6T22 | no  | none |
 | `0x03040001` | AP6  | M4T12 | no  | none |      
 | `0x03040002` | AP6  | M4T12 | no  | RTK  |
@@ -33,7 +33,9 @@
 | `0x03060101` | AP6  | M450  | yes | none |
 | `0x03060002` | AP6  | M450  | no  | A10  |
 | `0x03060102` | AP6  | M450  | yes | A10  |
-| `0x03060003` | AP6  | M450  | no  | no GPS |
+| `0x03060003` | AP6  | M450  | no  | DSHOT |
+| `0x03060004` | AP6  | M450  | no  | A10 - DSHOT |
+| `0x03060005` | AP6  | M450  | no  | A10 - NOGPS - DSHOT |
 | `0x03400001` | AP6  | E1    | no  | none |         
 | `0x03410001` | AP6  | TB70  | no  | none |         
 | `0x03420001` | AP6  | E2    | no  | none |         

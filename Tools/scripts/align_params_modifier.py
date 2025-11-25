@@ -13,30 +13,41 @@ import os
 
 # Base files with their respective operations
 BASE_FILES_CONFIG = {
+    # M3
     "libraries/AP_HAL_ChibiOS/hwdef/AP6m-M3/defaults.parm": [
         (["A10","A10-M3"], "libraries/AP_HAL_ChibiOS/hwdef/AP6m-M3-A10/defaults.parm"),
         (["OF","OF-M3"], "libraries/AP_HAL_ChibiOS/hwdef/AP6m-M3-OF/defaults.parm"),
     ],
+
+    # M450/M460/M490 4in1
+    "libraries/AP_HAL_ChibiOS/hwdef/AP6-M460-ds/defaults.parm": [
+        ("M490", "libraries/AP_HAL_ChibiOS/hwdef/AP6-M490-ds/defaults.parm"),
+        ("M450", "libraries/AP_HAL_ChibiOS/hwdef/AP6-M450-ds/defaults.parm"),
+        (["M450","A10"], "libraries/AP_HAL_ChibiOS/hwdef/AP6-M450-A10-ds/defaults.parm"),
+        (["M450", "A10","NO-GPS"], "libraries/AP_HAL_ChibiOS/hwdef/AP6-M450-nogps-ds/defaults.parm"),
+    ],
+
+    # M450 old ESC
     "libraries/AP_HAL_ChibiOS/hwdef/AP6-M450/defaults.parm": [
         (["A10","OF","OF-M450"], "libraries/AP_HAL_ChibiOS/hwdef/AP6-M450-A10-OF/defaults.parm"),
         ("A10", "libraries/AP_HAL_ChibiOS/hwdef/AP6-M450-A10/defaults.parm"),
         (["OF","OF-M450"], "libraries/AP_HAL_ChibiOS/hwdef/AP6-M450-OF/defaults.parm"),
-        (["DSHOT","A10","NO-GPS"], "libraries/AP_HAL_ChibiOS/hwdef/AP6-M450-no-gps/defaults.parm"),
-        (["DSHOT","A10"], "libraries/AP_HAL_ChibiOS/hwdef/AP6-M450-A10-ds/defaults.parm"),
     ],
+
+    # M460 old ESC
     "libraries/AP_HAL_ChibiOS/hwdef/AP6-M460/defaults.parm": [
         ("A10", "libraries/AP_HAL_ChibiOS/hwdef/AP6-M460-A10/defaults.parm"),
         ("AP5", "libraries/AP_HAL_ChibiOS/hwdef/AP5-M460/defaults.parm"),
         ("AP3", "libraries/AP_HAL_ChibiOS/hwdef/AP3-M460/defaults.parm"),
     ],
+
+    # M490 old ESC
     "libraries/AP_HAL_ChibiOS/hwdef/AP6-M490/defaults.parm": [
         ("A10", "libraries/AP_HAL_ChibiOS/hwdef/AP6-M490-A10/defaults.parm"),
         ("AP5", "libraries/AP_HAL_ChibiOS/hwdef/AP5-M490/defaults.parm"),
         ("AP3", "libraries/AP_HAL_ChibiOS/hwdef/AP3-M490/defaults.parm"),
     ],
-    "libraries/AP_HAL_ChibiOS/hwdef/AP6-M460-ds/defaults.parm": [
-        ("M490", "libraries/AP_HAL_ChibiOS/hwdef/AP6-M490-ds/defaults.parm"),
-    ],
+
 }
 
 # Configuration rules
@@ -196,8 +207,32 @@ ATC_RAT_YAW_I 0.08
 ATC_RAT_YAW_P 0.8
 """
     },
-}
 
+    "M450": {
+        "remove": [],
+        "add": """
+# M450 PID
+ATC_ACCEL_P_MAX 60000
+ATC_ACCEL_R_MAX 60000
+ATC_ACCEL_Y_MAX 30000
+ATC_ANG_PIT_P 10
+ATC_ANG_RLL_P 10
+ATC_ANG_YAW_P 7
+ATC_RAT_PIT_D 0.008
+ATC_RAT_PIT_I 0.17
+ATC_RAT_PIT_P 0.17
+ATC_RAT_RLL_D 0.009
+ATC_RAT_RLL_I 0.17
+ATC_RAT_RLL_P 0.17
+ATC_RAT_YAW_D 0.01
+ATC_RAT_YAW_FLTE 1.36
+ATC_RAT_YAW_I 0.06
+ATC_RAT_YAW_P 0.6
+ATC_SLEW_YAW 8000
+"""
+    },
+
+}
 # =============================================================================
 # SCRIPT CODE - NO NEED TO MODIFY BELOW THIS LINE
 # =============================================================================

@@ -22,13 +22,14 @@
 10. LED 3
 
 ### UART/I2C (G3P)
+Warning: Chinese ublox GPS only without rangefinders
 1. GCS Telemetry
 2. Rangefinder MT15 (forward)
 3. ESC telemetry
 4. PCU
 5. G3P gimbal
 6. GPS
-7. G3P gimbal
+7. G3P DV
 8. (I2C) Rangefinder MT15 (downward, configure as I2C)
 
 ### UART/I2C (A10)

@@ -39,8 +39,8 @@ local align_vehicle
 -- configuration based on vehicle type
 local function setup_channels()
     local align_frame = FWVersion:os_sw_version():toint()
-    if align_frame > 0x03010000 and align_frame < 0x03030000 then
-        -- AP6-M460 to AP6-M490
+    if align_frame > 0x03010000 and align_frame < 0x03070000 then
+        -- AP6-M450 AP6-M460 AP6-M490
         align_vehicle = M4
     elseif align_frame > 0x04070000 and align_frame < 0x04080000 then
         -- AP6m-M3

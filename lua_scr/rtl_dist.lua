@@ -5,35 +5,38 @@
 ----------------------------------------------
 local BATTERY_CELLS = 6
 
--- {cell voltage, M3 4200 mAh, M3 4800 mAh HV}
+-- {cell voltage, 4200 mAh, 4800 mAh HV,6000 mAh (!!! need to calculate !!!), 10000 mAh}
 local VOLTAGE_TO_PERCENT_TABLE = {
-    {3.4,   0,   0},
-    {3.5,   4,   4},
-    {3.6,  11,  12},
-    {3.7,  42,  38},
-    {3.8,  65,  56},
-    {3.9,  79,  69},
-    {4.0,  90,  79},
-    {4.1, 100,  89},
-    {4.2, 100,  98},
-    {4.3, 100, 100},
+    {0,  4200,4800,6000,10000},
+    {3.3,   0,   0,   0,   0},
+    {3.4,   0,   0,   9,   9},
+    {3.5,   4,   4,  26,  26},
+    {3.6,  11,  12,  44,  44},
+    {3.7,  42,  38,  59,  59},
+    {3.8,  65,  56,  70,  70},
+    {3.9,  79,  69,  79,  79},
+    {4.0,  90,  79,  90,  90},
+    {4.1, 100,  89, 100, 100},
+    {4.2, 100,  98, 100, 100},
+    {4.3, 100, 100, 100, 100},
 }
 
 -- %/m = 1/(SPEED[m/s]*36*BATT_CAPACITY[Ah]/CRUISE_CURRENT[A])
-local PERCENT_PER_METER = 0.012  -- Battery percentage consumed per meter of travel
+local PERCENT_PER_METER = 0.015  -- Battery percentage consumed per meter of travel
 local PERCENT_PER_METER_DOWN = 0.03  -- Battery percentage consumed per meter of travel
 local MIN_SAFE_PERCENT = 7  -- Minimum battery percentage needed to return home
+local LAND_PERCENTAGE = 4
 local MINIMUM_RTL_DIST = 30  -- Minimum distance from home to trigger RTL
-local DEFAULT_BATTERY_ID = 2  -- 4800 mAh HV as default
 
 ----------------------------------------------
 --- script start, don't change below this line
 ----------------------------------------------
 local UPDATE_VOLTAGE_MS = 200
 local VOLTAGES_SAMPLES_TO_MEDIAN = 51
-local RTL_MODE = 6  -- Mode number for RTL
+local RTL_MODE = 6
+local LAND_MODE = 9
 local PARAM_TABLE_KEY = 82
-local NUM_COLUMNS = #VOLTAGE_TO_PERCENT_TABLE[1]
+local BATT_CAPACITY = Parameter("BATT_CAPACITY")
 
 -- Variables
 local voltage_samples = {}
@@ -50,7 +53,7 @@ end
 -- add param table
 assert(param:add_table(PARAM_TABLE_KEY, "RTLS_", 2), 'rtl_dist: could not add param table')
 
-local RTLS_ENABLE = bind_add_param('ENABLE', 1, DEFAULT_BATTERY_ID)
+local RTLS_ENABLE = bind_add_param('ENABLE', 1, 1)
 local RTLS_DIST = bind_add_param('DIST', 2, MINIMUM_RTL_DIST)
 
 function update()
@@ -58,19 +61,15 @@ function update()
     if RTLS_ENABLE:get() < 1 then
         return update, 1000
     end
-    if  RTLS_ENABLE:get() > NUM_COLUMNS - 1 then
-        -- report error and delay script
-        gcs:send_text(0, "rtl_dist: battery id out of range")
-        return update, 30000
-    end
 
     -- return if not armed
     if not arming:is_armed() then
         return update, 1000
     end
 
-    -- return if already in RTL
-    if vehicle:get_mode() == RTL_MODE then
+    -- return if already in LAND
+    local mode = vehicle:get_mode()
+    if mode == LAND_MODE then
         return update, 1000
     end
 
@@ -95,9 +94,18 @@ function update()
     -- Convert voltage to percentage using lookup table
     local percent = voltage_to_percent(median_voltage)
     if percent < 0 then
-        -- report error and delay script
-        gcs:send_text(0, "rtl_dist: error calculating percentage")
+        -- Delay script
         return update, 10000
+    end
+
+    if percent < LAND_PERCENTAGE then
+        gcs:send_text(3, string.format("Low battery! %.1f%% remaining, start LAND", percent))
+        vehicle:set_mode(LAND_MODE)
+    end
+
+    -- return if already in RTL
+    if mode == RTL_MODE then
+        return update, 1000
     end
 
     -- Get distance from home and altitude
@@ -134,21 +142,37 @@ end
 
 -- Function to convert voltage to percentage using lookup table
 function voltage_to_percent(voltage)
-    -- add 1 so you get the table column (starts from 2)
-    local batt_id = RTLS_ENABLE:get() + 1
+    local batt_id = -1
+
+    local batt_capacity = BATT_CAPACITY:get()
+    if batt_capacity <= 0 then
+        gcs:send_text(4, "rtl_dist: invalid BATT_CAPACITY")
+        return -1
+    end
+
+    for i = 2, #VOLTAGE_TO_PERCENT_TABLE[1] do
+        if batt_capacity == VOLTAGE_TO_PERCENT_TABLE[1][i] then
+            batt_id = i
+        end
+    end
+
+    if batt_id == -1 then
+        gcs:send_text(4, "rtl_dist: BATT_CAPACITY not in battery list")
+        return -1
+    end
 
     -- divide for number of cells
     voltage = voltage / BATTERY_CELLS
 
     -- Handle edge cases
-    if voltage <= VOLTAGE_TO_PERCENT_TABLE[1][1] then
-        return VOLTAGE_TO_PERCENT_TABLE[1][batt_id]
+    if voltage <= VOLTAGE_TO_PERCENT_TABLE[2][1] then
+        return VOLTAGE_TO_PERCENT_TABLE[2][batt_id]
     elseif voltage >= VOLTAGE_TO_PERCENT_TABLE[#VOLTAGE_TO_PERCENT_TABLE][1] then
         return VOLTAGE_TO_PERCENT_TABLE[#VOLTAGE_TO_PERCENT_TABLE][batt_id]
     end
 
     -- Find the two closest voltage entries in the table
-    for i = 1, #VOLTAGE_TO_PERCENT_TABLE - 1 do
+    for i = 2, #VOLTAGE_TO_PERCENT_TABLE - 1 do
         local v1 = VOLTAGE_TO_PERCENT_TABLE[i][1]
         local p1 = VOLTAGE_TO_PERCENT_TABLE[i][batt_id]
         local v2 = VOLTAGE_TO_PERCENT_TABLE[i+1][1]
@@ -161,6 +185,7 @@ function voltage_to_percent(voltage)
     end
 
     -- should be impossible to get here
+    gcs:send_text(4, "rtl_dist: voltage out of range")
     return -1
 end
 

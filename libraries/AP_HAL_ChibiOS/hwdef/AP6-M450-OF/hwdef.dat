@@ -42,3 +42,4 @@ ROMFS scripts/rng_auto.lua lua_scr/rng_auto.lua
 ROMFS scripts/led_4.lua lua_scr/led_4.lua
 ROMFS scripts/ahrs_source_gps_optflow.lua lua_scr/ahrs_source_gps_optflow.lua
 ROMFS scripts/arm_check.lua lua_scr/arm_check.lua
+ROMFS scripts/rtl_dist.lua lua_scr/rtl_dist.lua

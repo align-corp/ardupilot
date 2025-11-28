@@ -15,4 +15,4 @@ define ARMING_DELAY_SEC 0.5f
 # list of files to put in ROMFS (Lua scripts)
 ROMFS scripts/battery_6s.lua lua_scr/battery_6s.lua
 ROMFS scripts/led.lua lua_scr/led.lua
-ROMFS scripts/rtl_dist.lua lua_scr/rtl_dist_M3.lua
+ROMFS scripts/rtl_dist.lua lua_scr/rtl_dist.lua

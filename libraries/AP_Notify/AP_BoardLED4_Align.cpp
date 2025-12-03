@@ -180,12 +180,12 @@ void AP_BoardLED_Align::update(void)
             if (now_ms - _check_voltage_ms > 1000 || _check_voltage_ms == 0) {
                 _check_voltage_ms = now_ms;
                 set_led_from_voltage();
-#if defined(HAL_GPIO_E_LED_PIN) && defined(HAL_GPIO_F_LED_PIN)
-                // update MR25 status LED
-                set_mr25_status_led();
-#endif
             }
 
+#if defined(HAL_GPIO_E_LED_PIN) && defined(HAL_GPIO_F_LED_PIN)
+            // update MR25 status LED
+            set_mr25_status_led();
+#endif
 
             // Do nothing if drone is armed
             if (AP_Notify::flags.armed) {

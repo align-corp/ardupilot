@@ -3,26 +3,25 @@
 ----------------------------------------------
 --- Configuration parameters
 ----------------------------------------------
-local BATTERY_CELLS = 6
-
 local VOLTAGE_TO_PERCENT_TABLE = {
-    {0,  3500,4200,4800,6000,10000},
-    {3.3,   0,   0,   0,   0,   0},
-    {3.4,   2,   0,   0,   1,   9},
-    {3.5,   4,   4,   4,   2,  26},
-    {3.6,   9,  11,  12,   6,  44},
-    {3.7,  39,  42,  38,  28,  59},
-    {3.8,  62,  65,  56,  58,  70},
-    {3.9,  77,  79,  69,  75,  79},
-    {4.0,  88,  90,  79,  86,  90},
-    {4.1, 100, 100,  89, 100, 100},
-    {4.2, 100, 100,  98, 100, 100},
-    {4.3, 100, 100, 100, 100, 100},
+    {  0, 3500, 4200, 4800, 6000,10000,16000,22000}, -- capacity (mAh)
+    {  0,    6,    6,    6,    6,    6,   12,   12}, -- Num cells
+    {  0, 0.02,0.017,0.015,0.018,0.015, 0.03, 0.03}, -- percent per meter                   
+    {  0, 0.04, 0.03, 0.03, 0.03, 0.03, 0.05, 0.05}, -- percent per meter down
+    {3.3,    0,    0,    0,    0,    0,    0,    0},
+    {3.4,    2,    0,    0,    1,    9,    4,    2},
+    {3.5,    4,    4,    4,    2,   26,    6,    4},
+    {3.6,    9,   11,   12,    6,   44,   11,   12},
+    {3.7,   39,   42,   38,   28,   59,   38,   46},
+    {3.8,   62,   65,   56,   58,   70,   62,   66},
+    {3.9,   77,   79,   69,   75,   79,   77,   79},
+    {4.0,   88,   90,   79,   86,   90,   88,   90},
+    {4.1,  100,  100,   89,  100,  100,  100,  100},
+    {4.2,  100,  100,   98,  100,  100,  100,  100},
+    {4.3,  100,  100,  100,  100,  100,  100,  100},
 }
 
 -- %/m = 1/(SPEED[m/s]*36*BATT_CAPACITY[Ah]/CRUISE_CURRENT[A])
-local PERCENT_PER_METER = 0.015  -- Battery percentage consumed per meter of travel
-local PERCENT_PER_METER_DOWN = 0.03  -- Battery percentage consumed per meter of travel
 local MIN_SAFE_PERCENT = 7  -- Minimum battery percentage needed to return home
 local LAND_PERCENTAGE = 4
 local MINIMUM_RTL_DIST = 30  -- Minimum distance from home to trigger RTL
@@ -40,6 +39,7 @@ local BATT_CAPACITY = Parameter("BATT_CAPACITY")
 -- Variables
 local voltage_samples = {}
 local sample_count = 0
+local batt_id = -1
 
 -- add a parameter and bind it to a variable
 local function bind_add_param(name, idx, default_value)
@@ -92,7 +92,7 @@ function update()
 
     -- Convert voltage to percentage using lookup table
     local percent = voltage_to_percent(median_voltage)
-    if percent < 0 then
+    if percent < 0 or batt_id < 0 then
         -- Delay script
         return update, 10000
     end
@@ -125,8 +125,8 @@ function update()
         end
 
         -- Calculate required battery percentage for return trip
-        local required_percent_horizontal = distance_m * PERCENT_PER_METER
-        local required_percent_down = alt * PERCENT_PER_METER_DOWN
+        local required_percent_horizontal = distance_m * VOLTAGE_TO_PERCENT_TABLE[3][batt_id]
+        local required_percent_down = alt * VOLTAGE_TO_PERCENT_TABLE[4][batt_id]
         local required_percent = required_percent_horizontal + required_percent_down
 
         -- trigger RTL if battery is low
@@ -141,9 +141,8 @@ end
 
 -- Function to convert voltage to percentage using lookup table
 function voltage_to_percent(voltage)
-    local batt_id = -1
-
     local batt_capacity = BATT_CAPACITY:get()
+    batt_id = -1
     if batt_capacity <= 0 then
         gcs:send_text(4, "rtl_dist: invalid BATT_CAPACITY")
         return -1
@@ -161,17 +160,17 @@ function voltage_to_percent(voltage)
     end
 
     -- divide for number of cells
-    voltage = voltage / BATTERY_CELLS
+    voltage = voltage / VOLTAGE_TO_PERCENT_TABLE[2][batt_id]
 
     -- Handle edge cases
-    if voltage <= VOLTAGE_TO_PERCENT_TABLE[2][1] then
-        return VOLTAGE_TO_PERCENT_TABLE[2][batt_id]
+    if voltage <= VOLTAGE_TO_PERCENT_TABLE[5][1] then
+        return VOLTAGE_TO_PERCENT_TABLE[5][batt_id]
     elseif voltage >= VOLTAGE_TO_PERCENT_TABLE[#VOLTAGE_TO_PERCENT_TABLE][1] then
         return VOLTAGE_TO_PERCENT_TABLE[#VOLTAGE_TO_PERCENT_TABLE][batt_id]
     end
 
     -- Find the two closest voltage entries in the table
-    for i = 2, #VOLTAGE_TO_PERCENT_TABLE - 1 do
+    for i = 5, #VOLTAGE_TO_PERCENT_TABLE - 1 do
         local v1 = VOLTAGE_TO_PERCENT_TABLE[i][1]
         local p1 = VOLTAGE_TO_PERCENT_TABLE[i][batt_id]
         local v2 = VOLTAGE_TO_PERCENT_TABLE[i+1][1]

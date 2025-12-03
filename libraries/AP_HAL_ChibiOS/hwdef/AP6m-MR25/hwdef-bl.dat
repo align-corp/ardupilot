@@ -1,0 +1,10 @@
+include ../AP6m/hwdef-bl.dat
+# different GPIO LED default
+undef PA15
+undef PC11
+undef PD0 
+undef PD1 
+PA15 LED1 OUTPUT LOW GPIO(80)
+PC11 LED2 OUTPUT HIGH GPIO(81)
+PD0  LED3 OUTPUT HIGH GPIO(82)
+PD1  LED4 OUTPUT HIGH GPIO(83)

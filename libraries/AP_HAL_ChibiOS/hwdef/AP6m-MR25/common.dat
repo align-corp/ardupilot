@@ -4,12 +4,11 @@ define ALIGN_RGB_STATUS_LED
 # decrease arming delay
 define ARMING_DELAY_SEC 0.5f
 
-# battery level (need to calculate)
-define ALIGN_LED_BATT_20 10.8
-define ALIGN_LED_BATT_40 11.1
-define ALIGN_LED_BATT_60 11.3
-define ALIGN_LED_BATT_80 11.7
-
+# battery level 1300 mAh
+define ALIGN_LED_BATT_20 10.6
+define ALIGN_LED_BATT_40 10.8
+define ALIGN_LED_BATT_60 11.0
+define ALIGN_LED_BATT_80 11.4
 
 # LED are on when LOW
 undef PA15
@@ -32,3 +31,6 @@ PB10  LED5 OUTPUT HIGH GPIO(86) # red, LOW ON
 PB11  LED6 OUTPUT HIGH GPIO(87) # green, LOW ON
 define HAL_GPIO_E_LED_PIN 86
 define HAL_GPIO_F_LED_PIN 87
+
+# common scripts
+ROMFS scripts/rtl_dist.lua lua_scr/rtl_dist.lua

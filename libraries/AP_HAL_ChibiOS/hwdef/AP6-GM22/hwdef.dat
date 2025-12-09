@@ -1,7 +1,7 @@
 include ../AP6/hwdef.dat
 
 # define custom Align frame code
-define ALIGN_FRAME ALIGN_GM22
+define ALIGN_FRAME ALIGN_AP6_GM22
 
 # Telemetry on Serial 1
 define DEFAULT_SERIAL1_BAUD 115

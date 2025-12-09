@@ -8,4 +8,4 @@ AUTOBUILD_TARGETS Copter
 define ARMING_DELAY_SEC 0.5f
 
 # just a frame to cope with Align app
-define ALIGN_FRAME ALIGN_M460
+define ALIGN_FRAME ALIGN_AP6_M460

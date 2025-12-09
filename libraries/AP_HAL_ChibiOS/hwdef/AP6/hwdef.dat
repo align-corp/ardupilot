@@ -1,8 +1,8 @@
 # hw definition file for processing by chibios_hwdef.py
 # for AP6 hardware
 
-# include ALIGN_FRAME definitions
-include align_frames.dat
+# include Align frames code
+include ../AP-common/frames.dat
 
 # USB setup
 USB_VENDOR 0x2A58 # ALIGN Corporation Limited

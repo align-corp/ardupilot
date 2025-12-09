@@ -1,13 +1,8 @@
 # hw definition file for processing by chibios_hwdef.py
 # for AP6 hardware
 
-# define frames
-define ALIGN_M3             0x04070001
-define ALIGN_M3_OF          0x04070101
-define ALIGN_M3_A10         0x04070002
-define ALIGN_MR25           0x04080001
-define ALIGN_MR25_A10       0x04080002
-define ALIGN_MR25_NO_GPS    0x04080003
+# include Align frames code
+include ../AP-common/frames.dat
 
 # USB setup
 USB_VENDOR 0x2A58 # ALIGN Corporation Limited

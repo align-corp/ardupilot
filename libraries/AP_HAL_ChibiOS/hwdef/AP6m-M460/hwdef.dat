@@ -1,7 +1,7 @@
 include ../AP6m/hwdef.dat
 
 # define custom Align frame code
-define ALIGN_FRAME ALIGN_M3
+define ALIGN_FRAME ALIGN_AP6M_M3
 
 # decrease arming delay
 define ARMING_DELAY_SEC 0.5f

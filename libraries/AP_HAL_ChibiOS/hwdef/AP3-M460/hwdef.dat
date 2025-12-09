@@ -1,7 +1,7 @@
 include ../AP3/hwdef.dat
 
 # define custom Align frame code
-define ALIGN_FRAME ALIGN_M460
+define ALIGN_FRAME ALIGN_AP3_M460
 
 # decrease arming delay
 define ARMING_DELAY_SEC 0.5f

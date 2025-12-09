@@ -1,9 +1,8 @@
 # hw definition file for processing by chibios_hwdef.py
 # for AP3 hardware
 
-# define AP3 frames
-define ALIGN_M460       0x01010001
-define ALIGN_M490       0x01020001
+# include Align frames code
+include ../AP-common/frames.dat
 
 # USB setup
 USB_VENDOR 0x2A58 # ALIGN Corporation Limited

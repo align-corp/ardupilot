@@ -1,7 +1,7 @@
 include ../AP6/hwdef.dat
 
 # define custom Align frame code
-define ALIGN_FRAME ALIGN_M450_NOGPS_DSH
+define ALIGN_FRAME ALIGN_AP6_M450_NOGPS_DSH
 
 # use flight mode switch for compass calibration
 define FLTMODE_SWITCH_COMPASS_CALIBRATION

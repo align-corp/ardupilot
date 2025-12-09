@@ -2,7 +2,7 @@ include ../AP6m/hwdef.dat
 include ../AP6m-MR25/common.dat
 
 # define custom Align frame code
-define ALIGN_FRAME ALIGN_MR25_NO_GPS
+define ALIGN_FRAME ALIGN_AP6M_MR25_NO_GPS
 
 # use flight mode switch for compass calibration
 define FLTMODE_SWITCH_COMPASS_CALIBRATION

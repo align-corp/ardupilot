@@ -26,3 +26,4 @@ define DEFAULT_SERIAL7_PROTOCOL SerialProtocol_Gimbal
 # list of files to put in ROMFS (Lua scripts)
 ROMFS scripts/rng_auto.lua lua_scr/rng_auto.lua
 ROMFS scripts/arm_check.lua lua_scr/arm_check.lua
+ROMFS scripts/rtl_dist.lua lua_scr/rtl_dist.lua

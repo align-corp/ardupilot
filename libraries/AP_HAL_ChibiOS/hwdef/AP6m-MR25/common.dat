@@ -10,6 +10,9 @@ define ALIGN_LED_BATT_40 10.8
 define ALIGN_LED_BATT_60 11.0
 define ALIGN_LED_BATT_80 11.4
 
+# No down LED
+undef PC13
+
 # LED are on when LOW
 undef PA15
 undef PC11

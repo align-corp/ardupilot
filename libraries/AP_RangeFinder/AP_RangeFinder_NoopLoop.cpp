@@ -93,7 +93,7 @@ bool AP_RangeFinder_NoopLoop::get_reading(float &reading_m)
                     if (dist > 0 && dist < NOOPLOOP_DIST_MAX_MM && valid < 255) {
                         reading_m = dist * 0.001f;
                         good_read = true;
-                    } else if (dist == 0 && valid < 255) {
+                    } else if (dist == 0) {
                         reading_m = MAX(NOOPLOOP_DIST_MAX_MM, max_distance_cm()*10 + NOOPLOOP_OUT_OF_RANGE_ADD_MM) * 0.001f;
                         good_read = true;
                     }

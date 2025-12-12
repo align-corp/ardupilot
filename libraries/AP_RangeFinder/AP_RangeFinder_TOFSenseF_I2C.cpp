@@ -133,11 +133,12 @@ void AP_RangeFinder_TOFSenseF_I2C::timer(void)
 
     if (get_reading(dist_mm, signal_strength, status)) {
         WITH_SEMAPHORE(_sem);
-        if (status == 1 && signal_strength > 1) {
+        if (status == 1 && signal_strength > 1 && dist_mm > 0) {
             // healthy data
             distance_mm = dist_mm;
         } else {
             // status == 0 means out of range on MT15
+            // dist_mm == 0 means out of ranfe on NoopLoop
             distance_mm = params.max_distance_cm * 10 + 5000;
         }
         state.last_reading_ms = AP_HAL::millis();

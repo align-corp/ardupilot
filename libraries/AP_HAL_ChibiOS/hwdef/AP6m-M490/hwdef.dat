@@ -2,7 +2,7 @@ include ../AP6m/hwdef.dat
 include ../AP6m-M460/common.dat
 
 # define custom Align frame code
-define ALIGN_FRAME ALIGN_AP6M_M460_DSH
+define ALIGN_FRAME ALIGN_AP6M_M490_DSH
 
 # list of files to put in ROMFS (Lua scripts)
 ROMFS scripts/arm_check.lua lua_scr/arm_check.lua

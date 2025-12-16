@@ -1,0 +1,28 @@
+# decrease arming delay
+define ARMING_DELAY_SEC 0.5f
+
+# use custom Align Status LED
+define ALIGN_RGB_STATUS_LED
+
+# battery level 1300 mAh
+define ALIGN_LED_BATT_20 10.6
+define ALIGN_LED_BATT_40 10.8
+define ALIGN_LED_BATT_60 11.0
+define ALIGN_LED_BATT_80 11.4
+
+# No down LED
+undef PC13
+
+# list of files to put in ROMFS (Lua scripts)
+ROMFS scripts/battery_6s.lua lua_scr/battery_6s.lua
+ROMFS scripts/rng_auto.lua lua_scr/rng_auto.lua
+ROMFS scripts/rtl_dist.lua lua_scr/rtl_dist.lua
+ROMFS scripts/led.lua lua_scr/led.lua
+
+# Use I2C port for landing gear controller
+define AP_LANDINGGEAR_GPIO
+undef PB10
+undef PB11 
+PB10 EXTERN_GPIO90 OUTPUT LOW GPIO(90)
+PB11 EXTERN_GPIO91 OUTPUT LOW GPIO(91)
+

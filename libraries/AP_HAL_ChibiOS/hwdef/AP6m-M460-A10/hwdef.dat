@@ -1,0 +1,5 @@
+include ../AP6m/hwdef.dat
+include ../AP6m-M460/common.dat
+
+# define custom Align frame code
+define ALIGN_FRAME ALIGN_AP6M_M460_A10_DSH

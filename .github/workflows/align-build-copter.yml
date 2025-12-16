@@ -72,6 +72,14 @@ jobs:
           - type: copter
             board: AP6m-MR25-no-gps
           - type: copter
+            board: AP6m-M460
+          - type: copter
+            board: AP6m-M460-A10
+          - type: copter
+            board: AP6m-M490
+          - type: copter
+            board: AP6m-M490-A10
+          - type: copter
             board: AP3-M460
           - type: copter
             board: AP3-M490

@@ -10,6 +10,7 @@ assert(param:add_param(PARAM_TABLE_KEY, 1, 'ENABLE', 1), 'could not add ENABLE p
 local led_enable = Parameter("LED_ENABLE")
 
 -- align_vehicles
+local UNKNOWN = -1
 local M3 = 0
 local M4 = 1
 
@@ -34,7 +35,7 @@ local ORANGE = 5
 local count = 0
 local channels = {}
 local num_leds_per_channel
-local align_vehicle
+local align_vehicle = UNKNOWN
 
 -- configuration based on vehicle type
 local function setup_channels()
@@ -42,8 +43,8 @@ local function setup_channels()
     if align_frame > 0x03010000 and align_frame < 0x03070000 then
         -- AP6-M450 AP6-M460 AP6-M490
         align_vehicle = M4
-    elseif align_frame > 0x04070000 and align_frame < 0x04080000 then
-        -- AP6m-M3
+    elseif align_frame > 0x04010000 and align_frame < 0x04080000 then
+        -- AP6m-M3 AP6m-M450 AP6m-M460 AP6m-M490 
         align_vehicle = M3
     end
 

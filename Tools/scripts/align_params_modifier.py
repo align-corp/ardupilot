@@ -27,6 +27,10 @@ BASE_FILES_CONFIG = {
         ("M450", "libraries/AP_HAL_ChibiOS/hwdef/AP6-M450-ds/defaults.parm"),
         (["M450","A10"], "libraries/AP_HAL_ChibiOS/hwdef/AP6-M450-A10-ds/defaults.parm"),
         (["M450", "A10","NO-GPS"], "libraries/AP_HAL_ChibiOS/hwdef/AP6-M450-nogps-ds/defaults.parm"),
+        ("AP6M", "libraries/AP_HAL_ChibiOS/hwdef/AP6m-M460/defaults.parm"),
+        (["AP6M", "A10"], "libraries/AP_HAL_ChibiOS/hwdef/AP6m-M460-A10/defaults.parm"),
+        (["AP6M", "M490"], "libraries/AP_HAL_ChibiOS/hwdef/AP6m-M490/defaults.parm"),
+        (["AP6M", "M490", "A10"], "libraries/AP_HAL_ChibiOS/hwdef/AP6m-M490-A10/defaults.parm"),
     ],
 
     # MR25 4in1
@@ -160,16 +164,6 @@ GPS_TYPE 0
 """
     },
 
-    "DSHOT": {
-        "remove": ["MOT_SPIN_MAX"],
-        "add": """
-# DSHOT
-MOT_PWM_TYPE 5
-SERVO_DSHOT_ESC 1
-SERVO_DSHOT_RATE 2
-"""
-    },
-
     "AP5": {
         "remove": ["AHRS_ORIENTATION"],
         "add": """
@@ -190,6 +184,21 @@ SR4_EXT_STAT 2
 SR4_POSITION 3
 SR4_RAW_SENS 2
 SR4_RC_CHAN 50
+"""
+    },
+
+    "AP6M": {
+    "remove": ["AHRS_ORIENTATION", "BATT_MONITOR", "BATT_AMP_MULT", "BATT_AMP_OFFSET", "BATT_VLT_OFFSET",
+               "SERVO1_FUNCTION", "SERVO2_FUNCTION", "SERVO3_FUNCTION", "SERVO4_FUNCTION",
+               "SERVO5_FUNCTION", "SERVO6_FUNCTION", "SERVO7_FUNCTION", "SERVO8_FUNCTION", 
+               "SERVO9_FUNCTION", "SERVO10_FUNCTION", "SERVO11_FUNCTION",
+               "SERVO12_FUNCTION", "SERVO16_FUNCTION"],
+    "add": """
+# AP6m
+NTF_LED_TYPES 257
+SERVO5_FUNCTION 28
+SERVO6_FUNCTION 120
+SERVO7_FUNCTION 94
 """
     },
 

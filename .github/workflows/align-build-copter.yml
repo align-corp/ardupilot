@@ -80,6 +80,10 @@ jobs:
           - type: copter
             board: AP6m-M490-A10
           - type: copter
+            board: AP6m-M450
+          - type: copter
+            board: AP6m-M450-A10
+          - type: copter
             board: AP3-M460
           - type: copter
             board: AP3-M490

@@ -31,6 +31,8 @@ BASE_FILES_CONFIG = {
         (["AP6M", "A10"], "libraries/AP_HAL_ChibiOS/hwdef/AP6m-M460-A10/defaults.parm"),
         (["AP6M", "M490"], "libraries/AP_HAL_ChibiOS/hwdef/AP6m-M490/defaults.parm"),
         (["AP6M", "M490", "A10"], "libraries/AP_HAL_ChibiOS/hwdef/AP6m-M490-A10/defaults.parm"),
+        (["AP6M", "M450"], "libraries/AP_HAL_ChibiOS/hwdef/AP6m-M450/defaults.parm"),
+        (["AP6M", "M450", "A10"], "libraries/AP_HAL_ChibiOS/hwdef/AP6m-M450-A10/defaults.parm"),
     ],
 
     # MR25 4in1

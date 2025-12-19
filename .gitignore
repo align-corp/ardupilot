@@ -194,6 +194,8 @@ libraries/AP_HAL_ChibiOS/hwdef/AP6m-M460/defaults.parm
 libraries/AP_HAL_ChibiOS/hwdef/AP6m-M460-A10/defaults.parm
 libraries/AP_HAL_ChibiOS/hwdef/AP6m-M490/defaults.parm
 libraries/AP_HAL_ChibiOS/hwdef/AP6m-M490-A10/defaults.parm
+libraries/AP_HAL_ChibiOS/hwdef/AP6m-M450/defaults.parm
+libraries/AP_HAL_ChibiOS/hwdef/AP6m-M450-A10/defaults.parm
 libraries/AP_HAL_ChibiOS/hwdef/AP3-M460/defaults.parm
 libraries/AP_HAL_ChibiOS/hwdef/AP3-M490/defaults.parm
 libraries/AP_HAL_ChibiOS/hwdef/AP5-M460/defaults.parm

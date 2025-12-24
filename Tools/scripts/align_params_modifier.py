@@ -224,7 +224,7 @@ ATC_RAT_YAW_P 0.8
     },
 
     "M450": {
-        "remove": ["BATT_CAPACITY"],
+        "remove": ["BATT_CAPACITY", "MOT_SPIN_ARM", "MOT_SPIN_MIN"],
         "add": """
 # M450 PID
 ATC_ACCEL_P_MAX 60000

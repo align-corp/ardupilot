@@ -86,6 +86,15 @@ const AP_Param::Info Copter::var_info[] = {
     // @Increment: 10
     GSCALAR(pilot_land_low_alt,  "PILOT_LAND_LOW",  PILOT_LAND_LOW_DEFAULT),
 
+    // @Param: PILOT_SLOW_ALT
+    // @DisplayName: Pilot slow down altitude
+    // @Description: At this altitude the maximum down speed will slow down to LAND_SPEED
+    // @User: Standard
+    // @Units: cm
+    // @Range: 0 1000
+    // @Increment: 10
+    GSCALAR(pilot_slow_alt,  "PILOT_SLOW_ALT",  PILOT_SLOW_ALT_DEFAULT),
+
     // @Param: PILOT_THR_BHV
     // @DisplayName: Throttle stick behavior
     // @Description: Bitmask containing various throttle stick options. TX with sprung throttle can set PILOT_THR_BHV to "1" so motor feedback when landed starts from mid-stick instead of bottom of stick.

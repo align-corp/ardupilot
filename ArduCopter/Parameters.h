@@ -211,6 +211,9 @@ public:
         k_param_loiter_nav,     // 105
         k_param_custom_control,
 
+        // 107: Loiter slow down
+        k_param_pilot_slow_alt,
+
         // 110: Telemetry control
         //
         k_param_gcs0 = 110,
@@ -407,6 +410,7 @@ public:
     AP_Float        pilot_takeoff_alt;
     AP_Float        pilot_land_alt;
     AP_Float        pilot_land_low_alt;
+    AP_Int16        pilot_slow_alt;
 
 #if MODE_RTL_ENABLED == ENABLED
     AP_Int32        rtl_altitude;

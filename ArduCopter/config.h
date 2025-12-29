@@ -367,6 +367,9 @@
 #ifndef PILOT_LAND_LOW_DEFAULT
  # define PILOT_LAND_LOW_DEFAULT 50
 #endif
+#ifndef PILOT_SLOW_ALT_DEFAULT
+ # define PILOT_SLOW_ALT_DEFAULT 450
+#endif
 
 //////////////////////////////////////////////////////////////////////////////
 // Landing Detector

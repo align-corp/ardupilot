@@ -143,7 +143,7 @@ void ModeLoiter::update_landing_state(AltHoldModeState alt_hold_state)
         if (channel_throttle->norm_input_ignore_trim() < -0.9f) {
             if (landing_request_start_ms == 0) {
                 landing_request_start_ms = now_ms;
-            } else if (now_ms - landing_request_start_ms > 2000) {
+            } else if (now_ms - landing_request_start_ms > 800) {
                 // initialise yaw
                 auto_yaw.set_mode(AutoYaw::Mode::HOLD);
 

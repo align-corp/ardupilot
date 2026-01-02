@@ -61,6 +61,7 @@
 #include "AP_RangeFinder_JRE_Serial.h"
 #include "AP_RangeFinder_Align_RDR01.h"
 #include "AP_RangeFinder_NRA12.h"
+#include "AP_RangeFinder_Align_R50.h"
 
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include <AP_Logger/AP_Logger.h>
@@ -593,6 +594,20 @@ void RangeFinder::detect_instance(uint8_t instance, uint8_t& serial_instance)
     case Type::Align_NRA12:
         serial_create_fn = AP_RangeFinder_NRA12::create;
         break;
+    case Type::Align_R50: {
+        uint8_t addr = R50_DEFAULT_ADDR;
+        if (params[instance].address != 0) {
+            addr = params[instance].address;
+        }
+        FOREACH_I2C(i) {
+            if (_add_backend(AP_RangeFinder_Align_R50::detect(state[instance], params[instance],
+                             hal.i2c_mgr->get_device(i, addr)), instance))
+            {
+                break;
+            }
+        }
+        break;
+    }
 #endif
 
     case Type::NONE:

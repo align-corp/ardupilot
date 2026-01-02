@@ -177,6 +177,7 @@ public:
 #if AP_RANGEFINDER_ALIGN_ENABLED
         Align_RDR01 = 42,
         Align_NRA12 = 43,
+        Align_R50 = 44,
 #endif
 #if AP_RANGEFINDER_SIM_ENABLED
         SIM = 100,

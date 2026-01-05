@@ -30,9 +30,15 @@ void AP_RangeFinder_MAVLink::handle_msg(const mavlink_message_t &msg)
     // only accept distances for the configured orientation
     if (packet.orientation == orientation()) {
         state.last_reading_ms = AP_HAL::millis();
-        distance_cm = packet.current_distance;
         _max_distance_cm = packet.max_distance;
         _min_distance_cm = packet.min_distance;
+        // cheap chinese lidar send 0 to signal out of range
+        if (packet.current_distance == 0) {
+            _distance.out_of_range = true;
+        } else if (packet.current_distance > 0) {
+            _distance.sum_cm += packet.current_distance;
+            _distance.count++;
+        }
         sensor_type = (MAV_DISTANCE_SENSOR)packet.type;
         signal_quality = packet.signal_quality;
         if (signal_quality == 0) {
@@ -80,13 +86,21 @@ void AP_RangeFinder_MAVLink::update(void)
         set_status(RangeFinder::Status::NoData);
         state.distance_m = 0.0f;
         state.signal_quality_pct = RangeFinder::SIGNAL_QUALITY_UNKNOWN;
-    } else if (distance_cm == 0) {
-        // set out of range high if the rangefinder reports exactly 0 (comply with cheap chinese lidar)
-        set_status(RangeFinder::Status::OutOfRangeHigh);
-        state.distance_m = params.max_distance_cm * 0.01f + 1.0f;
-    } else {
-        state.distance_m = distance_cm * 0.01f;
+        _distance.count = 0;
+        _distance.sum_cm = 0;
+        _distance.out_of_range = false;
+    } else if (_distance.count > 0) {
+        state.distance_m = _distance.sum_cm * 0.01f / _distance.count;
+        _distance.count = 0;
+        _distance.sum_cm = 0;
+        _distance.out_of_range = false;
         state.signal_quality_pct = signal_quality;
+        update_status();
+    } else if (_distance.out_of_range) {
+        state.distance_m = (max_distance_cm() + 100) * 0.01f;
+        _distance.count = 0;
+        _distance.sum_cm = 0;
+        _distance.out_of_range = false;
         update_status();
     }
 }

@@ -40,7 +40,11 @@ protected:
 private:
 
     // stored data from packet:
-    uint16_t distance_cm;
+    struct {
+        uint32_t sum_cm;
+        uint16_t count;
+        bool out_of_range;
+    } _distance = {};
     uint16_t _max_distance_cm;
     uint16_t _min_distance_cm;
     int8_t signal_quality;

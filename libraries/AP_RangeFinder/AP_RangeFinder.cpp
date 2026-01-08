@@ -681,7 +681,14 @@ void RangeFinder::handle_msp(const MSP::msp_rangefinder_data_message_t &pkt)
 // return true if we have a range finder with the specified orientation
 bool RangeFinder::has_orientation(enum Rotation orientation) const
 {
-    return (find_instance(orientation) != nullptr);
+    for (uint8_t i = 0; i < RANGEFINDER_MAX_INSTANCES; i++) {
+        if ((Type)params[i].type.get() == Type::NONE &&
+            params[i].orientation.get() == orientation) {
+            return true;
+        }
+    }
+
+    return false;
 }
 
 // find first range finder instance with the specified orientation

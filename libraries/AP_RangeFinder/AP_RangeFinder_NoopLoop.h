@@ -31,6 +31,9 @@ private:
     // distance returned in reading_m
     bool get_reading(float &reading_m) override;
 
+    // increase timeout
+    virtual uint16_t read_timeout_ms() const override { return 1000; }
+
     uint8_t linebuf[16];
     uint8_t linebuf_len;
 };

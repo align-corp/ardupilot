@@ -47,7 +47,9 @@ public:
     // Proximity driver types
     enum class Type {
         None    = 0,
-        // 1 was SF40C_v09
+#if AP_PROXIMITY_TOPAZB_ENABLED
+        TOPAZB  = 1,
+#endif
 #if AP_PROXIMITY_MAV_ENABLED
         MAV     = 2,
 #endif

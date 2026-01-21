@@ -32,6 +32,7 @@
 #include "AP_Proximity_LD06.h"
 #include "AP_Proximity_MR72_CAN.h"
 #include "AP_Proximity_N10P.h"
+#include "AP_Proximity_TopazB.h"
 
 #include <AP_Logger/AP_Logger.h>
 
@@ -149,6 +150,15 @@ void AP_Proximity::init()
         switch (get_type(instance)) {
         case Type::None:
             break;
+#if AP_PROXIMITY_N10P_ENABLED
+        case Type::TOPAZB:
+            if (AP_Proximity_TopazB::detect(serial_instance)) {
+                state[instance].instance = instance;
+                drivers[instance] = new AP_Proximity_TopazB(*this, state[instance], params[instance], serial_instance);
+                serial_instance++;
+            }
+            break;
+#endif
 #if AP_PROXIMITY_RPLIDARA2_ENABLED
         case Type::RPLidarA2:
             if (AP_Proximity_RPLidarA2::detect(serial_instance)) {

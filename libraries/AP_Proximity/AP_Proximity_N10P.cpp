@@ -162,12 +162,12 @@ void AP_Proximity_N10P::update_sector_data(float angle_deg, uint16_t distance_mm
             shortest_distance_mm = distance_mm;
         }
     } else {
-        //Just consider the shortest distance (skip the 3 shortest distance for filtering)
+        // push shortest distance
         float angle_deg_sector = last_sector * 45.0f;
 
         // Get location on 3-D boundary based on angle to the object
         const AP_Proximity_Boundary_3D::Face face = frontend.boundary.get_face(angle_deg_sector);
-        //check for target too far, target too close and sensor not connected
+        // check for target too far, target too close and sensor not connected
         const bool valid = (shortest_distance_mm < distance_max()*1000) && (shortest_distance_mm > distance_min()*1000);
         Debug("Shortest distance: %d, angle: %f, count: %d\n", shortest_distance_mm, angle_deg_sector, count);
         count = 0;

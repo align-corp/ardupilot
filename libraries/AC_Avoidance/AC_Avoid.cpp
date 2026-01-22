@@ -115,6 +115,14 @@ const AP_Param::GroupInfo AC_Avoid::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("BACKZ_SPD", 10, AC_Avoid, _backup_speed_z_max, 0.75),
 
+    // @Param: VEL_ANGLE
+    // @DisplayName: Avoidance speed vector angle
+    // @Description: Consider obstacles only in velocity direction +- VEL_ANGLE. Set zero to consider all obstacles in every angle
+    // @Units: deg
+    // @Range: 0 90
+    // @User: Standard
+    AP_GROUPINFO("VEL_ANGLE", 11, AC_Avoid, _velocity_angle, 0),
+
     AP_GROUPEND
 };
 
@@ -192,7 +200,7 @@ void AC_Avoid::adjust_velocity_fence(float kP, float accel_cmss, Vector3f &desir
 * kP, accel_cmss are for the horizontal axis
 * kP_z, accel_cmss_z are for vertical axis
 */
-void AC_Avoid::adjust_velocity(Vector3f &desired_vel_cms, bool &backing_up, float kP, float accel_cmss, float kP_z, float accel_cmss_z, float dt)
+void AC_Avoid::adjust_velocity(Vector3f &desired_vel_cms, bool &backing_up, float kP, float accel_cmss, float kP_z, float accel_cmss_z, float dt, Vector2f desired_accel)
 {
     // exit immediately if disabled
     if (_enabled == AC_AVOID_DISABLED) {
@@ -214,7 +222,7 @@ void AC_Avoid::adjust_velocity(Vector3f &desired_vel_cms, bool &backing_up, floa
     if (proximity_avoidance_enabled() && _proximity_alt_enabled) {
         // Store velocity needed to back away from physical obstacles
         Vector3f backup_vel_proximity;
-        adjust_velocity_proximity(kP, accel_cmss_limited, desired_vel_cms, backup_vel_proximity, kP_z,accel_cmss_z, dt);
+        adjust_velocity_proximity(kP, accel_cmss_limited, desired_vel_cms, backup_vel_proximity, kP_z,accel_cmss_z, dt, desired_accel);
         find_max_quadrant_velocity_3D(backup_vel_proximity, quad_1_back_vel, quad_2_back_vel, quad_3_back_vel, quad_4_back_vel, back_vel_up, back_vel_down);
     }
     
@@ -1151,7 +1159,7 @@ void AC_Avoid::adjust_velocity_beacon_fence(float kP, float accel_cmss, Vector2f
 /*
  * Adjusts the desired velocity based on output from the proximity sensor
  */
-void AC_Avoid::adjust_velocity_proximity(float kP, float accel_cmss, Vector3f &desired_vel_cms, Vector3f &backup_vel, float kP_z, float accel_cmss_z, float dt)
+void AC_Avoid::adjust_velocity_proximity(float kP, float accel_cmss, Vector3f &desired_vel_cms, Vector3f &backup_vel, float kP_z, float accel_cmss_z, float dt, Vector2f desired_accel)
 {
 #if HAL_PROXIMITY_ENABLED
     // exit immediately if proximity sensor is not present
@@ -1202,6 +1210,16 @@ void AC_Avoid::adjust_velocity_proximity(float kP, float accel_cmss, Vector3f &d
         const float dist_to_boundary = vector_to_obstacle.length();
         if (is_zero(dist_to_boundary)) {
             continue;
+        }
+
+        // consider only obstacle in body velocity direction +- _velocity_angle
+        // actually now we're using desired acceleration
+        if (_velocity_angle > 0 && !desired_accel.is_zero()) {
+            Vector2f des_accel_body = _ahrs.earth_to_body2D(desired_accel);
+            float angle_vel_obstacle = des_accel_body.angle(vector_to_obstacle.xy());
+            if (abs(angle_vel_obstacle) > radians(_velocity_angle)) {
+                continue;
+            }
         }
 
         // back away if vehicle has breached margin

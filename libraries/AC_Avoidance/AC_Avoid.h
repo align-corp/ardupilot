@@ -44,10 +44,10 @@ public:
     // before the fence/object.
     // kP, accel_cmss are for the horizontal axis
     // kP_z, accel_cmss_z are for vertical axis
-    void adjust_velocity(Vector3f &desired_vel_cms, bool &backing_up, float kP, float accel_cmss, float kP_z, float accel_cmss_z, float dt);
-    void adjust_velocity(Vector3f &desired_vel_cms, float kP, float accel_cmss, float kP_z, float accel_cmss_z, float dt) {
+    void adjust_velocity(Vector3f &desired_vel_cms, bool &backing_up, float kP, float accel_cmss, float kP_z, float accel_cmss_z, float dt, Vector2f desired_accel = {.0f, .0f});
+    void adjust_velocity(Vector3f &desired_vel_cms, float kP, float accel_cmss, float kP_z, float accel_cmss_z, float dt, Vector2f desired_accel = {.0f, .0f}) {
         bool backing_up = false;
-        adjust_velocity(desired_vel_cms, backing_up, kP, accel_cmss, kP_z, accel_cmss_z, dt);
+        adjust_velocity(desired_vel_cms, backing_up, kP, accel_cmss, kP_z, accel_cmss_z, dt, desired_accel);
     }
 
     // This method limits velocity and calculates backaway velocity from various supported fences
@@ -148,7 +148,7 @@ private:
     /*
      * Adjusts the desired velocity based on output from the proximity sensor
      */
-    void adjust_velocity_proximity(float kP, float accel_cmss, Vector3f &desired_vel_cms, Vector3f &backup_vel, float kP_z, float accel_cmss_z, float dt);
+    void adjust_velocity_proximity(float kP, float accel_cmss, Vector3f &desired_vel_cms, Vector3f &backup_vel, float kP_z, float accel_cmss_z, float dt, Vector2f desired_accel);
 
     /*
      * Adjusts the desired velocity given an array of boundary points
@@ -216,6 +216,7 @@ private:
     AP_Float _alt_min;             // alt below which Proximity based avoidance is turned off
     AP_Float _accel_max;           // maximum acceleration while simple avoidance is active
     AP_Float _backup_deadzone;     // distance beyond AVOID_MARGIN parameter, after which vehicle will backaway from obstacles
+    AP_Int8 _velocity_angle;      // Consider obstacles only in velocity direction +- _velocity_angle
 
     bool _proximity_enabled = true; // true if proximity sensor based avoidance is enabled (used to allow pilot to enable/disable)
     bool _proximity_alt_enabled = true; // true if proximity sensor based avoidance is enabled based on altitude

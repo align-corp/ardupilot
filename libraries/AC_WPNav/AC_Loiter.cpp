@@ -255,6 +255,11 @@ void AC_Loiter::calc_desired_velocity(bool avoidance_on)
         desired_vel = desired_vel_norm * desired_speed;
     }
 
+#if !APM_BUILD_TYPE(APM_BUILD_ArduPlane)
+    // copy for avoidance
+    Vector2f desired_accel_copy = _desired_accel;
+#endif // !APM_BUILD_ArduPlane
+
     // add braking to the desired acceleration
     _desired_accel -= loiter_accel_brake;
 
@@ -272,7 +277,7 @@ void AC_Loiter::calc_desired_velocity(bool avoidance_on)
         AC_Avoid *_avoid = AP::ac_avoid();
         if (_avoid != nullptr) {
             Vector3f avoidance_vel_3d{desired_vel.x, desired_vel.y, 0.0f};
-            _avoid->adjust_velocity(avoidance_vel_3d, _pos_control.get_pos_xy_p().kP(), _accel_cmss, _pos_control.get_pos_z_p().kP(), _pos_control.get_max_accel_z_cmss(), dt, _desired_accel);
+            _avoid->adjust_velocity(avoidance_vel_3d, _pos_control.get_pos_xy_p().kP(), _accel_cmss, _pos_control.get_pos_z_p().kP(), _pos_control.get_max_accel_z_cmss(), dt, desired_accel_copy);
             desired_vel = Vector2f{avoidance_vel_3d.x, avoidance_vel_3d.y};
         }
     }

@@ -1,4 +1,3 @@
-# use custom Align Status LED
 define ALIGN_RGB_STATUS_LED
 
 # decrease arming delay
@@ -12,28 +11,6 @@ define ALIGN_LED_BATT_80 11.4
 
 # No down LED
 undef PC13
-
-# LED are on when LOW
-undef PA15
-undef PC11
-undef PD0 
-undef PD1 
-PD1 LED1 OUTPUT HIGH GPIO(80)
-PD0 LED2 OUTPUT HIGH GPIO(81)
-PC11 LED3 OUTPUT HIGH GPIO(82)
-PA15 LED4 OUTPUT LOW GPIO(83)
-undef HAL_GPIO_LED_OFF
-undef HAL_GPIO_LED_ON
-define HAL_GPIO_LED_OFF 1
-define HAL_GPIO_LED_ON 0
-
-# I2C for status LEDs
-undef PB10
-undef PB11
-PB10  LED5 OUTPUT HIGH GPIO(86) # red, LOW ON
-PB11  LED6 OUTPUT HIGH GPIO(87) # green, LOW ON
-define HAL_GPIO_E_LED_PIN 86
-define HAL_GPIO_F_LED_PIN 87
 
 # common scripts
 ROMFS scripts/rtl_dist.lua lua_scr/rtl_dist.lua

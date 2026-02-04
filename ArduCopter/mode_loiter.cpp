@@ -291,12 +291,14 @@ void ModeLoiter::run()
         pos_control->set_max_speed_accel_z(max_speed_down, g.pilot_speed_up, g.pilot_accel_z*0.25f);
         pos_control->relax_z_controller(0.0f);   // forces throttle output to decay to zero
 
+#if FRAME_CONFIG != HELI_FRAME
         // speed should be near 0
         if (inertial_nav.get_velocity_xy_cms().length() > 30.0f) {
             // disarm and raise error
             copter.arming.disarm(AP_Arming::Method::FAILSAFE_ACTION_TERMINATE);
             GCS_SEND_TEXT(MAV_SEVERITY_EMERGENCY, "Loiter: Speed too high, Disarming");
         }
+#endif
         break;
 
     case AltHold_Takeoff:

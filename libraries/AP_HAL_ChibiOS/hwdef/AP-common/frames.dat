@@ -30,6 +30,7 @@ define ALIGN_AP6_E1             0x03400001
 define ALIGN_AP6_TB70           0x03410001
 define ALIGN_AP6_E2             0x03420001
 define ALIGN_AP6_TB40           0x03430001
+define ALIGN_AP6_TB40_A10       0x03430002
 define ALIGN_AP6_E1V2           0x03440001
 
 define ALIGN_AP6_GA22           0x03800001

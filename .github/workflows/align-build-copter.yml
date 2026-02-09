@@ -87,6 +87,8 @@ jobs:
             board: AP6-E1v2
           - type: heli
             board: AP6-E2
+          - type: heli
+            board: AP6-TB40-A10
 
     steps:
       - uses: actions/checkout@v4

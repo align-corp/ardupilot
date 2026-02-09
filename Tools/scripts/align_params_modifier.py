@@ -25,7 +25,9 @@ BASE_FILES_CONFIG = {
         ("M490", "libraries/AP_HAL_ChibiOS/hwdef/AP6-M490-ds/defaults.parm"),
         (["M490", "A10"], "libraries/AP_HAL_ChibiOS/hwdef/AP6-M490-A10-ds/defaults.parm"),
         ("M450", "libraries/AP_HAL_ChibiOS/hwdef/AP6-M450-ds/defaults.parm"),
+        (["M450", "OF", "OF-M450"], "libraries/AP_HAL_ChibiOS/hwdef/AP6-M450-OF-ds/defaults.parm"),
         (["M450","A10"], "libraries/AP_HAL_ChibiOS/hwdef/AP6-M450-A10-ds/defaults.parm"),
+        (["M450", "A10", "OF", "OF-M450"], "libraries/AP_HAL_ChibiOS/hwdef/AP6-M450-A10-OF-ds/defaults.parm"),
         (["M450", "A10","NO-GPS"], "libraries/AP_HAL_ChibiOS/hwdef/AP6-M450-nogps-ds/defaults.parm"),
     ],
 

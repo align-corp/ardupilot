@@ -9,7 +9,7 @@
 #ifdef ALIGN_DEV_VERSION
 #define THISFIRMWARE "ArduCopter V4.5.7 Align dev"
 #else
-#define THISFIRMWARE "ArduCopter V4.5.7 Align V3.9.0"
+#define THISFIRMWARE "ArduCopter V4.5.7 Align V3.9.1"
 #endif
 
 // the following line is parsed by the autotest scripts
@@ -29,7 +29,7 @@
 #else
 #define MIDDLE_MAJOR 3
 #define MIDDLE_MINOR 9
-#define MIDDLE_PATCH 0
+#define MIDDLE_PATCH 1
 #endif
 #define MIDDLE_TYPE FIRMWARE_VERSION_TYPE_DEV
 

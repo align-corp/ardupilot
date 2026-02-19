@@ -1,0 +1,17 @@
+include ../AP6m/hwdef.dat
+include ../AP6m-MR25/common.dat
+
+# define custom Align frame code
+define ALIGN_FRAME ALIGN_AP6M_MR25_A10_OF
+
+# use flight mode switch for compass calibration
+define FLTMODE_SWITCH_COMPASS_CALIBRATION
+
+# use custom Align Status LED
+define ALIGN_RGB_STATUS_LED
+
+# decrease arming delay
+define ARMING_DELAY_SEC 0.5f
+
+# list of files to put in ROMFS (Lua scripts)
+ROMFS scripts/ahrs_source_gps_optflow.lua lua_scr/ahrs_source_gps_optflow.lua

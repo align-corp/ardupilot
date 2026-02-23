@@ -34,7 +34,9 @@ BASE_FILES_CONFIG = {
     # MR25 4in1
     "libraries/AP_HAL_ChibiOS/hwdef/AP6m-MR25/defaults.parm": [
         ("A10", "libraries/AP_HAL_ChibiOS/hwdef/AP6m-MR25-A10/defaults.parm"),
-    (["A10","NO-GPS"], "libraries/AP_HAL_ChibiOS/hwdef/AP6m-MR25-no-gps/defaults.parm"),
+        (["OF", "OF-MR25"], "libraries/AP_HAL_ChibiOS/hwdef/AP6m-MR25-OF/defaults.parm"),
+        (["A10", "OF", "OF-MR25"], "libraries/AP_HAL_ChibiOS/hwdef/AP6m-MR25-A10-OF/defaults.parm"),
+        (["A10","NO-GPS"], "libraries/AP_HAL_ChibiOS/hwdef/AP6m-MR25-no-gps/defaults.parm"),
     ],
 
     # M450 old ESC
@@ -131,6 +133,19 @@ FLOW_POS_Y 0.045
 FLOW_POS_Z 0.02
 RNGFND2_POS_X 0.045
 RNGFND2_POS_Y 0.04
+"""
+    },
+
+    "OF-MR25": {
+        "remove": [],
+        "add": """
+# OF-MR25
+FLOW_ORIENT_YAW -9000
+FLOW_POS_X 0.04
+FLOW_POS_Y -0.005
+FLOW_POS_Z 0.01
+RNGFND2_POS_X 0.04
+RNGFND2_POS_Y 0
 """
     },
 

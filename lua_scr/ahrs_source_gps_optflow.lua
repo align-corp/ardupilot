@@ -72,7 +72,8 @@ assert(param:add_table(PARAM_TABLE_KEY, PARAM_TABLE_PREFIX, 5), 'ahrs-source-gps
 -- Enable 0: Disabled (always use SRC1=GPS), 1: Automatic, 2: Disabled (Always use SRC2=OpticalFlow)
 local FLGP_ENABLE = bind_add_param('ENABLE', 1, 1)
 
--- EKF Source OpticalFlow Innovation Threshold
+-- OpticalFlow may be used if Innovation is below this threshold
+-- Can check from log: XKF5.FIX/1000 and XKF5.FIY/1000
 local FLGP_FLOW_THRESH = bind_add_param('FLOW_THRESH', 2, 0.5)
 
 -- OpticalFlow may be used if quality is above this threshold

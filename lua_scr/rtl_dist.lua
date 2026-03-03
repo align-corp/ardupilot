@@ -40,6 +40,8 @@ local BATT_CAPACITY = Parameter("BATT_CAPACITY")
 local voltage_samples = {}
 local sample_count = 0
 local batt_id = -1
+local rtl_engaged = false
+local land_engaged = false
 
 -- add a parameter and bind it to a variable
 local function bind_add_param(name, idx, default_value)
@@ -63,12 +65,15 @@ function update()
 
     -- return if not armed
     if not arming:is_armed() then
+    rtl_engaged = false
+    land_engaged = false
+    sample_count = 0
         return update, 1000
     end
 
     -- return if already in LAND
     local mode = vehicle:get_mode()
-    if mode == LAND_MODE then
+    if mode == LAND_MODE or land_engaged then
         return update, 1000
     end
 
@@ -100,10 +105,12 @@ function update()
     if percent < LAND_PERCENTAGE then
         gcs:send_text(3, string.format("Low battery! %.1f%% remaining, start LAND", percent))
         vehicle:set_mode(LAND_MODE)
+        land_engaged = true
+        return update, UPDATE_VOLTAGE_MS
     end
 
     -- return if already in RTL
-    if mode == RTL_MODE then
+    if mode == RTL_MODE or rtl_engaged then
         return update, 1000
     end
 
@@ -133,6 +140,7 @@ function update()
         if percent < (required_percent + MIN_SAFE_PERCENT) then
             gcs:send_text(3, string.format("Low battery! %.1f%% remaining, start RTL", percent))
             vehicle:set_mode(RTL_MODE)
+            rtl_engaged = true
         end
     end
 

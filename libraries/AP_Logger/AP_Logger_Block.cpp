@@ -569,19 +569,16 @@ void AP_Logger_Block::start_new_log(void)
     if (find_last_log() == 0 || GetFileNumber() == 0xFFFF) {
         StartLogFile(new_log_num);
         StartWrite(1);
-    // Check for log of length 1 page and suppress
-    } else if (df_FilePage <= 1) {
-        new_log_num = GetFileNumber();
-        // Last log too short, reuse its number
-        // and overwrite it
-        StartLogFile(new_log_num);
-        StartWrite(last_page);
     } else {
         new_log_num = GetFileNumber()+1;
         if (last_page == 0xFFFF) {
             last_page=0;
         }
         StartLogFile(new_log_num);
+        // Always start at last_page+1, never reuse an already-written page.
+        // On NAND flash (e.g. W25N01GV) re-programming a page without a prior
+        // block erase causes ECC corruption that breaks all log boundary searches
+        // and makes every log appear as ~2kB in QGC.
         StartWrite(last_page + 1);
     }
 

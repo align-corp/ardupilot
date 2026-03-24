@@ -64,25 +64,6 @@ local RTLS_ENABLE = bind_add_param('ENABLE', 1, 1)
 local RTLS_DIST = bind_add_param('DIST', 2, MINIMUM_RTL_DIST)
 
 function update()
-    -- return if not enabled
-    if RTLS_ENABLE:get() < 1 then
-        return update, 1000
-    end
-
-    -- return if not armed
-    if not arming:is_armed() then
-    rtl_engaged = false
-    land_engaged = false
-    sample_count = 0
-        return update, 1000
-    end
-
-    -- return if already in LAND
-    local mode = vehicle:get_mode()
-    if mode == LAND_MODE or land_engaged then
-        return update, 1000
-    end
-
     -- Collect voltage samples for specified duration
     if sample_count < VOLTAGES_SAMPLES_TO_MEDIAN then
         local voltage = battery:voltage(0)
@@ -103,9 +84,32 @@ function update()
 
     -- Convert voltage to percentage using lookup table
     local percent = voltage_to_percent(median_voltage)
+
+    -- Send battery percentage to GCS
+    gcs:send_named_float("batt_percent", percent)
+
+    -- return if battery is not correctly set
     if percent < 0 or batt_id < 0 then
-        -- Delay script
-        return update, 10000
+        return update, 1000
+    end
+
+    -- return if not enabled
+    if RTLS_ENABLE:get() < 1 then
+        return update, 1000
+    end
+
+    -- return if not armed
+    if not arming:is_armed() then
+    rtl_engaged = false
+    land_engaged = false
+    sample_count = 0
+        return update, 1000
+    end
+
+    -- return if already in LAND
+    local mode = vehicle:get_mode()
+    if mode == LAND_MODE or land_engaged then
+        return update, 1000
     end
 
     if percent < LAND_PERCENTAGE then

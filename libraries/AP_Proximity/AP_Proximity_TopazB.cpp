@@ -213,7 +213,7 @@ void AP_Proximity_TopazB::update_sector_data(float angle_deg, uint16_t distance_
             _invalidate_sector = false;
             frontend.boundary.reset_face(face, state.instance);
         } else if (_shortest_distance_mm > min_dist_mm && _shortest_distance_mm < max_dist_mm &&
-            !ignore_reading(sector_angle_deg, distance_mm * 0.001f, false))
+            !ignore_reading(sector_angle_deg, distance_mm * 0.001f))
         {
             // convert mm to meters and update boundary
             frontend.boundary.set_face_attributes(face, sector_angle_deg,

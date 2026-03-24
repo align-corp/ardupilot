@@ -3,12 +3,6 @@ define ALIGN_RGB_STATUS_LED
 # decrease arming delay
 define ARMING_DELAY_SEC 0.5f
 
-# battery level 1300 mAh
-define ALIGN_LED_BATT_20 10.6
-define ALIGN_LED_BATT_40 10.8
-define ALIGN_LED_BATT_60 11.0
-define ALIGN_LED_BATT_80 11.4
-
 # No down LED
 undef PC13
 

@@ -8,6 +8,7 @@ local VOLTAGE_TO_PERCENT_TABLE = {
     {  0,    3,    6,    6,    6,    6,    6,    6,   12,   12}, -- Num cells
     {  0,  0.1,0.025,0.020,0.019,0.018,0.020,0.015,0.030,0.026}, -- percent per meter                   
     {  0,  0.2,0.075,0.060,0.057,0.055,0.060,0.045,0.090,0.080}, -- percent per meter down
+    {  0, 0.10, 0.10, 0.07, 0.06, 0.20, 0.07, 0.07, 0.07, 0.07}, -- voltage drop when flying (per cell)
     {2.7,    0,    0,    0,    0,    0,    0,    0,    0,    0},
     {2.8,    0,    0,    0,    0,    2,    0,    0,    0,    0},
     {2.9,    0,    0,    0,    0,    6,    0,    0,    0,    0},
@@ -85,8 +86,18 @@ function update()
     -- Convert voltage to percentage using lookup table
     local percent = voltage_to_percent(median_voltage)
 
-    -- Send battery percentage to GCS
-    gcs:send_named_float("batt_perc", percent)
+    -- return if not armed
+    if not arming:is_armed() then
+        rtl_engaged = false
+        land_engaged = false
+        sample_count = 0
+        -- Override battery percentage for GCS
+        battery:override_percentage(0, percent)
+        return update, 1000
+    end
+
+    -- Override battery percentage for GCS
+    battery:override_percentage(0, percent)
 
     -- return if battery is not correctly set
     if percent < 0 or batt_id < 0 then
@@ -95,14 +106,6 @@ function update()
 
     -- return if not enabled
     if RTLS_ENABLE:get() < 1 then
-        return update, 1000
-    end
-
-    -- return if not armed
-    if not arming:is_armed() then
-    rtl_engaged = false
-    land_engaged = false
-    sample_count = 0
         return update, 1000
     end
 
@@ -180,15 +183,21 @@ function voltage_to_percent(voltage)
     -- divide for number of cells
     voltage = voltage / VOLTAGE_TO_PERCENT_TABLE[2][batt_id]
 
+    -- remove voltage drop if we're not armed:
+    -- the lookup table is calculated from a flight log
+    if not vehicle:get_likely_flying() then
+        voltage = voltage - VOLTAGE_TO_PERCENT_TABLE[5][batt_id]
+    end
+
     -- Handle edge cases
-    if voltage <= VOLTAGE_TO_PERCENT_TABLE[5][1] then
-        return VOLTAGE_TO_PERCENT_TABLE[5][batt_id]
+    if voltage <= VOLTAGE_TO_PERCENT_TABLE[6][1] then
+        return VOLTAGE_TO_PERCENT_TABLE[6][batt_id]
     elseif voltage >= VOLTAGE_TO_PERCENT_TABLE[#VOLTAGE_TO_PERCENT_TABLE][1] then
         return VOLTAGE_TO_PERCENT_TABLE[#VOLTAGE_TO_PERCENT_TABLE][batt_id]
     end
 
     -- Find the two closest voltage entries in the table
-    for i = 5, #VOLTAGE_TO_PERCENT_TABLE - 1 do
+    for i = 6, #VOLTAGE_TO_PERCENT_TABLE - 1 do
         local v1 = VOLTAGE_TO_PERCENT_TABLE[i][1]
         local p1 = VOLTAGE_TO_PERCENT_TABLE[i][batt_id]
         local v2 = VOLTAGE_TO_PERCENT_TABLE[i+1][1]

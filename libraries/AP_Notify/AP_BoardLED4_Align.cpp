@@ -34,26 +34,6 @@ static_assert((HAL_GPIO_A_LED_PIN != HAL_GPIO_B_LED_PIN) &&
 #define HAL_GPIO_BUTTON_PRESSED 1
 #endif
 
-#ifndef ALIGN_LED_BATT_80
-#define ALIGN_LED_BATT_80 23.4f
-#endif
-
-#ifndef ALIGN_LED_BATT_60
-#define ALIGN_LED_BATT_60 22.6f
-#endif
-
-#ifndef ALIGN_LED_BATT_40
-#define ALIGN_LED_BATT_40 22.2f
-#endif
-
-#ifndef ALIGN_LED_BATT_20
-#define ALIGN_LED_BATT_20 21.6f
-#endif
-
-#ifndef ALIGN_LED_BATT_DISARMED_DIFF
-#define ALIGN_LED_BATT_DISARMED_DIFF 0.42f
-#endif
-
 extern const AP_HAL::HAL& hal;
 const AP_BattMonitor &batt = AP::battery();
 
@@ -338,28 +318,25 @@ void AP_BoardLED_Align::set_mr25_status_led() {
 
 void AP_BoardLED_Align::set_led_from_voltage()
 {
-    float voltage = batt.voltage(0);
+    uint8_t percentage = 0;
+    IGNORE_RETURN(batt.capacity_remaining_pct(percentage, 0));
 
-    if (!AP_Notify::flags.flying) {
-        voltage -= ALIGN_LED_BATT_DISARMED_DIFF;
-    }
-
-    if (voltage < ALIGN_LED_BATT_20) {
+    if (percentage < 20) {
         hal.gpio->toggle(HAL_GPIO_A_LED_PIN);
         hal.gpio->write(HAL_GPIO_B_LED_PIN, HAL_GPIO_LED_OFF);
         hal.gpio->write(HAL_GPIO_C_LED_PIN, HAL_GPIO_LED_OFF);
         hal.gpio->write(HAL_GPIO_D_LED_PIN, HAL_GPIO_LED_OFF);
-    } else if (voltage < ALIGN_LED_BATT_40) {
+    } else if (percentage < 40) {
         hal.gpio->write(HAL_GPIO_A_LED_PIN, HAL_GPIO_LED_ON);
         hal.gpio->write(HAL_GPIO_B_LED_PIN, HAL_GPIO_LED_OFF);
         hal.gpio->write(HAL_GPIO_C_LED_PIN, HAL_GPIO_LED_OFF);
         hal.gpio->write(HAL_GPIO_D_LED_PIN, HAL_GPIO_LED_OFF);
-    } else if (voltage < ALIGN_LED_BATT_60) {
+    } else if (percentage < 60) {
         hal.gpio->write(HAL_GPIO_A_LED_PIN, HAL_GPIO_LED_ON);
         hal.gpio->write(HAL_GPIO_B_LED_PIN, HAL_GPIO_LED_ON);
         hal.gpio->write(HAL_GPIO_C_LED_PIN, HAL_GPIO_LED_OFF);
         hal.gpio->write(HAL_GPIO_D_LED_PIN, HAL_GPIO_LED_OFF);
-    } else if (voltage < ALIGN_LED_BATT_80) {
+    } else if (percentage < 80) {
         hal.gpio->write(HAL_GPIO_A_LED_PIN, HAL_GPIO_LED_ON);
         hal.gpio->write(HAL_GPIO_B_LED_PIN, HAL_GPIO_LED_ON);
         hal.gpio->write(HAL_GPIO_C_LED_PIN, HAL_GPIO_LED_ON);

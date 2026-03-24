@@ -2946,6 +2946,13 @@ function battery:handle_scripting(idx, state) end
 ---@return boolean
 function battery:reset_remaining(instance, percentage) end
 
+-- Override the battery remaining percentage for any monitor type, including voltage-only monitors.
+-- Only affects the reported percentage; consumed_mah, consumed_wh and pack capacity are unchanged.
+-- Pass -1 or 255 to clear the override and return to normal calculation.
+---@param instance integer
+---@param percentage number -- 0-100 to set override, -1 or 255 to clear
+function battery:override_percentage(instance, percentage) end
+
 -- desc
 ---@param instance integer
 ---@return integer|nil

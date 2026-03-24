@@ -106,6 +106,7 @@ singleton AP_BattMonitor method overpower_detected boolean uint8_t 0 ud->num_ins
 singleton AP_BattMonitor method get_temperature boolean float'Null uint8_t 0 ud->num_instances()
 singleton AP_BattMonitor method get_cycle_count boolean uint8_t 0 ud->num_instances() uint16_t'Null
 singleton AP_BattMonitor method reset_remaining boolean uint8_t 0 ud->num_instances() float 0 100
+singleton AP_BattMonitor method override_percentage void uint8_t 0 ud->num_instances() float'skip_check
 singleton AP_BattMonitor method get_cell_voltage boolean uint8_t'skip_check uint8_t'skip_check float'Null
 singleton AP_BattMonitor method handle_scripting boolean uint8_t'skip_check BattMonitorScript_State
 singleton AP_BattMonitor method handle_scripting depends AP_BATTERY_SCRIPTING_ENABLED

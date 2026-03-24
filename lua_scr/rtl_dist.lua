@@ -86,7 +86,7 @@ function update()
     local percent = voltage_to_percent(median_voltage)
 
     -- Send battery percentage to GCS
-    gcs:send_named_float("batt_percent", percent)
+    gcs:send_named_float("batt_perc", percent)
 
     -- return if battery is not correctly set
     if percent < 0 or batt_id < 0 then

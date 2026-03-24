@@ -173,6 +173,7 @@ public:
         bool        has_state_of_health_pct;   // state_of_health_pct is only valid if this is true
         uint8_t     instance;                  // instance number of this backend
         const struct AP_Param::GroupInfo *var_info;
+        uint8_t     override_capacity_remaining_pct = UINT8_MAX; // scripting override for battery %, UINT8_MAX = no override
     };
 
     static const struct AP_Param::GroupInfo *backend_var_info[AP_BATT_MONITOR_MAX_INSTANCES];
@@ -284,6 +285,10 @@ public:
     // reset battery remaining percentage
     bool reset_remaining_mask(uint16_t battery_mask, float percentage);
     bool reset_remaining(uint8_t instance, float percentage) { return reset_remaining_mask(1U<<instance, percentage);}
+
+    // override battery remaining percentage via scripting (bypasses has_current() check, works for voltage-only monitors)
+    // call with percentage 0-100 to set override; override persists until cleared
+    void override_percentage(uint8_t instance, float percentage);
 
     // Returns mavlink charge state
     MAV_BATTERY_CHARGE_STATE get_mavlink_charge_state(const uint8_t instance) const;

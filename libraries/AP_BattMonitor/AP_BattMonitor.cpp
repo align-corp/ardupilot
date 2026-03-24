@@ -781,10 +781,26 @@ bool AP_BattMonitor::consumed_wh(float &wh, const uint8_t instance) const {
 /// capacity_remaining_pct - returns true if the percentage is valid and writes to percentage argument
 bool AP_BattMonitor::capacity_remaining_pct(uint8_t &percentage, uint8_t instance) const
 {
-    if (instance < _num_instances && drivers[instance] != nullptr) {
-        return drivers[instance]->capacity_remaining_pct(percentage);
+    if (instance >= _num_instances || drivers[instance] == nullptr) {
+        return false;
     }
-    return false;
+    // scripting override takes priority over backend calculation (works for voltage-only monitors too)
+    if (state[instance].override_capacity_remaining_pct != UINT8_MAX) {
+        percentage = state[instance].override_capacity_remaining_pct;
+        return true;
+    }
+    return drivers[instance]->capacity_remaining_pct(percentage);
+}
+
+// set battery remaining percentage override via scripting
+// bypasses has_current() check so works for voltage-only monitors
+// does not affect consumed_mah, consumed_wh or pack capacity
+void AP_BattMonitor::override_percentage(uint8_t instance, float percentage)
+{
+    if (instance < _num_instances) {
+        // cast via int so -1.0 wraps to UINT8_MAX (clears the override)
+        state[instance].override_capacity_remaining_pct = (uint8_t)(int)percentage;
+    }
 }
 
 /// time_remaining - returns remaining battery time

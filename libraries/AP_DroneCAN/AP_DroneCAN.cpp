@@ -641,6 +641,45 @@ void AP_DroneCAN::handle_hobbywing_StatusMsg2(const CanardRxTransfer& transfer, 
 }
 #endif // AP_DRONECAN_HOBBYWING_ESC_SUPPORT
 
+static struct {
+    uint8_t r, g, b;
+    bool valid;
+} _scripting_led_colors[20];
+
+void AP_DroneCAN::set_led(uint8_t id, uint8_t r, uint8_t g, uint8_t b)
+{
+    if (id >= 20) {
+        return;
+    }
+    _scripting_led_colors[id] = {r, g, b, true};
+}
+
+bool AP_DroneCAN::send_leds()
+{
+    uavcan_equipment_indication_LightsCommand msg {};
+    for (uint8_t i = 0; i < 20; i++) {
+        if (_scripting_led_colors[i].valid) {
+            auto &cmd = msg.commands.data[msg.commands.len++];
+            cmd.light_id    = i;
+            cmd.color.red   = _scripting_led_colors[i].r >> 3;
+            cmd.color.green = _scripting_led_colors[i].g >> 2;
+            cmd.color.blue  = _scripting_led_colors[i].b >> 3;
+        }
+    }
+    if (msg.commands.len == 0) {
+        return false;
+    }
+    bool ok = false;
+    const uint8_t num_drivers = AP::can().get_num_drivers();
+    for (uint8_t i = 0; i < num_drivers; i++) {
+        auto *dronecan = get_dronecan(i);
+        if (dronecan != nullptr) {
+            ok |= dronecan->rgb_led.broadcast(msg);
+        }
+    }
+    return ok;
+}
+
 void AP_DroneCAN::send_node_status(void)
 {
     const uint32_t now = AP_HAL::millis();

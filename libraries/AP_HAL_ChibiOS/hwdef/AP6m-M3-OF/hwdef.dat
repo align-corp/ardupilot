@@ -10,7 +10,6 @@ define ALIGN_RGB_STATUS_LED
 define ARMING_DELAY_SEC 0.5f
 
 # list of files to put in ROMFS (Lua scripts)
-ROMFS scripts/battery_6s.lua lua_scr/battery_6s.lua
 ROMFS scripts/rng_auto.lua lua_scr/rng_auto.lua
 ROMFS scripts/ahrs_source_gps_optflow.lua lua_scr/ahrs_source_gps_optflow.lua
 ROMFS scripts/led.lua lua_scr/led.lua

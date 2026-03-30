@@ -660,6 +660,12 @@ ap_object ScriptingCANBuffer method write_frame boolean AP_HAL::CANFrame uint32_
 ap_object ScriptingCANBuffer method read_frame boolean AP_HAL::CANFrame'Null
 ap_object ScriptingCANBuffer method add_filter boolean uint32_t'skip_check uint32_t'skip_check
 
+include AP_DroneCAN/AP_DroneCAN.h
+singleton AP_DroneCAN rename droneCAN
+singleton AP_DroneCAN depends HAL_ENABLE_DRONECAN_DRIVERS
+singleton AP_DroneCAN method set_led void uint8_t'skip_check uint8_t'skip_check uint8_t'skip_check uint8_t'skip_check
+singleton AP_DroneCAN method send_leds boolean
+
 include ../Tools/AP_Periph/AP_Periph.h depends defined(HAL_BUILD_AP_PERIPH)
 singleton AP_Periph_FW depends defined(HAL_BUILD_AP_PERIPH)
 singleton AP_Periph_FW rename periph

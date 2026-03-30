@@ -29,6 +29,7 @@ BASE_FILES_CONFIG = {
         (["M450","A10"], "libraries/AP_HAL_ChibiOS/hwdef/AP6-M450-A10-ds/defaults.parm"),
         (["M450", "A10", "OF", "OF-M450"], "libraries/AP_HAL_ChibiOS/hwdef/AP6-M450-A10-OF-ds/defaults.parm"),
         (["M450", "A10","NO-GPS"], "libraries/AP_HAL_ChibiOS/hwdef/AP6-M450-nogps-ds/defaults.parm"),
+        ("CAN_M4", "libraries/AP_HAL_ChibiOS/hwdef/AP6-M460-can/defaults.parm"),
     ],
 
     # MR25 4in1
@@ -242,6 +243,17 @@ PSC_ACCZ_P 0.3
 """
     },
 
+    "CAN_M4": {
+        "remove": ["SERVO1_FUNCTION", "SERVO2_FUNCTION", "SERVO3_FUNCTION",
+                    "SERVO4_FUNCTION", "SERVO7_FUNCTION", "SERVO8_FUNCTION",
+                    "SERVO9_FUNCTION", "SERVO10_FUNCTION",
+                    "SERVO_DSHOT_ESC", "SERVO_DSHOT_RATE", "MOT_PWM_TYPE"],
+        "add": """
+# M4 CAN
+CAN_P1_DRIVER 1
+CAN_D1_UC_ESC_BM 15
+"""
+    },
 }
 # =============================================================================
 # SCRIPT CODE - NO NEED TO MODIFY BELOW THIS LINE

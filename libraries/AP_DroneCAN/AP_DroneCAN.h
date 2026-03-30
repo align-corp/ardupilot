@@ -109,7 +109,11 @@ public:
     void SRV_push_servos(void);
 
     ///// LED /////
-    bool led_write(uint8_t led_index, uint8_t red, uint8_t green, uint8_t blue);
+    // scripting LED API: stage a per-id color, then send all at once
+    static void set_led(uint8_t id, uint8_t r, uint8_t g, uint8_t b);
+    static bool send_leds();
+
+    static AP_DroneCAN *get_singleton() { return get_dronecan(0); }
 
     // buzzer
     void set_buzzer_tone(float frequency, float duration_s);

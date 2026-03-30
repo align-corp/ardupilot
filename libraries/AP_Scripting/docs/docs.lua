@@ -1071,6 +1071,20 @@ function ScriptingCANBuffer_ud:add_filter(mask, value) end
 ---@return boolean
 function ScriptingCANBuffer_ud:write_frame(frame, timeout_us) end
 
+-- DroneCAN scripting helpers
+---@class droneCAN
+droneCAN = {}
+
+-- Stage a color for a single DroneCAN light ID. Call send_leds() to broadcast.
+---@param id integer light ID (0-19)
+---@param r integer red (0-255)
+---@param g integer green (0-255)
+---@param b integer blue (0-255)
+function droneCAN:set_led(id, r, g, b) end
+
+-- Broadcast a LightsCommand containing all staged light IDs in a single DroneCAN message.
+---@return boolean true if broadcast succeeded
+function droneCAN:send_leds() end
 
 -- desc
 ---@class AP_HAL__AnalogSource_ud

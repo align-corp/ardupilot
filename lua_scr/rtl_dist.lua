@@ -32,6 +32,7 @@ local VOLTAGE_TO_PERCENT_TABLE = {
 local MIN_SAFE_PERCENT = 8  -- Minimum battery percentage needed to return home
 local LAND_PERCENTAGE = 5
 local MINIMUM_RTL_DIST = 30  -- Minimum distance from home to trigger RTL
+local MINIMUM_ARM_PERCENT = 25
 
 ----------------------------------------------
 --- script start, don't change below this line
@@ -49,6 +50,8 @@ local sample_count = 0
 local batt_id = -1
 local rtl_engaged = false
 local land_engaged = false
+local cells_num = 6
+local voltage_drop = 0
 
 -- add a parameter and bind it to a variable
 local function bind_add_param(name, idx, default_value)
@@ -130,9 +133,10 @@ function update()
     -- Get distance from home and altitude
     local home = ahrs:get_home()
     local current_loc = ahrs:get_position()
-    local alt = -ahrs:get_relative_position_D_home()
+    local negative_alt = ahrs:get_relative_position_D_home()
 
-    if home and current_loc and alt then
+    if home and current_loc and negative_alt then
+        local alt = -negative_alt
         local distance_m = home:get_distance(current_loc)
 
         -- return if distance from home is < MINIMUM_RTL_DIST
@@ -163,30 +167,54 @@ end
 -- Function to convert voltage to percentage using lookup table
 function voltage_to_percent(voltage)
     local batt_capacity = BATT_CAPACITY:get()
-    batt_id = -1
     if batt_capacity <= 0 then
         gcs:send_text(4, "rtl_dist: invalid BATT_CAPACITY")
         return -1
     end
+    if batt_id < 0 or batt_capacity ~= VOLTAGE_TO_PERCENT_TABLE[1][batt_id] then
+        -- batt id is not set or user change BATT_CAPACITY parameter
+        -- look for battery capacity in LOT, update batt_id and
+        -- calculate minimum arming voltage
+        batt_id = -1
+        for i = 2, #VOLTAGE_TO_PERCENT_TABLE[1] do
+            if batt_capacity == VOLTAGE_TO_PERCENT_TABLE[1][i] then
+                batt_id = i
+                break
+            end
+        end
+        if batt_id == -1 then
+            gcs:send_text(4, "rtl_dist: BATT_CAPACITY not in battery list")
+            return -1
+        end
 
-    for i = 2, #VOLTAGE_TO_PERCENT_TABLE[1] do
-        if batt_capacity == VOLTAGE_TO_PERCENT_TABLE[1][i] then
-            batt_id = i
+        -- update cells number and voltage drop
+        cells_num = VOLTAGE_TO_PERCENT_TABLE[2][batt_id]
+        voltage_drop = VOLTAGE_TO_PERCENT_TABLE[5][batt_id]
+
+        -- set minimum arming voltage
+        for i = 6, #VOLTAGE_TO_PERCENT_TABLE - 1 do
+            local v1 = VOLTAGE_TO_PERCENT_TABLE[i][1]
+            local p1 = VOLTAGE_TO_PERCENT_TABLE[i][batt_id]
+            local v2 = VOLTAGE_TO_PERCENT_TABLE[i+1][1]
+            local p2 = VOLTAGE_TO_PERCENT_TABLE[i+1][batt_id]
+            if MINIMUM_ARM_PERCENT >= p1 and MINIMUM_ARM_PERCENT <= p2 then
+                -- Linear interpolation
+                local arm_volt = v1 + (MINIMUM_ARM_PERCENT - p1) * (v2 - v1) / (p2 - p1)
+                -- remove voltage drop and multiply for cells number
+                arm_volt = (arm_volt + voltage_drop) * cells_num
+                param:set("BATT_ARM_VOLT", arm_volt)
+                break
+            end
         end
     end
 
-    if batt_id == -1 then
-        gcs:send_text(4, "rtl_dist: BATT_CAPACITY not in battery list")
-        return -1
-    end
-
     -- divide for number of cells
-    voltage = voltage / VOLTAGE_TO_PERCENT_TABLE[2][batt_id]
+    voltage = voltage / cells_num
 
     -- remove voltage drop if we're not armed:
     -- the lookup table is calculated from a flight log
     if not vehicle:get_likely_flying() then
-        voltage = voltage - VOLTAGE_TO_PERCENT_TABLE[5][batt_id]
+        voltage = voltage - voltage_drop
     end
 
     -- Handle edge cases

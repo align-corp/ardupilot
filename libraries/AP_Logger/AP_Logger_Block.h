@@ -118,6 +118,9 @@ private:
     volatile bool stop_log_pending;
     // latch to make sure we only write out the full message once
     volatile bool chip_full;
+    // the starting page of a new log may need an erase if chip_full returned
+    // early from FinishWrite() without erasing the next block
+    bool start_page_needs_erase;
     // io thread health
     volatile uint32_t io_timer_heartbeat;
     uint8_t warning_decimation_counter;

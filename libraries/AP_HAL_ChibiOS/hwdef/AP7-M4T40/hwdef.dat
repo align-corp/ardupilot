@@ -1,0 +1,36 @@
+include ../AP7/hwdef.dat
+
+# define custom Align frame code
+define ALIGN_FRAME ALIGN_AP7_M4T40
+
+# decrease arming delay
+define ARMING_DELAY_SEC 0.5f
+
+# Telemetry on Serial 1
+define DEFAULT_SERIAL1_BAUD 115
+
+# 360 obstacle radar on Serial 2. The protocol (Lidar360) comes from
+# AP7/hwdef.dat, only the baud rate is airframe specific.
+define DEFAULT_SERIAL2_BAUD 921
+
+# list of files to put in ROMFS (Lua scripts)
+ROMFS scripts/rng_auto.lua lua_scr/rng_auto.lua
+ROMFS scripts/arm_check.lua lua_scr/arm_check.lua
+ROMFS scripts/agricolture_load.lua lua_scr/agricolture_load.lua
+ROMFS scripts/batt_cycles.lua lua_scr/batt_cycles.lua
+
+# Nothing else is needed here. AP6-M4T40 carries a block of pin surgery
+# that has no equivalent on AP7, because AP7 already provides natively
+# what AP6 had to be re-cut for:
+#
+#   undef PB1/PB0/PA3/PC0 + LOAD_CELL1..4
+#     AP7 has four dedicated load cell inputs on PC0..PC3, each behind
+#     its own INA333 instrumentation amp.
+#   undef PE11/PE13/PE14/PD15 + PWM(13..16)
+#     AP7 already numbers its outputs 13 and 16, motors are on CAN.
+#   undef PC1 + HAL_BATT_VOLT_PIN/CURR_PIN/VOLT_SCALE/CURR_SCALE
+#     AP7 has no analog battery sense at all and already defaults to
+#     HAL_BATT_MONITOR_DEFAULT 8 (DroneCAN).
+#   DEFAULT_SERIAL3_PROTOCOL SerialProtocol_Rangefinder
+#     Serial3 is RTK1 on AP7 (CN9). The downward radar moved onto the
+#     BSDB, which publishes it over DroneCAN.

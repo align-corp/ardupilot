@@ -580,6 +580,12 @@ void AP_Logger_Block::start_new_log(void)
         // block erase causes ECC corruption that breaks all log boundary searches
         // and makes every log appear as ~2kB in QGC.
         StartWrite(last_page + 1);
+        // If last_page ends a block, FinishWrite() may have returned early
+        // without erasing the next block (chip_full case). Mark it for erase
+        // before the first write so we don't write to an unerased NAND block.
+        if (last_page % df_PagePerBlock == 0) {
+            start_page_needs_erase = true;
+        }
     }
 
     // save UTC time in the first 4 bytes so that we can retrieve it later
@@ -910,6 +916,14 @@ void AP_Logger_Block::io_timer(void)
 // write out a page of log data
 void AP_Logger_Block::write_log_page()
 {
+    // If the starting block was not erased (chip_full returned early from
+    // FinishWrite without erasing the next block), erase it now before
+    // writing the first page of the new log.
+    if (start_page_needs_erase) {
+        SectorErase(get_block(df_PageAdr));
+        start_page_needs_erase = false;
+    }
+
     struct PageHeader ph;
     ph.FileNumber = df_Write_FileNumber;
     ph.FilePage = df_Write_FilePage;

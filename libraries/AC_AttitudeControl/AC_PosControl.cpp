@@ -859,7 +859,17 @@ void AC_PosControl::set_pos_target_z_from_climb_rate_cm(float vel)
     _vel_desired.z -= _vel_offset_z;
     _accel_desired.z -= _accel_offset_z;
 
+    // Scale pilot velocity to keep total (pilot + terrain) within speed limits.
+    // e.g. if terrain requires -Vdn/2, pilot is allowed Vup+Vdn/2 up to Vdn/2 down,
+    // so combined velocity always stays within [_vel_max_down_cms, _vel_max_up_cms].
     float vel_temp = vel;
+    if (vel > 0 && !is_zero(_vel_max_up_cms)) {
+        const float pilot_vel_max_up_scaled = MAX(_vel_max_up_cms - _vel_offset_z, 0.0f);
+        vel_temp = vel * pilot_vel_max_up_scaled / _vel_max_up_cms;
+    } else if (vel < 0 && !is_zero(_vel_max_down_cms)) {
+        const float pilot_vel_max_down_scaled = MIN(_vel_max_down_cms - _vel_offset_z, 0.0f);
+        vel_temp = vel * pilot_vel_max_down_scaled / _vel_max_down_cms;
+    }
     input_vel_accel_z(vel_temp, 0.0);
 
     // update the vertical position, velocity and acceleration offsets

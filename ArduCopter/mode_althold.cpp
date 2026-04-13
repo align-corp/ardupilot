@@ -86,7 +86,7 @@ void ModeAltHold::run()
 
 
         // limit descent rate when we're near ground
-        int16_t max_speed_down = sqrt_controller(g2.land_alt_low-get_alt_above_ground_cm(), pos_control->get_pos_z_p().kP(), 
+        int16_t max_speed_down = sqrt_controller(g.pilot_slow_alt-get_alt_above_ground_cm(), pos_control->get_pos_z_p().kP(), 
                     pos_control->get_max_accel_z_cmss(), G_Dt);
 
         // Constrain the demanded vertical velocity

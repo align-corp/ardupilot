@@ -766,7 +766,8 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                 return
             # can't use mode_is here because we're in the message hook
             print("Mode: %s" % self.mav.flightmode)
-            if self.mav.flightmode != "SMART_RTL":
+            #Align: automatic change flight mode after RTL, so check if we're armed
+            if self.mav.motors_armed() and self.mav.flightmode != "SMART_RTL":
                 raise NotAchievedException("Not in SMART_RTL")
         self.install_message_hook_context(ensure_smartrtl)
 

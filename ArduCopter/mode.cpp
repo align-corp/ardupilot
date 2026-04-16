@@ -622,6 +622,10 @@ int32_t Mode::get_alt_above_ground_cm(void)
     if (copter.get_rangefinder_height_interpolated_cm(alt_above_ground_cm)) {
         return alt_above_ground_cm;
     }
+    if (!copter.current_loc.initialised()) {
+        // current loc uninitialised during startup, return zero
+        return 0;
+    }
     if (!pos_control->is_active_xy()) {
         return copter.current_loc.alt;
     }

@@ -660,7 +660,7 @@ const AP_Param::GroupInfo SIM::var_gps[] = {
     // @User: Advanced
     // @Values: 2:2D_FIX, 3:3D_FIX, 4:DGPS_FIX, 5:RTK_FLOATING, 6:RTK_FIXED
     AP_GROUPINFO("GPS_FIX",       18, SIM,  gps_fix[0], 3),
-    // @Param: GPS_2_FIX
+    // @Param: GPS2_FIX
     // @DisplayName: GPS 2 Fix Type
     // @Description: Select GPS 2 Fix Type
     // @User: Advanced

@@ -5554,21 +5554,32 @@ class TestSuite(ABC):
     def arm_motors_with_rc_input(self, timeout=20):
         """Arm motors with radio."""
         self.progress("Arm motors with radio")
-        self.set_output_to_max(self.get_stick_arming_channel())
+        if (self.is_copter()):
+            #ALIGN: copter use a custom arming routine, like DJI
+            self.set_output_to_max(int(self.get_parameter("RCMAP_ROLL")))
+            self.set_output_to_max(int(self.get_parameter("RCMAP_PITCH")))
+            self.set_output_to_min(int(self.get_parameter("RCMAP_YAW")))
+        else:
+            self.set_output_to_max(self.get_stick_arming_channel())
         tstart = self.get_sim_time()
+        ret = False
         while True:
             self.wait_heartbeat()
             tdelta = self.get_sim_time_cached() - tstart
             if self.mav.motors_armed():
                 self.progress("MOTORS ARMED OK WITH RADIO")
-                self.set_output_to_trim(self.get_stick_arming_channel())
                 self.progress("Arm in %ss" % tdelta)  # TODO check arming time
-                return
+                ret = True
+                break
             print("Not armed after %f seconds" % (tdelta))
             if tdelta > timeout:
                 break
-        self.set_output_to_trim(self.get_stick_arming_channel())
-        raise NotAchievedException("Failed to ARM with radio")
+        #ALIGN: center all sticks, throttle to minimum
+        self.set_output_to_trim(int(self.get_parameter("RCMAP_ROLL")))
+        self.set_output_to_trim(int(self.get_parameter("RCMAP_PITCH")))
+        self.set_output_to_trim(int(self.get_parameter("RCMAP_YAW")))
+        if not ret:
+            raise NotAchievedException("Failed to ARM with radio")
 
     def disarm_motors_with_rc_input(self, timeout=20, watch_for_disabled=False):
         """Disarm motors with radio."""
@@ -5576,7 +5587,14 @@ class TestSuite(ABC):
         self.do_timesync_roundtrip()
         self.context_push()
         self.context_collect('STATUSTEXT')
-        self.set_output_to_min(self.get_stick_arming_channel())
+        if (self.is_copter()):
+            #ALIGN: copter use a custom arming routine, like DJI
+            self.set_output_to_max(int(self.get_parameter("RCMAP_ROLL")))
+            self.set_output_to_max(int(self.get_parameter("RCMAP_PITCH")))
+            self.set_output_to_min(int(self.get_parameter("RCMAP_YAW")))
+            self.progress("Debug: Align custom routine set")
+        else:
+            self.set_output_to_min(self.get_stick_arming_channel())
         tstart = self.get_sim_time()
         ret = False
         while self.get_sim_time_cached() < tstart + timeout:
@@ -5590,7 +5608,10 @@ class TestSuite(ABC):
                 self.progress("Found 'Rudder disarm: disabled' in statustext")
                 break
             self.context_clear_collection('STATUSTEXT')
-        self.set_output_to_trim(self.get_stick_arming_channel())
+        #ALIGN: center all sticks, throttle to minimum
+        self.set_output_to_trim(int(self.get_parameter("RCMAP_ROLL")))
+        self.set_output_to_trim(int(self.get_parameter("RCMAP_PITCH")))
+        self.set_output_to_trim(int(self.get_parameter("RCMAP_YAW")))
         self.context_pop()
         if not ret:
             raise NotAchievedException("Failed to DISARM with RC input")

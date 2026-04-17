@@ -1940,11 +1940,11 @@ bool AP_Mission::mission_cmd_to_mavlink_int(const AP_Mission::Mission_Command& c
         packet.y = cmd.content.location.lng;
 
 #if APM_BUILD_TYPE(APM_BUILD_ArduCopter)
-        uint32_t alt_cm = cmd.content.location.alt;
+        int32_t alt_cm = cmd.content.location.alt;
         if (circle_climbrate) {
             // we use 6 MSB of location.alt to specify climb rate
             // horrible, but storage is limited
-            alt_cm &= 0x1FFFF;
+            alt_cm &= 0x3FFFF;
         }
         packet.z = alt_cm * 0.01f;   // cmd alt in cm to m
 #else

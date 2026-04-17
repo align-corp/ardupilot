@@ -104,8 +104,8 @@ AC_Sprayer *AC_Sprayer::get_singleton()
 
 void AC_Sprayer::run(const bool activate)
 {
-    // turn off the pump and spinner servos if necessary
-    if (!_flags.running) {
+    // handle gradual spinner slowdown, but only after sprayer has been started at least once
+    if (!_flags.running && _flags.has_run) {
         stop_spraying();
     }
 
@@ -117,6 +117,9 @@ void AC_Sprayer::run(const bool activate)
     // set flag indicate whether spraying is permitted:
     // do not allow running to be set to true if we are currently not enabled
     _flags.running = _enabled && activate;
+    if (_flags.running) {
+        _flags.has_run = true;
+    }
 
 }
 

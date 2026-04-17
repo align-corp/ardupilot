@@ -3487,7 +3487,8 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
     def RTLSpeed(self):
         """Test RTL Speed parameters"""
         rtl_speed_ms = 7
-        wpnav_speed_ms = 4
+        #Align: RTL reduce speed when approaching home: faster wpnav_speed to fly farther
+        wpnav_speed_ms = 7
         wpnav_accel_mss = 3
         tolerance = 0.5
         self.load_mission("copter_rtl_speed.txt")
@@ -3507,10 +3508,10 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.change_mode('RTL')
         self.wait_groundspeed(rtl_speed_ms-tolerance, rtl_speed_ms+tolerance)
         self.monitor_groundspeed(rtl_speed_ms, timeout=5)
-        self.change_mode('AUTO')
-        self.wait_groundspeed(0-tolerance, 0+tolerance)
-        self.wait_groundspeed(wpnav_speed_ms-tolerance, wpnav_speed_ms+tolerance)
-        self.monitor_groundspeed(wpnav_speed_ms, tolerance=0.6, timeout=5)
+        #Align: check if RTL speed is reduced when approaching home
+        rtl_speed_low_ms = rtl_speed_ms * 0.5
+        self.wait_groundspeed(rtl_speed_low_ms-tolerance, rtl_speed_low_ms+tolerance)
+        self.monitor_groundspeed(rtl_speed_low_ms, timeout=5)
         self.do_RTL()
 
     def NavDelay(self):

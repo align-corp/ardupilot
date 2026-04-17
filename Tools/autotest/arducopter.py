@@ -3702,7 +3702,11 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         for speed_ms in 7, 8, 7, 8, 6, 2:
             self.set_parameter('WPNAV_SPEED_UP', speed_ms*100)
             self.wait_climbrate(speed_ms-1, speed_ms+1, minimum_duration=minimum_duration)
+
+        #Align: speedup RTL, with this test we reach high altitude
+        self.set_parameter('LAND_SPEED_HIGH', 400)
         self.do_RTL(timeout=240)
+        self.set_parameter('LAND_SPEED_HIGH', 0)
 
     def WPNAV_SPEED_DN(self):
         '''Change speed (down) during mission'''

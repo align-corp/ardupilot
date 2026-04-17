@@ -13587,6 +13587,7 @@ switch value'''
         self.start_subtest("Ensure detection when sim gps connected")
         self.set_parameter("SIM_GPS2_TYPE", 1)
         self.set_parameter("SIM_GPS2_DISABLE", 0)
+        self.set_parameter("SIM_GPS2_FIX", 6)
         # a reboot is required after setting GPS_TYPE2.  We start
         # sending GPS2_RAW out, once the parameter is set, but a
         # reboot is required because _port[1] is only set in

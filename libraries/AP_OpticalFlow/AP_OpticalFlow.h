@@ -128,6 +128,7 @@ private:
     AP_Vector3f _pos_offset;        // position offset of the flow sensor in the body frame
     AP_Int8  _address;              // address on the bus (allows selecting between 8 possible I2C addresses for px4flow)
     AP_Float  _height_override;              // height of the sensor above the ground. Only used in rover
+    AP_Int8   _flow_filter;                  // enable matched average filter on flow and body rates
 
     // method called by backend to update frontend state:
     void update_state(const OpticalFlow_state &state);
@@ -140,9 +141,11 @@ private:
     void Log_Write_Optflow();
     uint32_t _log_bit = -1;     // bitmask bit which indicates if we should log.  -1 means we always log
 
-    // Average filters for flow rates
+    // matched average filters for flow and body rates
     AverageFilterFloat_Size5 _flow_x_avg;
     AverageFilterFloat_Size5 _flow_y_avg;
+    AverageFilterFloat_Size5 _body_x_avg;
+    AverageFilterFloat_Size5 _body_y_avg;
 
 #if AP_OPTICALFLOW_CALIBRATOR_ENABLED
     // calibrator

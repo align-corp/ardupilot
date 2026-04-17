@@ -86,6 +86,7 @@ private:
         uint8_t spraying    : 1;            ///< 1 if we are currently spraying
         uint8_t testing     : 1;            ///< 1 if we are testing the sprayer and should output a minimum value
         uint8_t running     : 1;            ///< 1 if we are permitted to run sprayer
+        uint8_t has_run     : 1;            ///< 1 if sprayer has been started at least once
     } _flags;
 
     // internal variables

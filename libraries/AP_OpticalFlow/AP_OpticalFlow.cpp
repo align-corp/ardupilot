@@ -103,6 +103,13 @@ const AP_Param::GroupInfo AP_OpticalFlow::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO_FRAME("_HGT_OVR", 6,  AP_OpticalFlow, _height_override,   0.0f, AP_PARAM_FRAME_ROVER),
 
+    // @Param: _FILTER
+    // @DisplayName: Flow rate filter enable
+    // @Description: Enable moving average filter on flow and body rates. Applies a matched 5-sample average to both axes to reduce noise while preserving body-rate compensation accuracy.
+    // @Values: 0:Disabled,1:Enabled
+    // @User: Advanced
+    AP_GROUPINFO("_FILTER", 7, AP_OpticalFlow, _flow_filter, 0),
+
     AP_GROUPEND
 };
 
@@ -265,16 +272,16 @@ void AP_OpticalFlow::stop_calibration()
 
 void AP_OpticalFlow::update_state(const OpticalFlow_state &state)
 {
-#ifdef ALIGN_OPTICALFLOW_FILTER
-    // filter flowrate and bodyrate with matched filters to preserve compensation accuracy
-    _state.flowRate.x = _flow_x_avg.apply(state.flowRate.x);
-    _state.flowRate.y = _flow_y_avg.apply(state.flowRate.y);
-    _state.bodyRate.x = _body_x_avg.apply(state.bodyRate.x);
-    _state.bodyRate.y = _body_y_avg.apply(state.bodyRate.y);
-#else
-    _state.flowRate = state.flowRate;
-    _state.bodyRate = state.bodyRate;
-#endif
+    if (_flow_filter > 0) {
+        // matched filter on flow and body rates to preserve compensation accuracy
+        _state.flowRate.x = _flow_x_avg.apply(state.flowRate.x);
+        _state.flowRate.y = _flow_y_avg.apply(state.flowRate.y);
+        _state.bodyRate.x = _body_x_avg.apply(state.bodyRate.x);
+        _state.bodyRate.y = _body_y_avg.apply(state.bodyRate.y);
+    } else {
+        _state.flowRate = state.flowRate;
+        _state.bodyRate = state.bodyRate;
+    }
     _state.surface_quality = state.surface_quality;
     _last_update_ms = AP_HAL::millis();
 

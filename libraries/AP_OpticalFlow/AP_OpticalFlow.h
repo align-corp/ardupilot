@@ -15,7 +15,9 @@
 #pragma once
 
 #include "AP_OpticalFlow_config.h"
+#ifdef ALIGN_OPTICALFLOW_FILTER
 #include "Filter/Filter.h"
+#endif
 
 #if AP_OPTICALFLOW_ENABLED
 
@@ -140,9 +142,13 @@ private:
     void Log_Write_Optflow();
     uint32_t _log_bit = -1;     // bitmask bit which indicates if we should log.  -1 means we always log
 
-    // Average filters for flow rates
+#ifdef ALIGN_OPTICALFLOW_FILTER
+    // Average filters for flow and body rates (matched to preserve compensation accuracy)
     AverageFilterFloat_Size5 _flow_x_avg;
     AverageFilterFloat_Size5 _flow_y_avg;
+    AverageFilterFloat_Size5 _body_x_avg;
+    AverageFilterFloat_Size5 _body_y_avg;
+#endif
 
 #if AP_OPTICALFLOW_CALIBRATOR_ENABLED
     // calibrator

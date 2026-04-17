@@ -265,10 +265,16 @@ void AP_OpticalFlow::stop_calibration()
 
 void AP_OpticalFlow::update_state(const OpticalFlow_state &state)
 {
-    // filter flowrate: this will add a 20 ms delay at 100 Hz update rate
+#ifdef ALIGN_OPTICALFLOW_FILTER
+    // filter flowrate and bodyrate with matched filters to preserve compensation accuracy
     _state.flowRate.x = _flow_x_avg.apply(state.flowRate.x);
     _state.flowRate.y = _flow_y_avg.apply(state.flowRate.y);
+    _state.bodyRate.x = _body_x_avg.apply(state.bodyRate.x);
+    _state.bodyRate.y = _body_y_avg.apply(state.bodyRate.y);
+#else
+    _state.flowRate = state.flowRate;
     _state.bodyRate = state.bodyRate;
+#endif
     _state.surface_quality = state.surface_quality;
     _last_update_ms = AP_HAL::millis();
 

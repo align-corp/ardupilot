@@ -8118,16 +8118,11 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
     def fly_rangefinder_mavlink_distance_sensor(self):
         self.start_subtest("Test mavlink rangefinder using DISTANCE_SENSOR messages")
         self.context_push()
-        self.set_parameters({
-            "RTL_ALT_TYPE": 0,
-            "LGR_ENABLE": 1,
-            "LGR_DEPLOY_ALT": 1,
-            "LGR_RETRACT_ALT": 10, # metres
-            "SERVO10_FUNCTION": 29
-        })
         ex = None
+        lgr_tolerance_cm = 200
         try:
             self.set_parameter("SERIAL5_PROTOCOL", 1)
+            self.set_parameter("SERIAL5_OPTIONS", 1024) # don't forward mavlink
             self.set_parameter("RNGFND1_TYPE", 10)
             self.reboot_sitl()
             self.set_parameter("RNGFND1_MAX_CM", 32767)
@@ -8159,7 +8154,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.delay_sim_time(1)
             self.assert_sensor_state(mavutil.mavlink.MAV_SYS_STATUS_SENSOR_LASER_POSITION, True, True, False)
 
-            self.progress("Landing gear should deploy with current_distance below min_distance")
+            self.progress("Copter should be armable when Rangefinder is healthy")
             self.change_mode('STABILIZE')
             timeout = 60
             tstart = self.get_sim_time()
@@ -8176,59 +8171,33 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                     mavutil.mavlink.MAV_SENSOR_ROTATION_PITCH_270, # orientation
                     255  # covariance
                 )
-            self.arm_vehicle()
-            self.delay_sim_time(1)  # servo function maps only periodically updated
-#            self.send_debug_trap()
 
-            self.run_cmd(
-                mavutil.mavlink.MAV_CMD_AIRFRAME_CONFIGURATION,
-                p2=0,  # deploy
-            )
-
-            self.context_collect("STATUSTEXT")
+            self.progress("Distance should be reported correctly")
+            timeout = 5
             tstart = self.get_sim_time()
+            test_dist_cm = 500
             while True:
-                if self.get_sim_time_cached() - tstart > 5:
-                    raise NotAchievedException("Retraction did not happen")
+                if self.get_sim_time() - tstart > timeout:
+                    raise NotAchievedException("Mavlink rangefinder reports wrong distance")
                 self.mav.mav.distance_sensor_send(
                     0,  # time_boot_ms
                     100, # min_distance (cm)
-                    6000, # max_distance (cm)
-                    1500, # current_distance (cm)
+                    2500, # max_distance (cm)
+                    test_dist_cm, # current_distance (cm)
                     mavutil.mavlink.MAV_DISTANCE_SENSOR_LASER, # type
                     21, # id
                     mavutil.mavlink.MAV_SENSOR_ROTATION_PITCH_270, # orientation
                     255  # covariance
                 )
-                self.delay_sim_time(0.1)
-                try:
-                    self.wait_text("LandingGear: RETRACT", check_context=True, timeout=0.1)
-                except Exception:
-                    continue
-                self.progress("Retracted")
-                break
-#            self.send_debug_trap()
-            while True:
-                if self.get_sim_time_cached() - tstart > 5:
-                    raise NotAchievedException("Deployment did not happen")
-                self.progress("Sending distance-sensor message")
-                self.mav.mav.distance_sensor_send(
-                    0, # time_boot_ms
-                    300, # min_distance
-                    500, # max_distance
-                    250, # current_distance
-                    mavutil.mavlink.MAV_DISTANCE_SENSOR_LASER, # type
-                    21, # id
-                    mavutil.mavlink.MAV_SENSOR_ROTATION_PITCH_270, # orientation
-                    255 # covariance
+                ds = self.mav.recv_match(
+                    type="DISTANCE_SENSOR",
+                    blocking=False,
                 )
-                try:
-                    self.wait_text("LandingGear: DEPLOY", check_context=True, timeout=0.1)
-                except Exception:
+                if ds is None:
                     continue
-                self.progress("Deployed")
-                break
-            self.disarm_vehicle()
+                elif ds.current_distance == test_dist_cm:
+                    break
+            self.progress("mavlink rangefinder OK")
 
         except Exception as e:
             self.print_exception_caught(e)

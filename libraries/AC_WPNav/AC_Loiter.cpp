@@ -272,13 +272,23 @@ void AC_Loiter::calc_desired_velocity(bool avoidance_on)
 
 #if !APM_BUILD_TYPE(APM_BUILD_ArduPlane)
     if (avoidance_on) {
-        // Limit the velocity to prevent fence violations
-        // TODO: We need to also limit the _desired_accel
+        // Limit the velocity and acceleration to prevent fence/obstacle violations
         AC_Avoid *_avoid = AP::ac_avoid();
         if (_avoid != nullptr) {
             Vector3f avoidance_vel_3d{desired_vel.x, desired_vel.y, 0.0f};
             _avoid->adjust_velocity(avoidance_vel_3d, _pos_control.get_pos_xy_p().kP(), _accel_cmss, _pos_control.get_pos_z_p().kP(), _pos_control.get_max_accel_z_cmss(), dt, desired_accel_copy);
             desired_vel = Vector2f{avoidance_vel_3d.x, avoidance_vel_3d.y};
+
+            // When proximity avoidance is active (limiting or holding position),
+            // take control of acceleration to prevent feed-forward (including
+            // braking decel) from fighting avoidance. Zero all acceleration,
+            // then allow pilot input only in directions away from obstacles.
+            if (_avoid->proximity_limiting() || _avoid->proximity_held()) {
+                _desired_accel.zero();
+                Vector2f safe_pilot_accel = desired_accel_copy;
+                _avoid->limit_accel_from_proximity(safe_pilot_accel);
+                _desired_accel = safe_pilot_accel;
+            }
         }
     }
 #endif // !APM_BUILD_ArduPlane

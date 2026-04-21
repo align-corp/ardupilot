@@ -109,6 +109,16 @@ public:
     // return true if limiting is active
     bool limits_active() const {return (AP_HAL::millis() - _last_limit_time) < AC_AVOID_ACTIVE_LIMIT_TIMEOUT_MS;};
 
+    // return true if proximity avoidance specifically modified velocity in the latest cycle
+    bool proximity_limiting() const { return _proximity_limiting; }
+
+    // return true if vehicle is being held in place near a confirmed proximity obstacle
+    bool proximity_held() const { return _proximity_held; }
+
+    // Limit desired acceleration based on confirmed proximity obstacles.
+    // Removes acceleration components directed toward confirmed obstacles.
+    void limit_accel_from_proximity(Vector2f &accel_cmss) const;
+
     static const struct AP_Param::GroupInfo var_info[];
 
 private:
@@ -217,12 +227,38 @@ private:
     AP_Float _accel_max;           // maximum acceleration while simple avoidance is active
     AP_Float _backup_deadzone;     // distance beyond AVOID_MARGIN parameter, after which vehicle will backaway from obstacles
     AP_Int8 _velocity_angle;      // Consider obstacles only in velocity direction +- _velocity_angle
+    AP_Int16 _confirm_ms;         // ms before new obstacle is trusted for backup/accel limiting
+    AP_Int16 _holdoff_ms;         // ms to retain disappeared obstacle (prevents confirmation reset on brief dropouts)
 
     bool _proximity_enabled = true; // true if proximity sensor based avoidance is enabled (used to allow pilot to enable/disable)
     bool _proximity_alt_enabled = true; // true if proximity sensor based avoidance is enabled based on altitude
     uint32_t _last_limit_time;      // the last time a limit was active
     uint32_t _last_log_ms;          // the last time simple avoidance was logged
     Vector3f _prev_avoid_vel;       // copy of avoidance adjusted velocity
+    bool _proximity_limiting;       // true when proximity avoidance modified velocity in latest cycle
+    bool _proximity_held;           // true when vehicle is being held at a confirmed obstacle
+
+    // obstacle tracking for proximity memory
+    static constexpr uint8_t AVOID_MAX_OBSTACLE_TRACKS = 40;
+    static constexpr float AVOID_RATE_FILT_HZ = 3.0f;
+
+    struct ObstacleTrack {
+        Vector3f last_direction {};  // body-frame vector to obstacle
+        float distance_cm = 0;      // last raw distance in cm
+        float approach_rate_cms = 0; // filtered approach rate, positive = closing
+        uint32_t first_seen_ms = 0;  // when first detected
+        uint32_t last_seen_ms = 0;   // when last seen
+        bool active = false;         // tracking an obstacle
+        bool held = false;           // vehicle has stopped for this obstacle, latch position
+    };
+
+    ObstacleTrack _obstacle_tracks[AVOID_MAX_OBSTACLE_TRACKS];
+
+    // update obstacle tracking from proximity data, including held state
+    void update_obstacle_tracks(float dt);
+
+    // return true if obstacle has been seen long enough to be trusted
+    bool is_obstacle_confirmed(uint8_t obstacle_num) const;
 
     static AC_Avoid *_singleton;
 };

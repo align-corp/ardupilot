@@ -123,6 +123,22 @@ const AP_Param::GroupInfo AC_Avoid::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("VEL_ANGLE", 11, AC_Avoid, _velocity_angle, 0),
 
+    // @Param: CONFIRM
+    // @DisplayName: Avoidance obstacle confirmation time
+    // @Description: Time in milliseconds that a proximity obstacle must be seen before backup and acceleration limiting are applied. Velocity limiting is always immediate for safety. Higher values reduce false reactions from sensor noise.
+    // @Units: ms
+    // @Range: 0 1000
+    // @User: Advanced
+    AP_GROUPINFO("CONFIRM", 12, AC_Avoid, _confirm_ms, 200),
+
+    // @Param: HOLDOFF
+    // @DisplayName: Avoidance obstacle hold-off time
+    // @Description: Time in milliseconds to retain a proximity obstacle after it disappears from sensor. Prevents confirmation reset on brief sensor dropouts.
+    // @Units: ms
+    // @Range: 0 2000
+    // @User: Advanced
+    AP_GROUPINFO("HOLDOFF", 13, AC_Avoid, _holdoff_ms, 500),
+
     AP_GROUPEND
 };
 
@@ -132,6 +148,8 @@ AC_Avoid::AC_Avoid()
     _singleton = this;
 
     AP_Param::setup_object_defaults(this, var_info);
+    _proximity_limiting = false;
+    _proximity_held = false;
 }
 
 /*
@@ -206,6 +224,9 @@ void AC_Avoid::adjust_velocity(Vector3f &desired_vel_cms, bool &backing_up, floa
     if (_enabled == AC_AVOID_DISABLED) {
         return;
     }
+
+    _proximity_limiting = false;
+    _proximity_held = false;
 
     // make a copy of input velocity, because desired_vel_cms might be changed
     const Vector3f desired_vel_cms_original = desired_vel_cms;
@@ -1169,6 +1190,10 @@ void AC_Avoid::adjust_velocity_proximity(float kP, float accel_cmss, Vector3f &d
     }
 
     AP_Proximity &_proximity = *proximity;
+
+    // update obstacle tracking memory
+    update_obstacle_tracks(dt);
+
     // get total number of obstacles
     const uint8_t obstacle_num = _proximity.get_obstacle_count();
     if (obstacle_num == 0) {
@@ -1192,6 +1217,33 @@ void AC_Avoid::adjust_velocity_proximity(float kP, float accel_cmss, Vector3f &d
 
     // calc margin in cm
     const float margin_cm = MAX(_margin * 100.0f, 0.0f);
+
+    // update per-obstacle held state
+    for (uint8_t i = 0; i < MIN(obstacle_num, (uint8_t)AVOID_MAX_OBSTACLE_TRACKS); i++) {
+        ObstacleTrack &track = _obstacle_tracks[i];
+        if (!track.active || !is_obstacle_confirmed(i)) {
+            track.held = false;
+            continue;
+        }
+        // enter held: confirmed obstacle close enough and vehicle nearly stationary relative to it
+        if (!track.held && track.distance_cm < margin_cm * 1.5f &&
+            track.approach_rate_cms < 5.0f) {
+            track.held = true;
+        }
+        // exit held: obstacle moved far away
+        if (track.held && track.distance_cm > margin_cm * 2.5f) {
+            track.held = false;
+        }
+    }
+
+    // set global held flag for callers (e.g. AC_Loiter)
+    for (uint8_t i = 0; i < AVOID_MAX_OBSTACLE_TRACKS; i++) {
+        if (_obstacle_tracks[i].held) {
+            _proximity_held = true;
+            break;
+        }
+    }
+
     Vector3f stopping_point_plus_margin;
     if (!desired_vel_cms.is_zero()) {
         // only used for "stop mode". Pre-calculating the stopping point here makes sure we do not need to repeat the calculations under iterations.
@@ -1222,8 +1274,27 @@ void AC_Avoid::adjust_velocity_proximity(float kP, float accel_cmss, Vector3f &d
             }
         }
 
-        // back away if vehicle has breached margin
-        if (is_negative(dist_to_boundary - margin_cm)) {
+        // HELD STATE: vehicle already stopped for this obstacle.
+        // Use simple velocity projection instead of complex stopping-distance
+        // calculation. This prevents oscillation from sensor distance noise.
+        // No backup velocity — vehicle is already at rest.
+        if (i < AVOID_MAX_OBSTACLE_TRACKS && _obstacle_tracks[i].held) {
+            const Vector2f obs_dir{vector_to_obstacle.x, vector_to_obstacle.y};
+            if (!obs_dir.is_zero()) {
+                const Vector2f obs_dir_norm = obs_dir.normalized();
+                const float vel_toward = Vector2f{safe_vel.x, safe_vel.y} * obs_dir_norm;
+                if (is_positive(vel_toward)) {
+                    safe_vel.x -= obs_dir_norm.x * vel_toward;
+                    safe_vel.y -= obs_dir_norm.y * vel_toward;
+                }
+            }
+            continue;
+        }
+
+        // back away if vehicle has breached margin and obstacle is confirmed
+        // velocity limiting below is always applied for safety, but backup
+        // requires confirmation to prevent erratic reactions from sensor noise
+        if (is_negative(dist_to_boundary - margin_cm) && is_obstacle_confirmed(i)) {
             const float breach_dist = margin_cm - dist_to_boundary;
             // add a deadzone so that the vehicle doesn't backup and go forward again and again
             const float deadzone = MAX(0.0f, _backup_deadzone) * 100.0f;
@@ -1254,7 +1325,7 @@ void AC_Avoid::adjust_velocity_proximity(float kP, float accel_cmss, Vector3f &d
             }
             // Adjust velocity to not violate margin.
             limit_velocity_3D(kP, accel_cmss, safe_vel, limit_direction, margin_cm, kP_z, accel_cmss_z, dt);
-        
+
             break;
         }
 
@@ -1296,6 +1367,9 @@ void AC_Avoid::adjust_velocity_proximity(float kP, float accel_cmss, Vector3f &d
         backup_vel.zero();
         return;
     }
+
+    // proximity avoidance is actively modifying velocity
+    _proximity_limiting = true;
 
     // set modified desired velocity vector and back away velocity vector
     // vectors were in body-frame, rotate resulting vector back to earth-frame
@@ -1502,6 +1576,129 @@ void AC_Avoid::get_proximity_roll_pitch_pct(float &roll_positive, float &roll_ne
         }
     }
 #endif // HAL_PROXIMITY_ENABLED
+}
+
+/*
+ * Update obstacle tracking from proximity data.
+ * Maintains per-obstacle confirmation time and approach rate.
+ */
+void AC_Avoid::update_obstacle_tracks(float dt)
+{
+#if HAL_PROXIMITY_ENABLED
+    AP_Proximity *proximity = AP::proximity();
+    if (!proximity) {
+        return;
+    }
+
+    const uint32_t now_ms = AP_HAL::millis();
+    const uint8_t num_obstacles = MIN(proximity->get_obstacle_count(), (uint8_t)AVOID_MAX_OBSTACLE_TRACKS);
+
+    for (uint8_t i = 0; i < num_obstacles; i++) {
+        ObstacleTrack &track = _obstacle_tracks[i];
+        Vector3f vec_to_obstacle;
+        const bool valid = proximity->get_obstacle(i, vec_to_obstacle);
+
+        if (valid) {
+            const float new_dist = vec_to_obstacle.length();
+            if (!track.active) {
+                // new obstacle appearing — start tracking
+                track.first_seen_ms = now_ms;
+                track.distance_cm = new_dist;
+                track.approach_rate_cms = 0.0f;
+                track.active = true;
+            } else if (is_positive(dt)) {
+                // compute approach rate from raw distances: positive = closing
+                const float raw_rate = -(new_dist - track.distance_cm) / dt;
+                // first-order low-pass filter on the rate
+                const float rc = 1.0f / (2.0f * M_PI * AVOID_RATE_FILT_HZ);
+                const float alpha = constrain_float(dt / (rc + dt), 0.0f, 1.0f);
+                track.approach_rate_cms += alpha * (raw_rate - track.approach_rate_cms);
+                track.distance_cm = new_dist;
+            }
+            track.last_seen_ms = now_ms;
+            track.last_direction = vec_to_obstacle;
+        } else if (track.active) {
+            // obstacle disappeared — keep track during holdoff to preserve confirmation
+            if (now_ms - track.last_seen_ms > (uint32_t)MAX(_holdoff_ms.get(), 0)) {
+                track.active = false;
+            }
+        }
+    }
+
+    // deactivate tracks beyond current obstacle count
+    for (uint8_t i = num_obstacles; i < AVOID_MAX_OBSTACLE_TRACKS; i++) {
+        _obstacle_tracks[i].active = false;
+    }
+#endif
+}
+
+/*
+ * Return true if obstacle has been tracked long enough to be trusted.
+ * Defaults to confirmed if obstacle_num is out of range (safety).
+ */
+bool AC_Avoid::is_obstacle_confirmed(uint8_t obstacle_num) const
+{
+    if (obstacle_num >= AVOID_MAX_OBSTACLE_TRACKS) {
+        return true;
+    }
+    const ObstacleTrack &track = _obstacle_tracks[obstacle_num];
+    if (!track.active) {
+        return false;
+    }
+    return (AP_HAL::millis() - track.first_seen_ms >= (uint32_t)MAX(_confirm_ms.get(), 0));
+}
+
+/*
+ * Limit desired acceleration based on confirmed proximity obstacles.
+ * For each confirmed obstacle within 2x margin distance, remove
+ * the component of accel_cmss directed toward the obstacle.
+ * accel_cmss is in earth frame (NE, cm/s/s).
+ */
+void AC_Avoid::limit_accel_from_proximity(Vector2f &accel_cmss) const
+{
+#if HAL_PROXIMITY_ENABLED
+    if (accel_cmss.is_zero()) {
+        return;
+    }
+    if (!proximity_avoidance_enabled() || !_proximity_alt_enabled) {
+        return;
+    }
+
+    const float margin_cm = MAX(_margin * 100.0f, 0.0f);
+    const AP_AHRS &ahrs = AP::ahrs();
+
+    // work in body frame since obstacle directions are body-frame
+    Vector2f accel_body = ahrs.earth_to_body2D(accel_cmss);
+
+    for (uint8_t i = 0; i < AVOID_MAX_OBSTACLE_TRACKS; i++) {
+        const ObstacleTrack &track = _obstacle_tracks[i];
+        if (!track.active || !is_obstacle_confirmed(i)) {
+            continue;
+        }
+        // only limit for obstacles within avoidance range or held
+        if (track.distance_cm > margin_cm * 2.0f && !track.held) {
+            continue;
+        }
+
+        // direction to obstacle in body frame (horizontal)
+        Vector2f obs_dir{track.last_direction.x, track.last_direction.y};
+        if (obs_dir.is_zero()) {
+            continue;
+        }
+        obs_dir.normalize();
+
+        // project accel onto obstacle direction
+        const float accel_toward = accel_body * obs_dir;
+        if (is_positive(accel_toward)) {
+            // pilot accelerating toward obstacle — remove that component
+            // full removal at margin, linear taper to zero removal at 2x margin
+            const float scale = constrain_float((margin_cm * 2.0f - track.distance_cm) / margin_cm, 0.0f, 1.0f);
+            accel_body -= obs_dir * (accel_toward * scale);
+        }
+    }
+
+    accel_cmss = ahrs.body_to_earth2D(accel_body);
+#endif
 }
 
 // singleton instance

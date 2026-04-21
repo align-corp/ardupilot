@@ -221,8 +221,23 @@ void AP_Logger_W25N01GV::PageToBuffer(uint32_t pageNum)
         send_command_addr(JEDEC_PAGE_DATA_READ, PageAdr);
     }
 
-    // read from internal buffer into our buffer
+    // wait for page data read to complete — ECC status is valid after this
     WaitReady();
+
+    // check ECC status (SR-3 bits [5:4])
+    // 0=ok, 1=corrected, 2/3=uncorrectable
+    {
+        const uint8_t ecc = (ReadStatusRegBits(W25N01G_STATUS_REG) >> 4) & 0x03;
+        if (ecc >= 2) {
+            // uncorrectable ECC error — return 0xFF so the page looks erased
+            // and cannot poison the log-boundary binary searches
+            memset(buffer, 0xFF, df_PageSize);
+            read_cache_valid = true;
+            return;
+        }
+    }
+
+    // read from internal buffer into our buffer
     {
         WITH_SEMAPHORE(dev_sem);
         dev->set_chip_select(true);
@@ -282,6 +297,10 @@ void AP_Logger_W25N01GV::BufferToPage(uint32_t pageNum)
 */
 void AP_Logger_W25N01GV::SectorErase(uint32_t blockNum)
 {
+    // the cached page may be in this block — invalidate so we don't
+    // return stale pre-erase data on the next read
+    read_cache_valid = false;
+
     WriteEnable();
     WITH_SEMAPHORE(dev_sem);
 

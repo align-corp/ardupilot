@@ -571,21 +571,24 @@ void AP_Logger_Block::start_new_log(void)
         StartWrite(1);
     } else {
         new_log_num = GetFileNumber()+1;
-        if (last_page == 0xFFFF) {
-            last_page=0;
-        }
         StartLogFile(new_log_num);
-        // Always start at last_page+1, never reuse an already-written page.
-        // On NAND flash (e.g. W25N01GV) re-programming a page without a prior
-        // block erase causes ECC corruption that breaks all log boundary searches
-        // and makes every log appear as ~2kB in QGC.
-        StartWrite(last_page + 1);
-        // If last_page ends a block, FinishWrite() may have returned early
-        // without erasing the next block (chip_full case). Mark it for erase
-        // before the first write so we don't write to an unerased NAND block.
-        if (last_page % df_PagePerBlock == 0) {
-            start_page_needs_erase = true;
+        // Always start at the next block boundary and erase the block.
+        // On NAND flash (e.g. W25N01GV) re-programming a page without a
+        // prior block erase causes ECC corruption that breaks all log
+        // boundary searches and makes every log appear as ~2kB in QGC.
+        // Block-aligning wastes at most one block (~128kB) but guarantees
+        // a clean start regardless of prior chip state or ECC corruption.
+        uint32_t start_page;
+        if (last_page == 0xFFFF || last_page == 0) {
+            start_page = 1;
+        } else {
+            start_page = (get_block(last_page) + 1) * df_PagePerBlock + 1;
+            if (start_page > df_NumPages) {
+                start_page = 1;
+            }
         }
+        StartWrite(start_page);
+        start_page_needs_erase = true;
     }
 
     // save UTC time in the first 4 bytes so that we can retrieve it later

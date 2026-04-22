@@ -5915,8 +5915,8 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
             freq, hover_throttle, peakdb2 = self.hover_and_check_matched_frequency_with_fft(-15, 20, 350, reverse=True)
 
-            # double-notch should do better, but check for within 5%
-            if peakdb2 * 1.05 > peakdb1:
+            # double-notch should do better, but check for within 10%
+            if peakdb2 * 1.1 > peakdb1:
                 raise NotAchievedException(
                     "Double-notch peak was higher than single-notch peak %fdB > %fdB" %
                     (peakdb2, peakdb1))

@@ -9985,6 +9985,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
     def Sprayer(self):
         """Test sprayer functionality."""
+        #Align: add spinner delay test
         self.context_push()
 
         rc_ch = 9
@@ -9992,6 +9993,9 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         spinner_ch = 6
         pump_ch_min = 1050
         pump_ch_trim = 1520
+        pump_ch_test = 1140
+        spinner_ch_set = 1300
+
         pump_ch_max = 1950
         spinner_ch_min = 975
         spinner_ch_trim = 1510
@@ -10020,12 +10024,17 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         self.reboot_sitl()
 
+        self.set_parameters({
+            "SPRAY_SPINNER": spinner_ch_set,
+            "SPRAY_SPIN_DEL": 0,
+        })
+
         self.wait_ready_to_arm()
         self.arm_vehicle()
 
-        self.progress("test bootup state - it's zero-output!")
-        self.wait_servo_channel_value(spinner_ch, 0)
-        self.wait_servo_channel_value(pump_ch, 0)
+        self.progress("test bootup state - it's minimum output")
+        self.wait_servo_channel_value(spinner_ch, spinner_ch_min)
+        self.wait_servo_channel_value(pump_ch, pump_ch_min)
 
         self.progress("Enable sprayer")
         self.set_rc(rc_ch, 2000)
@@ -10039,14 +10048,25 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.wait_servo_channel_value(spinner_ch, spinner_ch_min)
         self.wait_servo_channel_value(pump_ch, pump_ch_min)
 
-        self.progress("Testing turning it back on")
+        self.progress("Testing turning it back on disarmed (test speed)")
+        self.disarm_vehicle()
         self.set_rc(rc_ch, 2000)
-        self.wait_servo_channel_value(spinner_ch, spinner_ch_min)
-        self.wait_servo_channel_value(pump_ch, pump_ch_min)
+        self.wait_servo_channel_value(spinner_ch, spinner_ch_set)
+        self.wait_servo_channel_value(pump_ch, pump_ch_test)
+
+        self.progress("Testing SPINNER DELAY")
+        self.set_parameters({"SPRAY_SPIN_DEL": 10})
+        self.set_rc(rc_ch, 1000)
+        tstart = self.get_sim_time()
+        self.wait_servo_channel_value(spinner_ch, spinner_ch_min, 15)
+        self.set_parameters({"SPRAY_SPIN_DEL": 0})
+        if self.get_sim_time_cached() - tstart < 5:
+            raise NotAchievedException("Spinner delay is not working")
 
         self.takeoff(30, mode='LOITER')
 
         self.progress("Testing speed-ramping")
+        self.set_rc(rc_ch, 2000)
         self.set_rc(1, 1700) # start driving forward
 
         # this is somewhat empirical...

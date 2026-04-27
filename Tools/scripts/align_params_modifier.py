@@ -59,6 +59,10 @@ BASE_FILES_CONFIG = {
         ("AP3", "libraries/AP_HAL_ChibiOS/hwdef/AP3-M490/defaults.parm"),
     ],
 
+    # M4P Plus
+    "libraries/AP_HAL_ChibiOS/hwdef/AP6-M4P/defaults.parm": [
+        ("M4P+", "libraries/AP_HAL_ChibiOS/hwdef/AP6-M4P+/defaults.parm"),
+    ],
 }
 
 # Configuration rules
@@ -255,6 +259,32 @@ CAN_P1_DRIVER 1
 CAN_D1_UC_ESC_BM 15
 """
     },
+
+    "M4P+": {
+        "remove": [],
+        "add": """
+# M4P+ PID-RNG
+ATC_ACCEL_P_MAX 25000
+ATC_ACCEL_R_MAX 25000
+ATC_ANG_PIT_P 6
+ATC_ANG_RLL_P 6
+ATC_ANG_YAW_P 5
+ATC_RAT_PIT_D 0.006
+ATC_RAT_PIT_I 0.11
+ATC_RAT_PIT_P 0.11
+ATC_RAT_RLL_D 0.006
+ATC_RAT_RLL_I 0.11
+ATC_RAT_RLL_P 0.11
+ATC_RAT_YAW_I 0.06
+ATC_RAT_YAW_P 0.6
+BATT_CAPACITY 30000
+MOT_BAT_VOLT_MAX 60.9
+MOT_BAT_VOLT_MIN 46.2
+RNGFND1_TYPE 10
+RNGFND2_TYPE 10
+"""
+    },
+
 }
 # =============================================================================
 # SCRIPT CODE - NO NEED TO MODIFY BELOW THIS LINE

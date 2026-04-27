@@ -59,6 +59,10 @@ BASE_FILES_CONFIG = {
         ("AP3", "libraries/AP_HAL_ChibiOS/hwdef/AP3-M490/defaults.parm"),
     ],
 
+    # M4P Plus
+    "libraries/AP_HAL_ChibiOS/hwdef/AP6-M4P/defaults.parm": [
+        ("M4P+", "libraries/AP_HAL_ChibiOS/hwdef/AP6-M4P+/defaults.parm"),
+    ],
 }
 
 # Configuration rules
@@ -255,6 +259,49 @@ CAN_P1_DRIVER 1
 CAN_D1_UC_ESC_BM 15
 """
     },
+
+    "M4P+": {
+        "remove": ["LGR_DEPLOY_ALT", "LGR_ENABLE", "LGR_OPTIONS", "LGR_RETRACT_ALT",
+                    "RC8_OPTION"],
+        "add": """
+# M4P+ PID-RNG
+ATC_ACCEL_P_MAX 25000
+ATC_ACCEL_R_MAX 25000
+ATC_ANG_PIT_P 6
+ATC_ANG_RLL_P 6
+ATC_ANG_YAW_P 4.5
+ATC_RAT_PIT_D 0.006
+ATC_RAT_PIT_I 0.11
+ATC_RAT_PIT_P 0.11
+ATC_RAT_RLL_D 0.006
+ATC_RAT_RLL_I 0.11
+ATC_RAT_RLL_P 0.11
+ATC_RAT_YAW_I 0.05
+ATC_RAT_YAW_P 0.5
+BATT_CAPACITY 30000
+INS_HNTCH_BW 35
+INS_HNTCH_FREQ 73
+INS_HNTCH_REF 0.19
+LOIT_ACC_MAX 300
+LOIT_ANG_MAX 12
+LOIT_BRK_ACCEL 100
+LOIT_BRK_DELAY 0.4
+LOIT_BRK_JERK 200
+MOT_BAT_VOLT_MAX 60.9
+MOT_BAT_VOLT_MIN 46.2
+PSC_ACCZ_I 0.8
+PSC_ACCZ_P 0.4
+PSC_THOV_MAX 0.28
+PSC_THOV_MIN 0.16
+PSC_VELXY_D 0.25
+PSC_VELXY_I 0.5
+PSC_VELXY_P 1
+RC8_OPTION 19
+RNGFND1_TYPE 10
+RNGFND2_TYPE 10
+"""
+    },
+
 }
 # =============================================================================
 # SCRIPT CODE - NO NEED TO MODIFY BELOW THIS LINE

@@ -323,6 +323,11 @@ def kill_tasks():
             # use special macos kill routine if Display is on
             return kill_tasks_macos()
 
+        # macOS psutil cannot read other processes' environ without root,
+        # so SIM_VEHICLE_SESSION matching silently fails — use pkill instead.
+        if sys.platform == 'darwin':
+            return kill_tasks_pkill(victim_names)
+
         try:
             kill_tasks_psutil(victim_names)
         except ImportError:

@@ -3795,7 +3795,7 @@ class TestSuite(ABC):
             self.last_sim_time_cached_wallclock = time.time()
         else:
             timeout = 30
-            if self.valgrind:
+            if self.valgrind or sys.platform == "darwin":
                 timeout *= 10
             if time.time() - self.last_sim_time_cached_wallclock > timeout and not self.gdb:
                 raise AutoTestTimeoutException("sim_time_cached is not updating!")

@@ -20,82 +20,47 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        include:
+        board:
           # Copters
-          - type: copter
-            board: AP6-M460
-          - type: copter
-            board: AP6-M460-A10
-          - type: copter
-            board: AP6-M460-ds
-          - type: copter
-            board: AP6-M460-A10-ds
-          - type: copter
-            board: AP6-M460-can
-          - type: copter
-            board: AP6-M490
-          - type: copter
-            board: AP6-M490-A10
-          - type: copter
-            board: AP6-M490-ds
-          - type: copter
-            board: AP6-M490-A10-ds
-          - type: copter
-            board: AP6-M6T22
-          - type: copter
-            board: AP6-M4T12
-          - type: copter
-            board: AP6-M4P
-          - type: copter
-            board: AP6-M450
-          - type: copter
-            board: AP6-M450-ds
-          - type: copter
-            board: AP6-M450-nogps-ds
-          - type: copter
-            board: AP6-M450-OF
-          - type: copter
-            board: AP6-M450-OF-ds
-          - type: copter
-            board: AP6-M450-A10-OF
-          - type: copter
-            board: AP6-M450-A10
-          - type: copter
-            board: AP6-M450-A10-ds
-          - type: copter
-            board: AP6-M450-A10-OF-ds
-          - type: copter
-            board: AP6-SoH
-          - type: copter
-            board: AP6m-M3
-          - type: copter
-            board: AP6m-M3-A10
-          - type: copter
-            board: AP6m-M3-OF
-          - type: copter
-            board: AP6m-MR25
-          - type: copter
-            board: AP6m-MR25-A10
-          - type: copter
-            board: AP6m-MR25-no-gps
-          - type: copter
-            board: AP3-M460
-          - type: copter
-            board: AP3-M490
-          - type: copter
-            board: AP5-M460
-          - type: copter
-            board: AP5-M490
+          - AP6-M460
+          - AP6-M460-A10
+          - AP6-M460-ds
+          - AP6-M460-A10-ds
+          - AP6-M460-can
+          - AP6-M490
+          - AP6-M490-A10
+          - AP6-M490-ds
+          - AP6-M490-A10-ds
+          - AP6-M6T22
+          - AP6-M4T12
+          - AP6-M4P
+          - AP6-M4P+
+          - AP6-M450
+          - AP6-M450-ds
+          - AP6-M450-nogps-ds
+          - AP6-M450-OF
+          - AP6-M450-OF-ds
+          - AP6-M450-A10-OF
+          - AP6-M450-A10
+          - AP6-M450-A10-ds
+          - AP6-M450-A10-OF-ds
+          - AP6-SoH
+          - AP6m-M3
+          - AP6m-M3-A10
+          - AP6m-M3-OF
+          - AP6m-MR25
+          - AP6m-MR25-A10
+          - AP6m-MR25-no-gps
+          - AP3-M460
+          - AP3-M490
+          - AP5-M460
+          - AP5-M490
 
           # Helis
-          - type: heli
-            board: AP6-E1
-          - type: heli
-            board: AP6-E1v2
-          - type: heli
-            board: AP6-E2
-          - type: heli
-            board: AP6-TB40-A10
+          - AP6-E1
+          - AP6-E1v2
+          - AP6-E2
+          - AP6-TB40-A10
 
     steps:
       - uses: actions/checkout@v6
@@ -136,13 +101,16 @@ jobs:
           # Build target depending on firmware type
           ./waf configure --board ${{ matrix.board }}
           ./waf clean
-          if [ "${{ matrix.type }}" == "heli" ]; then
-            ./waf heli
-            cp build/${{ matrix.board }}/bin/arducopter-heli.apj ${{ matrix.board }}.apj
-          else
-            ./waf copter
-            cp build/${{ matrix.board }}/bin/arducopter.apj ${{ matrix.board }}.apj
-          fi
+          case "${{ matrix.board }}" in
+            AP6-E1|AP6-E1v2|AP6-E2|AP6-TB40-A10)
+              ./waf heli
+              cp build/${{ matrix.board }}/bin/arducopter-heli.apj ${{ matrix.board }}.apj
+              ;;
+            *)
+              ./waf copter
+              cp build/${{ matrix.board }}/bin/arducopter.apj ${{ matrix.board }}.apj
+              ;;
+          esac
           ccache -s
           ccache -z
 
@@ -170,6 +138,7 @@ jobs:
         uses: actions/download-artifact@v7
         with:
           path: align-build
+          merge-multiple: true
 
       - name: upload align-build
         uses: actions/upload-artifact@v7
@@ -186,7 +155,7 @@ jobs:
           gh release create ${{ github.ref_name }} \
             --title "Release ${{ github.ref_name }}" \
             --notes "Automated release for ${{ github.ref_name }}" \
-            align-build/*/*.apj \
+            align-build/*.apj \
             align-build.zip \
             Tools/bootloaders/AP6m_bl.bin
 

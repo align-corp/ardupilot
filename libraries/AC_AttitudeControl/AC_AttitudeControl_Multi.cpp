@@ -458,7 +458,7 @@ void AC_AttitudeControl_Multi::rate_controller_run()
     _motors.set_pitch_ff(get_rate_pitch_pid().get_ff());
 
     // lower yaw pid gain while landed to avoid oscillation
-    float yaw_pd_scale = (_motors.get_spool_state() == AP_Motors::SpoolState::THROTTLE_UNLIMITED) ? _pd_scale.z : _pd_scale.z * 0.4f;
+    float yaw_pd_scale = _landed ? _pd_scale.z * 0.4f : _pd_scale.z;
     _motors.set_yaw(get_rate_yaw_pid().update_all(_ang_vel_body.z, gyro_latest.z,  _dt, _motors.limit.yaw, yaw_pd_scale) + _actuator_sysid.z);
     _motors.set_yaw_ff(get_rate_yaw_pid().get_ff()*_feedforward_scalar);
 

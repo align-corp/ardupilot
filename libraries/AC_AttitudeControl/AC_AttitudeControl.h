@@ -379,6 +379,10 @@ public:
     // enable inverted flight on backends that support it
     virtual void set_inverted_flight(bool inverted) {}
 
+    // set landed state from the vehicle's land detector
+    void set_landed(bool landed) { _landed = landed; }
+    bool is_landed() const { return _landed; }
+
     // get the slew rate value for roll, pitch and yaw, for oscillation detection in lua scripts
     void get_rpy_srate(float &roll_srate, float &pitch_srate, float &yaw_srate);
     
@@ -568,6 +572,9 @@ protected:
 
     // true in inverted flight mode
     bool _inverted_flight;
+
+    // true when vehicle is on the ground (set by Copter::update_throttle_mix)
+    bool _landed = true;
 
 public:
     // log a CTRL message

@@ -52,6 +52,7 @@ local rtl_engaged = false
 local land_engaged = false
 local cells_num = 6
 local voltage_drop = 0
+local last_sent_percent = nil
 
 -- add a parameter and bind it to a variable
 local function bind_add_param(name, idx, default_value)
@@ -88,6 +89,14 @@ function update()
 
     -- Convert voltage to percentage using lookup table
     local percent = voltage_to_percent(median_voltage)
+
+    -- Battery is discharging: never let the reported percentage increase
+    if percent >= 0 then
+        if last_sent_percent and percent > last_sent_percent then
+            percent = last_sent_percent
+        end
+        last_sent_percent = percent
+    end
 
     -- return if not armed
     if not arming:is_armed() then
@@ -176,6 +185,8 @@ function voltage_to_percent(voltage)
         -- look for battery capacity in LOT, update batt_id and
         -- calculate minimum arming voltage
         batt_id = -1
+        -- new battery: reset monotonic percentage tracker
+        last_sent_percent = nil
         for i = 2, #VOLTAGE_TO_PERCENT_TABLE[1] do
             if batt_capacity == VOLTAGE_TO_PERCENT_TABLE[1][i] then
                 batt_id = i

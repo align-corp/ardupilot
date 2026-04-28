@@ -10739,6 +10739,12 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             Test(self.GyroFFTContinuousAveraging, attempts=4, speedup=8),
             self.GyroFFTPostFilter,
             self.GyroFFTMotorNoiseCheck,
+        ])
+        return ret
+
+    def tests2c(self):
+        '''return list of all tests'''
+        ret = ([
             self.CompassReordering,
             self.CRSF,
             self.MotorTest,
@@ -10816,6 +10822,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         ret.extend(self.tests1e())
         ret.extend(self.tests2a())
         ret.extend(self.tests2b())
+        ret.extend(self.tests2c())
         return ret
 
     def disabled_tests(self):
@@ -10862,6 +10869,11 @@ class AutoTestCopterTests2a(AutoTestCopter):
 class AutoTestCopterTests2b(AutoTestCopter):
     def tests(self):
         return self.tests2b()
+
+
+class AutoTestCopterTests2c(AutoTestCopter):
+    def tests(self):
+        return self.tests2c()
 
 
 class AutoTestCAN(AutoTestCopter):

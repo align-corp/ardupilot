@@ -318,6 +318,22 @@ const AP_Param::GroupInfo AC_PosControl::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("_JERK_Z", 11, AC_PosControl, _shaping_jerk_z, POSCONTROL_JERK_Z),
 
+    // @Param: _THOV_MIN
+    // @DisplayName: ACCZ P+D hover-throttle scaling lower bound
+    // @Description: Hover throttle (MOT_THST_HOVER) at or below which the ACCZ controller P and D gains are scaled to 50% of their configured values. Above this point gains ramp linearly to full at PSC_THOV_MAX. I term is not scaled. Set _THOV_MAX <= _THOV_MIN to disable scaling (gains always at configured value).
+    // @Range: 0.0 1.0
+    // @Increment: 0.01
+    // @User: Advanced
+    AP_GROUPINFO("_THOV_MIN", 12, AC_PosControl, _thov_min, 0.0f),
+
+    // @Param: _THOV_MAX
+    // @DisplayName: ACCZ P+D hover-throttle scaling upper bound
+    // @Description: Hover throttle (MOT_THST_HOVER) at or above which the ACCZ controller P and D gains are at 100% of their configured values. Below this point gains ramp linearly down to 50% at PSC_THOV_MIN. Tune PSC_ACCZ_P / PSC_ACCZ_D at the loaded condition (high hover throttle); the scaler reduces gains when unloaded. Set _THOV_MAX <= _THOV_MIN to disable.
+    // @Range: 0.0 1.0
+    // @Increment: 0.01
+    // @User: Advanced
+    AP_GROUPINFO("_THOV_MAX", 13, AC_PosControl, _thov_max, 0.0f),
+
     AP_GROUPEND
 };
 
@@ -1002,7 +1018,9 @@ void AC_PosControl::update_z_controller()
     if (_vibe_comp_enabled) {
         thr_out = get_throttle_with_vibration_override();
     } else {
-        thr_out = _pid_accel_z.update_all(_accel_target.z, z_accel_meas, _dt, (_motors.limit.throttle_lower || _motors.limit.throttle_upper)) * 0.001f;
+        // Scale ACCZ P+D with hover throttle
+        const float pd_scale = get_accel_z_pd_scale();
+        thr_out = _pid_accel_z.update_all(_accel_target.z, z_accel_meas, _dt, (_motors.limit.throttle_lower || _motors.limit.throttle_upper), pd_scale) * 0.001f;
         thr_out += _pid_accel_z.get_ff() * 0.001f;
     }
     thr_out += _motors.get_throttle_hover();
@@ -1138,6 +1156,20 @@ int32_t AC_PosControl::get_bearing_to_target_cd() const
 ///
 /// System methods
 ///
+
+// returns multiplier in [0.5, 1.0], based on MOT_THST_HOVER.
+float AC_PosControl::get_accel_z_pd_scale() const
+{
+    const float thov_min = _thov_min.get();
+    const float thov_max = _thov_max.get();
+
+    // sanity check params
+    if (thov_min < 0.1f || thov_min > 0.8f || thov_max < 0.1f || thov_max > 0.8f || thov_max <= thov_min) {
+        return 1.0f;
+    }
+    const float thr_hover = constrain_float(_motors.get_throttle_hover(), thov_min, thov_max);
+    return 0.5f + 0.5f * (thr_hover - thov_min) / (thov_max - thov_min);
+}
 
 // get throttle using vibration-resistant calculation (uses feed forward with manually calculated gain)
 float AC_PosControl::get_throttle_with_vibration_override()

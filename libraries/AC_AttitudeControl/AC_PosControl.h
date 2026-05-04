@@ -406,6 +406,10 @@ protected:
     // get throttle using vibration-resistant calculation (uses feed forward with manually calculated gain)
     float get_throttle_with_vibration_override();
 
+    // returns multiplier in [0.5, 1.0] applied to ACCZ P+D output, derived from MOT_THST_HOVER
+    // clamped to [_thov_min, _thov_max]. Returns 1.0 when scaling is disabled.
+    float get_accel_z_pd_scale() const;
+
     // lean_angles_to_accel - convert roll, pitch lean angles to lat/lon frame accelerations in cm/s/s
     void accel_to_lean_angles(float accel_x_cmss, float accel_y_cmss, float& roll_target, float& pitch_target) const;
 
@@ -434,6 +438,8 @@ protected:
     AP_Float        _lean_angle_max;    // Maximum autopilot commanded angle (in degrees). Set to zero for Angle Max
     AP_Float        _shaping_jerk_xy;   // Jerk limit of the xy kinematic path generation in m/s^3 used to determine how quickly the aircraft varies the acceleration target
     AP_Float        _shaping_jerk_z;    // Jerk limit of the z kinematic path generation in m/s^3 used to determine how quickly the aircraft varies the acceleration target
+    AP_Float        _thov_min;          // Hover throttle at/below which ACCZ P+D are scaled to half. Disabled if _thov_max <= _thov_min.
+    AP_Float        _thov_max;          // Hover throttle at/above which ACCZ P+D are at full configured gain.
     AC_P_2D         _p_pos_xy;          // XY axis position controller to convert distance error to desired velocity
     AC_P_1D         _p_pos_z;           // Z axis position controller to convert altitude error to desired climb rate
     AC_PID_2D       _pid_vel_xy;        // XY axis velocity controller to convert velocity error to desired acceleration

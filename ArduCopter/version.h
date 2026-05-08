@@ -28,8 +28,8 @@
 #define MIDDLE_PATCH 0
 #else
 #define MIDDLE_MAJOR 3
-#define MIDDLE_MINOR 9
-#define MIDDLE_PATCH 2
+#define MIDDLE_MINOR 10
+#define MIDDLE_PATCH 0
 #endif
 #define MIDDLE_TYPE FIRMWARE_VERSION_TYPE_DEV
 

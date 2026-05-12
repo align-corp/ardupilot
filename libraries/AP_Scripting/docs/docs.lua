@@ -1075,8 +1075,8 @@ function ScriptingCANBuffer_ud:write_frame(frame, timeout_us) end
 ---@class droneCAN
 droneCAN = {}
 
--- Stage a color for a single DroneCAN light ID. Call send_leds() to broadcast.
----@param id integer light ID (0-19)
+-- Stage a color for a single DroneCAN light. Call send_leds() to broadcast.
+---@param id integer index of LightCommands array (0-19)
 ---@param r integer red (0-255)
 ---@param g integer green (0-255)
 ---@param b integer blue (0-255)

@@ -660,7 +660,7 @@ bool AP_DroneCAN::send_leds()
     for (uint8_t i = 0; i < 20; i++) {
         if (_scripting_led_colors[i].valid) {
             auto &cmd = msg.commands.data[msg.commands.len++];
-            cmd.light_id    = i;
+            cmd.light_id    = 20; // scripting
             cmd.color.red   = _scripting_led_colors[i].r >> 3;
             cmd.color.green = _scripting_led_colors[i].g >> 2;
             cmd.color.blue  = _scripting_led_colors[i].b >> 3;

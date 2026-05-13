@@ -169,7 +169,12 @@ local function send_led_updates()
             break
         end
     end
-    if not changed then return end
+
+    -- early return if is armed and we don't need to update LEDs
+    -- if not armed keep sending led messages, because ESC might be manually 
+    -- rebooted and default to green color
+    if not changed and arming:is_armed() then return end
+
     for pos in pairs(led_colors) do
         local c = led_colors[pos]
         prev_led_colors[pos] = {c[1], c[2], c[3]}

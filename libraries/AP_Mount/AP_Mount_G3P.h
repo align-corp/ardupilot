@@ -65,6 +65,13 @@
 
 #define AP_MOUNT_DV_PACKETLEN       9       // Only 9 bytes packet are allowed (strange)
 
+// Zoom motor controller bytes
+#define AP_MOUNT_G3P_ZOOM_HEADER        0xA0
+#define AP_MOUNT_G3P_ZOOM_CMD_MOVE      0x00
+#define AP_MOUNT_G3P_ZOOM_MAX           19000   // maximum zoom value
+#define AP_MOUNT_G3P_ZOOM_STEP          1000    // resend command only when target moved by this many counts
+#define AP_MOUNT_G3P_ZOOM_TIMEOUT_MS    5000    // give up waiting for the zoom motor to finish moving after this long
+
 
 class AP_Mount_G3P : public AP_Mount_Backend
 {
@@ -127,6 +134,16 @@ private:
     // returns true on success, false if outgoing serial buffer is full
     bool send_packet_dv(uint8_t cmd_id1, uint8_t cmd_id2, uint8_t data1, uint8_t data2);
 
+    // send absolute zoom target to zoom motor controller (value clamped to 0..AP_MOUNT_G3P_ZOOM_MAX)
+    // returns true on success, false if outgoing serial buffer is full
+    bool send_packet_zoom(int16_t zoom_value);
+
+    // read the camera-zoom RC channel and forward the target to the zoom motor controller
+    void update_zoom();
+
+    // consume any bytes from the zoom controller (any byte = move complete) and report timeout
+    void check_zoom_response();
+
     // request info from gimbal
     void request_gimbal_attitude() { send_packet_gimbal(AP_MOUNT_G3P_CMD_ANGLE_REQUEST, nullptr, 0); }
 
@@ -147,7 +164,12 @@ private:
     // internal variables
     AP_HAL::UARTDriver *_uart;                      // uart connected to gimbal
     AP_HAL::UARTDriver *_uart_dv;                   // uart connected to DV
+    AP_HAL::UARTDriver *_uart_zoom;                 // uart connected to zoom/focus motor controller
     bool _initialised;                              // true once the driver has been initialised
+    int16_t _last_zoom_value_sent;                  // last zoom target sent to motor controller
+    bool _zoom_value_initialised;                   // true once a zoom target has been sent at least once
+    bool _zoom_is_moving;                           // true while waiting for the zoom motor to report move complete
+    uint32_t _last_zoom_send_ms;                    // system time the most recent zoom command was sent
     // buffer holding bytes from latest packet
     uint8_t _msg_buff[AP_MOUNT_G3P_PACKETLEN_MAX];
     uint8_t _msg_buff_len;

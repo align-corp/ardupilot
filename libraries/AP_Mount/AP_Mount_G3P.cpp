@@ -5,7 +5,8 @@
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_SerialManager/AP_SerialManager.h>
 #include <AP_GPS/AP_GPS.h>
- 
+#include <GCS_MAVLink/GCS.h>
+
 #ifdef AP_MOUNT_G3P_DEBUG
 #include <stdio.h>
 #endif
@@ -42,6 +43,7 @@ void AP_Mount_G3P::init()
 
     _uart = serial_manager.find_serial(AP_SerialManager::SerialProtocol_Gimbal, 0);
     _uart_dv = serial_manager.find_serial(AP_SerialManager::SerialProtocol_Gimbal, 1);
+    _uart_zoom = serial_manager.find_serial(AP_SerialManager::SerialProtocol_Gimbal, 2);
     if (_uart != nullptr) {
         _uart->begin((uint32_t)120000);
         _initialised = true;
@@ -50,6 +52,10 @@ void AP_Mount_G3P::init()
 
     if (_uart_dv != nullptr) {
         _uart_dv->begin((uint32_t)115200);
+    }
+
+    if (_uart_zoom != nullptr) {
+        _uart_zoom->begin((uint32_t)115200);
     }
 
     AP_Mount_Backend::init();
@@ -79,6 +85,10 @@ void AP_Mount_G3P::update()
         send_gps_position();
         _last_coordinates_send_ms = now_ms;
     }
+
+    // process zoom motor controller responses and update the target from RC
+    check_zoom_response();
+    update_zoom();
 
     // update based on mount mode
     switch (get_mode()) {
@@ -513,6 +523,87 @@ void AP_Mount_G3P::send_gps_position()
     send_packet_dv(AP_MOUNT_DV_CMD1, AP_MOUNT_DV_CMD2_LONH, BYTE4(here.lng), BYTE3(here.lng));
     send_packet_dv(AP_MOUNT_DV_CMD1, AP_MOUNT_DV_CMD2_LONL, BYTE2(here.lng), BYTE1(here.lng));
     send_packet_dv(AP_MOUNT_DV_CMD1, AP_MOUNT_DV_CMD2_ALT, HIGHBYTE(alt_dm), LOWBYTE(alt_dm));
+}
+
+// send absolute zoom target to motor controller using the G3P-zoom protocol:
+// [HEADER=0xA0][CMD=0x00][LEN=2][value_hi][value_lo]   (value is int16 big-endian)
+bool AP_Mount_G3P::send_packet_zoom(int16_t zoom_value)
+{
+    if (_uart_zoom == nullptr) {
+        return false;
+    }
+
+    const uint8_t packet_size = 5;
+    if (_uart_zoom->txspace() < packet_size) {
+        return false;
+    }
+
+    const uint8_t send_buff[packet_size] = {
+        AP_MOUNT_G3P_ZOOM_HEADER,
+        AP_MOUNT_G3P_ZOOM_CMD_MOVE,
+        2,
+        HIGHBYTE(zoom_value),
+        LOWBYTE(zoom_value),
+    };
+    _uart_zoom->write(send_buff, packet_size);
+    return true;
+}
+
+// read the Camera Zoom RC channel and forward the target to the zoom motor controller,
+// quantising to AP_MOUNT_G3P_ZOOM_STEP to limit traffic and ignoring sub-step changes
+void AP_Mount_G3P::update_zoom()
+{
+    if (_uart_zoom == nullptr || _zoom_is_moving) {
+        return;
+    }
+
+    const RC_Channel *zoom_ch = rc().find_channel_for_option(RC_Channel::AUX_FUNC::CAMERA_ZOOM);
+    if (zoom_ch == nullptr || zoom_ch->get_radio_in() <= 0) {
+        return;
+    }
+
+    // map RC channel 0..100% to 0..AP_MOUNT_G3P_ZOOM_MAX, quantised to AP_MOUNT_G3P_ZOOM_STEP
+    const uint16_t raw = (uint32_t)zoom_ch->percent_input() * AP_MOUNT_G3P_ZOOM_MAX / 100;
+    const int16_t target = (raw / AP_MOUNT_G3P_ZOOM_STEP) * AP_MOUNT_G3P_ZOOM_STEP;
+
+    if (_zoom_value_initialised && target == _last_zoom_value_sent) {
+        return;
+    }
+
+    // always move +-ZOOM_STEP
+    const int16_t constr_low = _last_zoom_value_sent - AP_MOUNT_G3P_ZOOM_STEP;
+    const int16_t constr_high = _last_zoom_value_sent + AP_MOUNT_G3P_ZOOM_STEP;
+    const int16_t target_constrained = constrain_int16(target, constr_low, constr_high);
+
+    if (send_packet_zoom(target_constrained)) {
+        _last_zoom_value_sent = target_constrained;
+        _zoom_value_initialised = true;
+        _zoom_is_moving = true;
+        _last_zoom_send_ms = AP_HAL::millis();
+    }
+}
+
+// consume any bytes returned by the zoom motor controller; receiving any byte means
+// the previous move completed.  if no response arrives within the timeout, warn the user.
+void AP_Mount_G3P::check_zoom_response()
+{
+    if (_uart_zoom == nullptr || !_zoom_is_moving) {
+        return;
+    }
+
+    if (_uart_zoom->available() > 0) {
+        // drain the buffer; the controller only echoes ASCII when the target position is reached
+        while (_uart_zoom->available() > 0) {
+            _uart_zoom->read();
+        }
+        _zoom_is_moving = false;
+        return;
+    }
+
+    if (AP_HAL::millis() - _last_zoom_send_ms >= AP_MOUNT_G3P_ZOOM_TIMEOUT_MS) {
+        GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "Mount: G3P zoom timeout");
+        _zoom_is_moving = false;
+    }
 }
 
 #endif // HAL_MOUNT_G3P_ENABLED

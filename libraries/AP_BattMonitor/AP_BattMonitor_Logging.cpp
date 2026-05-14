@@ -2,6 +2,7 @@
 
 #if HAL_LOGGING_ENABLED
 
+#include "AP_BattMonitor.h"
 #include "AP_BattMonitor_Backend.h"
 #include <AP_Logger/AP_Logger.h>
 
@@ -12,7 +13,7 @@ void AP_BattMonitor_Backend::Log_Write_BAT(const uint8_t instance, const uint64_
 {
     bool has_curr = has_current();
     uint8_t percent = -1;
-    IGNORE_RETURN(capacity_remaining_pct(percent));
+    IGNORE_RETURN(AP::battery().capacity_remaining_pct(percent, instance));
 
     float temperature;
     int16_t temperature_cd = 0;

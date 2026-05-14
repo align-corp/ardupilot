@@ -1,4 +1,5 @@
 #include "AP_Mount_G3P.h"
+#include "include/mavlink/v2.0/all/mavlink.h"
 
 #if HAL_MOUNT_G3P_ENABLED
 #include <AP_HAL/AP_HAL.h>
@@ -87,7 +88,6 @@ void AP_Mount_G3P::update()
     }
 
     // process zoom motor controller responses and update the target from RC
-    check_zoom_response();
     update_zoom();
 
     // update based on mount mode
@@ -526,25 +526,28 @@ void AP_Mount_G3P::send_gps_position()
 }
 
 // send absolute zoom target to motor controller using the G3P-zoom protocol:
-// [HEADER=0xA0][CMD=0x00][LEN=2][value_hi][value_lo]   (value is int16 big-endian)
+// [HEADER_REQ=0xA0][CMD=0x00][LEN=2][value_hi][value_lo][CRC]
+// value is int16 big-endian; CRC is XOR over [CMD, LEN, payload]
 bool AP_Mount_G3P::send_packet_zoom(int16_t zoom_value)
 {
     if (_uart_zoom == nullptr) {
         return false;
     }
 
-    const uint8_t packet_size = 5;
+    const uint8_t packet_size = 6;
     if (_uart_zoom->txspace() < packet_size) {
         return false;
     }
 
-    const uint8_t send_buff[packet_size] = {
-        AP_MOUNT_G3P_ZOOM_HEADER,
+    uint8_t send_buff[packet_size] = {
+        AP_MOUNT_G3P_ZOOM_HEADER_REQ,
         AP_MOUNT_G3P_ZOOM_CMD_MOVE,
         2,
         HIGHBYTE(zoom_value),
         LOWBYTE(zoom_value),
+        0,
     };
+    send_buff[packet_size - 1] = crc_xor(send_buff, packet_size - 1, 1);
     _uart_zoom->write(send_buff, packet_size);
     return true;
 }
@@ -553,12 +556,18 @@ bool AP_Mount_G3P::send_packet_zoom(int16_t zoom_value)
 // quantising to AP_MOUNT_G3P_ZOOM_STEP to limit traffic and ignoring sub-step changes
 void AP_Mount_G3P::update_zoom()
 {
-    if (_uart_zoom == nullptr || _zoom_is_moving) {
+    if (_uart_zoom == nullptr) {
+        return;
+    }
+    
+    check_zoom_response();
+
+    if (_zoom_is_moving) {
         return;
     }
 
     const RC_Channel *zoom_ch = rc().find_channel_for_option(RC_Channel::AUX_FUNC::CAMERA_ZOOM);
-    if (zoom_ch == nullptr || zoom_ch->get_radio_in() <= 0) {
+    if (zoom_ch == nullptr) {
         return;
     }
 
@@ -566,7 +575,7 @@ void AP_Mount_G3P::update_zoom()
     const uint16_t raw = (uint32_t)zoom_ch->percent_input() * AP_MOUNT_G3P_ZOOM_MAX / 100;
     const int16_t target = (raw / AP_MOUNT_G3P_ZOOM_STEP) * AP_MOUNT_G3P_ZOOM_STEP;
 
-    if (_zoom_value_initialised && target == _last_zoom_value_sent) {
+    if (target == _last_zoom_value_sent) {
         return;
     }
 
@@ -576,33 +585,95 @@ void AP_Mount_G3P::update_zoom()
     const int16_t target_constrained = constrain_int16(target, constr_low, constr_high);
 
     if (send_packet_zoom(target_constrained)) {
+        GCS_SEND_TEXT(MAV_SEVERITY_EMERGENCY, "sending zoom: %d %d", raw, target_constrained);
         _last_zoom_value_sent = target_constrained;
-        _zoom_value_initialised = true;
         _zoom_is_moving = true;
         _last_zoom_send_ms = AP_HAL::millis();
     }
 }
 
-// consume any bytes returned by the zoom motor controller; receiving any byte means
-// the previous move completed.  if no response arrives within the timeout, warn the user.
+// parse incoming response frames from the zoom motor controller:
+// [HEADER_RESP=0xA1][CMD][STATUS][LEN][PAYLOAD..][CRC]
+// CRC is XOR over [CMD, STATUS, LEN, payload].  A valid OK ack for the MOVE command
+// clears _zoom_is_moving.  Non-zero status, bad CRC and timeout all report via GCS.
 void AP_Mount_G3P::check_zoom_response()
 {
-    if (_uart_zoom == nullptr || !_zoom_is_moving) {
+    if (_uart_zoom == nullptr) {
         return;
     }
 
-    if (_uart_zoom->available() > 0) {
-        // drain the buffer; the controller only echoes ASCII when the target position is reached
-        while (_uart_zoom->available() > 0) {
-            _uart_zoom->read();
+    int16_t nbytes = MIN(_uart_zoom->available(), 64U);
+    for (int16_t i = 0; i < nbytes; i++) {
+        const int16_t b = _uart_zoom->read();
+        if ((b < 0) || (b > 0xFF)) {
+            continue;
         }
-        _zoom_is_moving = false;
-        return;
+
+        switch (_zoom_parsed_msg.state) {
+        case ParseStateZoom::WAITING_FOR_HEADER:
+            if (b == AP_MOUNT_G3P_ZOOM_HEADER_RESP) {
+                _zoom_parsed_msg.state = ParseStateZoom::WAITING_FOR_CMD;
+            }
+            // non-header bytes (boot banner, debug prints) are silently dropped
+            break;
+
+        case ParseStateZoom::WAITING_FOR_CMD:
+            _zoom_parsed_msg.cmd = b;
+            _zoom_parsed_msg.state = ParseStateZoom::WAITING_FOR_STATUS;
+            break;
+
+        case ParseStateZoom::WAITING_FOR_STATUS:
+            _zoom_parsed_msg.status = b;
+            _zoom_parsed_msg.state = ParseStateZoom::WAITING_FOR_LEN;
+            break;
+
+        case ParseStateZoom::WAITING_FOR_LEN:
+            if (b > AP_MOUNT_G3P_ZOOM_PAYLOAD_MAX) {
+                _zoom_parsed_msg.state = ParseStateZoom::WAITING_FOR_HEADER;
+                break;
+            }
+            _zoom_parsed_msg.len = b;
+            _zoom_parsed_msg.payload_received = 0;
+            _zoom_parsed_msg.state = (b == 0) ? ParseStateZoom::WAITING_FOR_CRC
+                                              : ParseStateZoom::WAITING_FOR_PAYLOAD;
+            break;
+
+        case ParseStateZoom::WAITING_FOR_PAYLOAD:
+            _zoom_parsed_msg.payload[_zoom_parsed_msg.payload_received++] = b;
+            if (_zoom_parsed_msg.payload_received >= _zoom_parsed_msg.len) {
+                _zoom_parsed_msg.state = ParseStateZoom::WAITING_FOR_CRC;
+            }
+            break;
+
+        case ParseStateZoom::WAITING_FOR_CRC: {
+            uint8_t expected = _zoom_parsed_msg.cmd ^ _zoom_parsed_msg.status ^ _zoom_parsed_msg.len;
+            for (uint8_t j = 0; j < _zoom_parsed_msg.len; j++) {
+                expected ^= _zoom_parsed_msg.payload[j];
+            }
+            _zoom_parsed_msg.state = ParseStateZoom::WAITING_FOR_HEADER;
+
+            if (expected != b) {
+                GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "Mount: G3P zoom bad CRC");
+                break;
+            }
+            // only the move ack ends the in-flight move; ignore other responses for now
+            if (_zoom_parsed_msg.cmd != AP_MOUNT_G3P_ZOOM_CMD_MOVE) {
+                break;
+            }
+            if (_zoom_parsed_msg.status != AP_MOUNT_G3P_ZOOM_STATUS_OK) {
+                GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "Mount: G3P zoom err %u",
+                              (unsigned)_zoom_parsed_msg.status);
+            }
+            _zoom_is_moving = false;
+            break;
+        }
+        }
     }
 
-    if (AP_HAL::millis() - _last_zoom_send_ms >= AP_MOUNT_G3P_ZOOM_TIMEOUT_MS) {
+    if (_zoom_is_moving && (AP_HAL::millis() - _last_zoom_send_ms >= AP_MOUNT_G3P_ZOOM_TIMEOUT_MS)) {
         GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "Mount: G3P zoom timeout");
         _zoom_is_moving = false;
+        _zoom_parsed_msg.state = ParseStateZoom::WAITING_FOR_HEADER;
     }
 }
 

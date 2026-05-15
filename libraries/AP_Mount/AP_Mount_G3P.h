@@ -1,20 +1,15 @@
-/*
-  Siyi gimbal driver using custom serial protocol
-
-  Packet format (courtesy of Siyi's SDK document)
-
-  -------------------------------------------------------------------------------------------
-  Field     Index   Bytes       Description
-  -------------------------------------------------------------------------------------------
-  STX       0       2           0x5566: starting mark
-  CTRL      2       1           bit 0: need_ack.  set if the current data packet needs ack
-                                bit 1: ack_pack.  set if the current data packate IS an ack
-                                bit 2-7: reserved
-  Data_len  3       2           Data field byte length.  Low byte in the front
-  SEQ       5       2           Frame sequence (0 ~ 65535).  Low byte in the front.  May be used to detect packet loss
-  CMD_ID    7       1           Command ID
-  DATA      8       Data_len    Data
-  CRC16             2           CRC16 check the complete data package.  Low byte in the front
+/***** Align G3P protocol *****
+ * Parameter to set:
+ * CAM1_TYPE 4
+ * MNT1_TYPE 30
+ * MNT1_RC_RATE 60
+ * SERIALn_PROTOCOL 8 (G3P gimbal)
+ * SERIALm_PROTOCOL 8 (G3P DV, m > n)
+ * SERIALn_PROTOCOL 26 (zoom focus controller)
+ * RCn_OPTION 167 (zoom control)
+ * RCn_OPTION 213 (Pitch)
+ * RCn_OPTION 214 (Yaw)
+ * RCn_OPTION 27 (Camera trigger)
  */
 
 #pragma once
@@ -69,11 +64,12 @@
 #define AP_MOUNT_G3P_ZOOM_HEADER_REQ    0xA0
 #define AP_MOUNT_G3P_ZOOM_HEADER_RESP   0xA1
 #define AP_MOUNT_G3P_ZOOM_CMD_MOVE      0x00
+#define AP_MOUNT_G3P_ZOOM_CMD_GET_POS   0x04
 #define AP_MOUNT_G3P_ZOOM_STATUS_OK     0x00
-#define AP_MOUNT_G3P_ZOOM_PAYLOAD_MAX   4       // max response payload bytes
-#define AP_MOUNT_G3P_ZOOM_MAX           19000   // maximum zoom value
-#define AP_MOUNT_G3P_ZOOM_STEP          1000    // resend command only when target moved by this many counts
-#define AP_MOUNT_G3P_ZOOM_TIMEOUT_MS    10000    // give up waiting for the zoom motor to finish moving after this long
+#define AP_MOUNT_G3P_ZOOM_PAYLOAD_MAX   4       // max payload bytes (request or response)
+#define AP_MOUNT_G3P_ZOOM_MAX           17100   // maximum zoom value
+#define AP_MOUNT_G3P_ZOOM_STEP          1900    // size of each relative step sent to the controller
+#define AP_MOUNT_G3P_ZOOM_TIMEOUT_MS    5000   // timeout for both the startup GET_POS handshake and each move ack
 
 
 class AP_Mount_G3P : public AP_Mount_Backend
@@ -147,9 +143,10 @@ private:
     // returns true on success, false if outgoing serial buffer is full
     bool send_packet_dv(uint8_t cmd_id1, uint8_t cmd_id2, uint8_t data1, uint8_t data2);
 
-    // send absolute zoom target to zoom motor controller (value clamped to 0..AP_MOUNT_G3P_ZOOM_MAX)
-    // returns true on success, false if outgoing serial buffer is full
-    bool send_packet_zoom(int16_t zoom_value);
+    // send a framed packet to the zoom motor controller.
+    // payload is at most AP_MOUNT_G3P_ZOOM_PAYLOAD_MAX bytes; pass nullptr / 0 for no payload.
+    // returns true on success, false if outgoing serial buffer is full or payload too big
+    bool send_packet_zoom(uint8_t cmd, const uint8_t *payload, uint8_t payload_len);
 
     // read the camera-zoom RC channel and forward the target to the zoom motor controller
     void update_zoom();
@@ -179,9 +176,13 @@ private:
     AP_HAL::UARTDriver *_uart_dv;                   // uart connected to DV
     AP_HAL::UARTDriver *_uart_zoom;                 // uart connected to zoom/focus motor controller
     bool _initialised;                              // true once the driver has been initialised
-    int16_t _last_zoom_value_sent = 0;              // last zoom target sent to motor controller
-    bool _zoom_is_moving;                           // true while waiting for the zoom motor to report move complete
-    uint32_t _last_zoom_send_ms;                    // system time the most recent zoom command was sent
+    int16_t _current_zoom_position = 0;             // motor position in controller counts (updated from GET_POS reply and after each OK MOVE ack)
+    int16_t _last_zoom_step = 0;                    // step value sent in last MOVE; applied to _current_zoom_position when OK ack arrives
+    bool _zoom_pos_known = false;                   // true once the startup GET_POS handshake has succeeded
+    bool _zoom_pos_requested = false;               // true once the startup GET_POS request has been sent
+    bool _zoom_is_moving = false;                   // true while waiting for a MOVE ack
+    bool _zoom_failed = false;                      // true if init handshake failed; zoom controller disabled
+    uint32_t _last_zoom_send_ms = 0;                // system time of the most recent zoom request
 
     // zoom response parser state and unpacked fields
     struct {

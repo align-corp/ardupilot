@@ -601,6 +601,11 @@ void AP_Mount_G3P::update_zoom()
     }
 }
 
+SetFocusResult set_focus(FocusType focus_type, float focus_value) {
+    //TODO: send focus packet
+    return SetFocusResult::FAILED;
+}
+
 // parse incoming response frames from the zoom motor controller:
 // [HEADER_RESP=0xA1][CMD][STATUS][LEN][PAYLOAD..][CRC]
 // CRC is XOR over [CMD, STATUS, LEN, payload].  A valid OK ack for the MOVE command

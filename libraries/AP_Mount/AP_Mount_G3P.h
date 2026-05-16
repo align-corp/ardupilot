@@ -101,6 +101,9 @@ public:
     // take a picture.  returns true on success
     bool take_picture() override {return send_packet_dv(AP_MOUNT_DV_CMD1, AP_MOUNT_DV_CMD2_CAPTURE, AP_MOUNT_DV_DATA1_CAPTURE, AP_MOUNT_DV_DATA2_CAPTURE); }
 
+    // Zoom directly call RC library to get a percent
+    SetFocusResult set_focus(FocusType focus_type, float focus_value) override;
+
 protected:
 
     // get attitude as a quaternion.  returns true on success

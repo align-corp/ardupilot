@@ -271,7 +271,15 @@ private:
         int8_t glitch_count;    // non-zero number indicates rangefinder is glitching
         uint32_t glitch_cleared_ms; // system time glitch cleared
         float terrain_offset_cm;    // filtered terrain offset (e.g. terrain's height above EKF origin)
+        // anchors for the inertial-consistency window; reset on health loss
+        int16_t consistency_start_alt_cm;
+        float consistency_start_inertial_alt_cm;
+        uint32_t consistency_check_start_ms;  // 0 means window inactive
     } rangefinder_state, rangefinder_up_state;
+
+    // mark the downward rangefinder externally failed in the library if the sensor
+    // stops tracking inertial altitude while horizontal speed is near zero
+    void update_rangefinder_inertial_consistency_check();
 
     // return rangefinder height interpolated using inertial altitude
     bool get_rangefinder_height_interpolated_cm(int32_t& ret) const;

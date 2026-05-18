@@ -102,6 +102,26 @@
  # define RANGEFINDER_GLITCH_NUM_SAMPLES  3   // number of rangefinder glitches in a row to take new reading
 #endif
 
+#ifndef RANGEFINDER_INERTIAL_CONSISTENCY_ENABLED
+ # define RANGEFINDER_INERTIAL_CONSISTENCY_ENABLED DISABLED
+#endif
+
+#ifndef RANGEFINDER_INERTIAL_CONSISTENCY_MAX_HSPEED_CMS
+ # define RANGEFINDER_INERTIAL_CONSISTENCY_MAX_HSPEED_CMS 100   // only evaluate while horizontal speed is below
+#endif
+
+#ifndef RANGEFINDER_INERTIAL_CONSISTENCY_WINDOW_MS
+ # define RANGEFINDER_INERTIAL_CONSISTENCY_WINDOW_MS 20000      // window restarts if inertial change does not reach trigger within
+#endif
+
+#ifndef RANGEFINDER_INERTIAL_CONSISTENCY_INERTIAL_DELTA_CM
+ # define RANGEFINDER_INERTIAL_CONSISTENCY_INERTIAL_DELTA_CM 1000  // inertial change that triggers an evaluation
+#endif
+
+#ifndef RANGEFINDER_INERTIAL_CONSISTENCY_RF_DELTA_CM
+ # define RANGEFINDER_INERTIAL_CONSISTENCY_RF_DELTA_CM 300      // minimum filtered rangefinder change expected when inertial moves the trigger amount
+#endif
+
 #ifndef MAV_SYSTEM_ID
  # define MAV_SYSTEM_ID          1
 #endif

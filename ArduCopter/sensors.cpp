@@ -113,6 +113,8 @@ void Copter::read_rangefinder(void)
 #endif
     }
 
+    update_rangefinder_inertial_consistency_check();
+
 #else
     // downward facing rangefinder
     rangefinder_state.enabled = false;
@@ -130,6 +132,55 @@ void Copter::read_rangefinder(void)
 bool Copter::rangefinder_alt_ok() const
 {
     return (rangefinder_state.enabled && rangefinder_state.alt_healthy);
+}
+
+// downward rangefinder inertial-consistency check (flyaway guard).
+void Copter::update_rangefinder_inertial_consistency_check()
+{
+#if RANGEFINDER_ENABLED == ENABLED && RANGEFINDER_INERTIAL_CONSISTENCY_ENABLED == ENABLED
+    RangeFinderState &rf_state = rangefinder_state;
+    if (rangefinder.external_failure(ROTATION_PITCH_270)) {
+        // already triggered
+        return;
+    }
+
+    const bool hspeed_ok = inertial_nav.get_speed_xy_cms() < RANGEFINDER_INERTIAL_CONSISTENCY_MAX_HSPEED_CMS;
+    if (!rf_state.alt_healthy || !hspeed_ok) {
+        // can't evaluate: sensor unhealthy, or moving horizontally so terrain under us may change
+        rf_state.consistency_check_start_ms = 0;
+        return;
+    }
+
+    const uint32_t now_ms = AP_HAL::millis();
+    const int16_t rf_alt_cm = (int16_t)rf_state.alt_cm_filt.get();
+
+    if (rf_state.consistency_check_start_ms == 0) {
+        // open a new window anchored at the current filtered rangefinder and inertial altitude
+        rf_state.consistency_check_start_ms = now_ms;
+        rf_state.consistency_start_alt_cm = rf_alt_cm;
+        rf_state.consistency_start_inertial_alt_cm = rf_state.inertial_alt_cm;
+        return;
+    }
+
+    const float inertial_delta_cm = fabsf(rf_state.inertial_alt_cm - rf_state.consistency_start_inertial_alt_cm);
+    if (inertial_delta_cm >= RANGEFINDER_INERTIAL_CONSISTENCY_INERTIAL_DELTA_CM) {
+        // inertial altitude moved enough to evaluate: filtered rangefinder reading should have moved comparably
+        const int32_t rf_delta_cm = abs(rf_alt_cm - rf_state.consistency_start_alt_cm);
+        if (rf_delta_cm < RANGEFINDER_INERTIAL_CONSISTENCY_RF_DELTA_CM) {
+            rangefinder.set_external_failure(ROTATION_PITCH_270, true);
+            gcs().send_text(MAV_SEVERITY_CRITICAL, "Rangefinder not tracking altitude");
+        }
+        // restart the window from the current sample whether we passed or failed
+        rf_state.consistency_check_start_ms = now_ms;
+        rf_state.consistency_start_alt_cm = rf_alt_cm;
+        rf_state.consistency_start_inertial_alt_cm = rf_state.inertial_alt_cm;
+    } else if (now_ms - rf_state.consistency_check_start_ms > RANGEFINDER_INERTIAL_CONSISTENCY_WINDOW_MS) {
+        // stale window: inertial change did not reach the trigger within the timeout, start fresh
+        rf_state.consistency_check_start_ms = now_ms;
+        rf_state.consistency_start_alt_cm = rf_alt_cm;
+        rf_state.consistency_start_inertial_alt_cm = rf_state.inertial_alt_cm;
+    }
+#endif
 }
 
 // return true if rangefinder_alt can be used

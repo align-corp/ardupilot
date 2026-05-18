@@ -40,6 +40,8 @@ local EKF_SRC_OPTICALFLOW = 1
 local EKF_SRC_UNDECIDED = -1
 local RNG_ROTATION_DOWN = 25
 local VOTE_COUNT_MAX = 100 -- when a vote counter reaches this number (i.e. 10sec) source may be switched
+local MODE_LOITER = 5
+local MODE_LAND = 9
 
 -- variables
 local source_prev = EKF_SRC_OPTICALFLOW -- opticalflow for takeoff
@@ -174,9 +176,11 @@ function update()
     local rangefinder_thresh_dist_m = rangefinder:max_distance_cm_orient(RNG_ROTATION_DOWN) * 0.0075
     local rangefinder_thresh_dist_fast_climb_m = rangefinder:max_distance_cm_orient(RNG_ROTATION_DOWN) * 0.006
     local rngfnd_distance_m = 0
-    local rngfnd_out_of_range = rangefinder:status_orient(RNG_ROTATION_DOWN) == 3
-    if rangefinder:has_data_orient(RNG_ROTATION_DOWN) then
+    local rngfnd_healthy = rangefinder:has_data_orient(RNG_ROTATION_DOWN)
+    local rngfnd_out_of_range = true
+    if rngfnd_healthy then
         rngfnd_distance_m = rangefinder:distance_cm_orient(RNG_ROTATION_DOWN) * 0.01
+        rngfnd_out_of_range = rangefinder:status_orient(RNG_ROTATION_DOWN) == 3
     end
     local rngfnd_over_threshold = (rngfnd_distance_m == 0) or (rngfnd_distance_m > rangefinder_thresh_dist_m)
 
@@ -189,10 +193,11 @@ function update()
 
     local auto_source = EKF_SRC_UNDECIDED
     local switch_to_loiter = false
+    local mode = vehicle:get_mode()
 
     -- altitude hold and stabilize: don't use opticalflow if rangefinder is out of range
     -- this is needed, otherwise EKF set to optical flow prevent vehicle to climb higher than 0.8*RNGFND_MAX_DIST
-    if vehicle:get_mode() <= 2 then
+    if mode <= 2 then
         if rngfnd_distance_m > rangefinder_thresh_dist_fast_climb_m or gps_very_good then
             -- immediately switch to GPS if we're over rangefinder_thresh_dist_fast_climb_m
             auto_source = EKF_SRC_GPS
@@ -213,8 +218,8 @@ function update()
             end
         end
 
-    -- modes that requires position
-    else
+    -- loiter and land: full voting so OF can take over near ground for precision touchdown
+    elseif mode == MODE_LOITER or mode == MODE_LAND then
         opticalflow_state_dangerous = false
         -- here we have a loooot of conditions:
         --==-- prevent EKF failsafe immediately switching to GPS if we're getting out of rangefinder range
@@ -252,7 +257,8 @@ function update()
             optical_flow_dangerous_count = 0
 
         --==-- if we're in loiter and opticalflow quality is dangerously low switch to alt_hold and alert user
-        elseif opticalflow_dangerous and arming:is_armed() and source_prev == EKF_SRC_OPTICALFLOW then
+        --     skip in LAND: interrupting a descent into AltHold would be the same failure mode as refusing to land
+        elseif mode == MODE_LOITER and opticalflow_dangerous and arming:is_armed() and source_prev == EKF_SRC_OPTICALFLOW then
             optical_flow_dangerous_count = optical_flow_dangerous_count + 1
             if (optical_flow_dangerous_count >= 10) then
                 optical_flow_dangerous_count = 0
@@ -274,6 +280,19 @@ function update()
             auto_source = EKF_SRC_OPTICALFLOW
             gps_vs_opticalflow_vote = VOTE_COUNT_MAX
         end
+
+    -- only loiter and land can use OF. Other modes (RTL, Auto, ...) must use GPS.
+    -- If GPS quality is decent, force EKF source to GPS, if not abort mode change and keep using OF
+    else
+        if gps_good or source_prev == EKF_SRC_GPS then
+            auto_source = EKF_SRC_GPS
+            gps_vs_opticalflow_vote = 0
+        elseif source_prev == EKF_SRC_OPTICALFLOW then
+            -- switch to loiter
+            gcs:send_text(MAV_SEVERITY.WARNING, "Mode change failed: weak GPS signal")
+            vehicle:set_mode(MODE_LOITER)
+        end
+
     end
 
     local send_to_gcs_now = false
@@ -286,6 +305,9 @@ function update()
         local turn_off_led = false
         -- automatic mode
         if not arming:is_armed() then
+            turn_off_led = true
+        elseif not rngfnd_healthy then
+            -- downward rangefinder unhealthy (no data, not connected, or externally failed): OF cannot be used, drop the LED
             turn_off_led = true
         elseif rngfnd_out_of_range and auto_source == EKF_SRC_GPS then
             turn_off_led = true
@@ -323,7 +345,7 @@ function update()
         opticalflow_state_dangerous = false
         gcs:send_text(MAV_SEVERITY.WARNING, "OpticalFlow quality recovered")
         -- don't actually switch to loiter
-        -- if vehicle:get_mode() == 2 then
+        -- if mode == 2 then
         --     vehicle:set_mode(5)
         -- end
     end

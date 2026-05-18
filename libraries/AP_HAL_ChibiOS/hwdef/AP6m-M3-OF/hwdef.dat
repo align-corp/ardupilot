@@ -9,6 +9,9 @@ define ALIGN_RGB_STATUS_LED
 # decrease arming delay
 define ARMING_DELAY_SEC 0.5f
 
+# protect against poor lidar
+define RANGEFINDER_INERTIAL_CONSISTENCY_ENABLED 1
+
 # list of files to put in ROMFS (Lua scripts)
 ROMFS scripts/rng_auto.lua lua_scr/rng_auto.lua
 ROMFS scripts/ahrs_source_gps_optflow.lua lua_scr/ahrs_source_gps_optflow.lua

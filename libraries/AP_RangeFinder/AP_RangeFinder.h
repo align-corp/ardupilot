@@ -292,6 +292,10 @@ public:
         estimated_terrain_height = height;
     }
 
+    // mark or clear an externally-detected failure for rangefinders facing the given orientation.
+    void set_external_failure(enum Rotation orientation, bool failed);
+    bool external_failure(enum Rotation orientation) const;
+
     static RangeFinder *get_singleton(void) { return _singleton; }
 
 protected:
@@ -302,6 +306,7 @@ private:
 
     RangeFinder_State state[RANGEFINDER_MAX_INSTANCES];
     AP_RangeFinder_Backend *drivers[RANGEFINDER_MAX_INSTANCES];
+    bool external_failure_flag[RANGEFINDER_MAX_INSTANCES] {};  // vehicle-set per-instance failure override; latched until cleared
     uint8_t num_instances;
     HAL_Semaphore detect_sem;
     float estimated_terrain_height;

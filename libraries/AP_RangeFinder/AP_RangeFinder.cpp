@@ -649,11 +649,36 @@ AP_RangeFinder_Backend *RangeFinder::get_backend(uint8_t id) const {
 
 RangeFinder::Status RangeFinder::status_orient(enum Rotation orientation) const
 {
+    if (external_failure(orientation)) {
+        // backend exists but vehicle has flagged it untrustworthy
+        return Status::NoData;
+    }
     AP_RangeFinder_Backend *backend = find_instance(orientation);
     if (backend == nullptr) {
         return Status::NotConnected;
     }
     return backend->status();
+}
+
+// mark or clear an externally-detected failure for all rangefinders facing the given orientation
+void RangeFinder::set_external_failure(enum Rotation orientation, bool failed)
+{
+    for (uint8_t i = 0; i < num_instances; i++) {
+        if (drivers[i] != nullptr && drivers[i]->orientation() == orientation) {
+            external_failure_flag[i] = failed;
+        }
+    }
+}
+
+// true if any rangefinder facing the given orientation has been externally marked as failed
+bool RangeFinder::external_failure(enum Rotation orientation) const
+{
+    for (uint8_t i = 0; i < num_instances; i++) {
+        if (drivers[i] != nullptr && drivers[i]->orientation() == orientation && external_failure_flag[i]) {
+            return true;
+        }
+    }
+    return false;
 }
 
 void RangeFinder::handle_msg(const mavlink_message_t &msg)
@@ -716,6 +741,9 @@ AP_RangeFinder_Backend *RangeFinder::find_instance(enum Rotation orientation) co
 
 float RangeFinder::distance_orient(enum Rotation orientation) const
 {
+    if (external_failure(orientation)) {
+        return 0;
+    }
     AP_RangeFinder_Backend *backend = find_instance(orientation);
     if (backend == nullptr) {
         return 0;
@@ -766,6 +794,9 @@ int16_t RangeFinder::ground_clearance_cm_orient(enum Rotation orientation) const
 
 bool RangeFinder::has_data_orient(enum Rotation orientation) const
 {
+    if (external_failure(orientation)) {
+        return false;
+    }
     AP_RangeFinder_Backend *backend = find_instance(orientation);
     if (backend == nullptr) {
         return false;
@@ -775,6 +806,9 @@ bool RangeFinder::has_data_orient(enum Rotation orientation) const
 
 uint8_t RangeFinder::range_valid_count_orient(enum Rotation orientation) const
 {
+    if (external_failure(orientation)) {
+        return 0;
+    }
     AP_RangeFinder_Backend *backend = find_instance(orientation);
     if (backend == nullptr) {
         return 0;

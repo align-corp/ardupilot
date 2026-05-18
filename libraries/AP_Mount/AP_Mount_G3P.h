@@ -67,8 +67,8 @@
 #define AP_MOUNT_G3P_ZOOM_CMD_GET_POS   0x04
 #define AP_MOUNT_G3P_ZOOM_STATUS_OK     0x00
 #define AP_MOUNT_G3P_ZOOM_PAYLOAD_MAX   4       // max payload bytes (request or response)
-#define AP_MOUNT_G3P_ZOOM_MAX           17100   // maximum zoom value
-#define AP_MOUNT_G3P_ZOOM_STEP          1900    // size of each relative step sent to the controller
+#define AP_MOUNT_G3P_ZOOM_MAX           16000   // maximum zoom value
+#define AP_MOUNT_G3P_ZOOM_STEP          2000    // size of each relative step sent to the controller
 #define AP_MOUNT_G3P_ZOOM_TIMEOUT_MS    5000   // timeout for both the startup GET_POS handshake and each move ack
 
 
@@ -101,10 +101,9 @@ public:
     // take a picture.  returns true on success
     bool take_picture() override {return send_packet_dv(AP_MOUNT_DV_CMD1, AP_MOUNT_DV_CMD2_CAPTURE, AP_MOUNT_DV_DATA1_CAPTURE, AP_MOUNT_DV_DATA2_CAPTURE); }
 
+protected:
     // Zoom directly call RC library to get a percent
     SetFocusResult set_focus(FocusType focus_type, float focus_value) override;
-
-protected:
 
     // get attitude as a quaternion.  returns true on success
     bool get_attitude_quaternion(Quaternion& att_quat) override;

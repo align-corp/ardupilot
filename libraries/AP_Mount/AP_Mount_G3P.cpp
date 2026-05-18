@@ -601,7 +601,8 @@ void AP_Mount_G3P::update_zoom()
     }
 }
 
-SetFocusResult set_focus(FocusType focus_type, float focus_value) {
+SetFocusResult AP_Mount_G3P::set_focus(FocusType focus_type, float focus_value)
+{
     //TODO: send focus packet
     return SetFocusResult::FAILED;
 }

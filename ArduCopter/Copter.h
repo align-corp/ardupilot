@@ -307,6 +307,7 @@ private:
         Surface surface;
         uint32_t last_update_ms;    // system time of last update to target_alt_cm
         uint32_t last_glitch_cleared_ms;    // system time of last handle glitch recovery
+        float last_offset_cm;  // pos_control's pos_offset_z observed at end of last update_surface_offset(); used as a discontinuity detector for external resets (e.g. init_z_controller)
         bool valid_for_logging;     // true if we have a desired target altitude
         bool reset_target;          // true if target should be reset because of change in surface being tracked
     } surface_tracking;

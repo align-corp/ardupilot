@@ -9,6 +9,10 @@ void Copter::SurfaceTracking::update_surface_offset()
     const uint32_t now_ms = millis();
     const bool timeout = (now_ms - last_update_ms) > SURFACE_TRACKING_TIMEOUT_MS;
 
+    // check for offset glitch
+    const float current_offset_cm = copter.pos_control->get_pos_offset_z_cm();
+    const bool offset_glitched = fabsf(current_offset_cm - last_offset_cm) > RANGEFINDER_GLITCH_ALT_CM;
+
     // check tracking state and that range finders are healthy
     if (((surface == Surface::GROUND) && copter.rangefinder_alt_ok() && (copter.rangefinder_state.glitch_count == 0)) ||
         ((surface == Surface::CEILING) && copter.rangefinder_up_ok() && (copter.rangefinder_up_state.glitch_count == 0))) {
@@ -22,12 +26,13 @@ void Copter::SurfaceTracking::update_surface_offset()
         last_update_ms = now_ms;
         valid_for_logging = true;
 
-        // reset target altitude if this controller has just been engaged
-        // target has been changed between upwards vs downwards
-        // or glitch has cleared
+        // reset target altitude if this controller has just been engaged,
+        // target has been changed between upwards vs downwards,
+        // glitch has cleared, or the offset was reset externally
         if (timeout ||
             reset_target ||
-            (last_glitch_cleared_ms != rf_state.glitch_cleared_ms)) {
+            (last_glitch_cleared_ms != rf_state.glitch_cleared_ms) ||
+            offset_glitched) {
             copter.pos_control->set_pos_offset_z_cm(rf_state.terrain_offset_cm);
             reset_target = false;
             last_glitch_cleared_ms = rf_state.glitch_cleared_ms;
@@ -42,6 +47,9 @@ void Copter::SurfaceTracking::update_surface_offset()
             reset_target = true;
         }
     }
+
+    // remember the offset for the next call's discontinuity check
+    last_offset_cm = copter.pos_control->get_pos_offset_z_cm();
 #else
     copter.pos_control->set_pos_offset_z_cm(0);
     copter.pos_control->set_pos_offset_target_z_cm(0);

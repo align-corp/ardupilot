@@ -6,8 +6,8 @@
 local VOLTAGE_TO_PERCENT_TABLE = {
     {  0, 1300, 3500, 4200, 4800, 5650, 6000,10000,16000,22000,30000}, -- capacity (mAh)
     {  0,    3,    6,    6,    6,    6,    6,    6,   12,   12,   14}, -- Num cells
-    {  0,  0.1,0.025,0.020,0.019,0.018,0.020,0.015,0.030,0.026,0.025}, -- percent per meter                   
-    {  0,  0.2,0.075,0.060,0.057,0.055,0.060,0.045,0.090,0.080,0.070}, -- percent per meter down
+    {  0,  0.1,0.025,0.015,0.010,0.018,0.020,0.015,0.030,0.026,0.025}, -- percent per meter                   
+    {  0,  0.2,0.075,0.050,0.040,0.055,0.060,0.045,0.090,0.080,0.070}, -- percent per meter down
     {  0, 0.10, 0.10, 0.07, 0.06, 0.20, 0.07, 0.07, 0.07, 0.07, 0.07}, -- voltage drop when flying (per cell)
     {2.7,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0},
     {2.8,    0,    0,    0,    0,    2,    0,    0,    0,    0,    0},
@@ -98,18 +98,15 @@ function update()
         last_sent_percent = percent
     end
 
+    -- Override battery percentage for GCS
+    battery:override_percentage(0, percent)
+
     -- return if not armed
     if not arming:is_armed() then
         rtl_engaged = false
         land_engaged = false
-        sample_count = 0
-        -- Override battery percentage for GCS
-        battery:override_percentage(0, percent)
         return update, 1000
     end
-
-    -- Override battery percentage for GCS
-    battery:override_percentage(0, percent)
 
     -- return if battery is not correctly set
     if percent < 0 or batt_id < 0 then
@@ -118,6 +115,11 @@ function update()
 
     -- return if not enabled
     if RTLS_ENABLE:get() < 1 then
+        return update, 1000
+    end
+
+    -- return if percentage is > 60 %
+    if percent > 60 then
         return update, 1000
     end
 

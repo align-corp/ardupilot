@@ -41,6 +41,11 @@ BASE_FILES_CONFIG = {
         (["M450", "A10", "OF", "OF-M450"], "libraries/AP_HAL_ChibiOS/hwdef/AP6-M450-A10-OF-ds/defaults.parm"),
         (["M450", "A10","NO-GPS"], "libraries/AP_HAL_ChibiOS/hwdef/AP6-M450-nogps-ds/defaults.parm"),
         ("CAN_M4", "libraries/AP_HAL_ChibiOS/hwdef/AP6-M460-can/defaults.parm"),
+        (["CAN_M4", "A10"], "libraries/AP_HAL_ChibiOS/hwdef/AP6-M460-A10-can/defaults.parm"),
+        (["M490", "CAN_M4"], "libraries/AP_HAL_ChibiOS/hwdef/AP6-M490-can/defaults.parm"),
+        (["M490", "CAN_M4", "A10"], "libraries/AP_HAL_ChibiOS/hwdef/AP6-M490-A10-can/defaults.parm"),
+        (["M450", "CAN_M4"], "libraries/AP_HAL_ChibiOS/hwdef/AP6-M450-can/defaults.parm"),
+        (["M450", "CAN_M4", "A10"], "libraries/AP_HAL_ChibiOS/hwdef/AP6-M450-A10-can/defaults.parm"),
     ],
 
     # MR25 4in1
@@ -218,17 +223,17 @@ SR4_RC_CHAN 50
         "remove": [],
         "add": """
 # M490 PID
-ATC_ANG_PIT_P 14
-ATC_ANG_RLL_P 10
-ATC_ANG_YAW_P 4.8
-ATC_RAT_PIT_D 0.013
+ATC_ANG_PIT_P 8
+ATC_ANG_RLL_P 7
+ATC_ANG_YAW_P 4.5
+ATC_RAT_PIT_D 0.011
 ATC_RAT_PIT_I 0.17
 ATC_RAT_PIT_P 0.17
-ATC_RAT_RLL_D 0.014
+ATC_RAT_RLL_D 0.01
 ATC_RAT_RLL_I 0.16
 ATC_RAT_RLL_P 0.16
-ATC_RAT_YAW_I 0.08
-ATC_RAT_YAW_P 0.8
+ATC_RAT_YAW_I 0.1
+ATC_RAT_YAW_P 1
 """
     },
 
@@ -238,20 +243,18 @@ ATC_RAT_YAW_P 0.8
 # M450 PID
 ATC_ACCEL_P_MAX 60000
 ATC_ACCEL_R_MAX 60000
-ATC_ACCEL_Y_MAX 30000
-ATC_ANG_PIT_P 10
-ATC_ANG_RLL_P 10
-ATC_ANG_YAW_P 7
+ATC_ACCEL_Y_MAX 13000
+ATC_ANG_PIT_P 8
+ATC_ANG_RLL_P 8
+ATC_ANG_YAW_P 5
 ATC_RAT_PIT_D 0.008
-ATC_RAT_PIT_I 0.11
-ATC_RAT_PIT_P 0.11
-ATC_RAT_RLL_D 0.006
-ATC_RAT_RLL_I 0.11
-ATC_RAT_RLL_P 0.11
-ATC_RAT_YAW_D 0.01
-ATC_RAT_YAW_FLTE 1.36
-ATC_RAT_YAW_I 0.06
-ATC_RAT_YAW_P 0.6
+ATC_RAT_PIT_I 0.15
+ATC_RAT_PIT_P 0.15
+ATC_RAT_RLL_D 0.007
+ATC_RAT_RLL_I 0.12
+ATC_RAT_RLL_P 0.12
+ATC_RAT_YAW_I 0.05
+ATC_RAT_YAW_P 0.5
 ATC_SLEW_YAW 8000
 BATT_CAPACITY 4200
 PSC_ACCZ_I 0.6
@@ -262,12 +265,16 @@ PSC_ACCZ_P 0.3
     "CAN_M4": {
         "remove": ["SERVO1_FUNCTION", "SERVO2_FUNCTION", "SERVO3_FUNCTION",
                     "SERVO4_FUNCTION", "SERVO7_FUNCTION", "SERVO8_FUNCTION",
-                    "SERVO9_FUNCTION", "SERVO10_FUNCTION",
+                    "SERVO9_FUNCTION", "SERVO10_FUNCTION", "BATT_MONITOR",
                     "SERVO_DSHOT_ESC", "SERVO_DSHOT_RATE", "MOT_PWM_TYPE"],
         "add": """
 # M4 CAN
+BATT_MONITOR 8
 CAN_P1_DRIVER 1
 CAN_D1_UC_ESC_BM 15
+CAN_D1_UC_OPTION 10
+CAN_D1_UC_SRV_BM 32768
+NTF_LED_TYPES 288
 """
     },
 

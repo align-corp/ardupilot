@@ -224,7 +224,15 @@ function led()
         front_color = RED
     end
 
-    if not arming:is_armed() and not arming:pre_arm_checks() then
+    if led_color:get() == 2 then
+        -- override: white flash
+        if count == 2 then
+            leds_off()
+            count = 0
+        else
+            set_all_leds(WHITE_HIGH, WHITE_HIGH)
+        end
+    elseif not arming:is_armed() and not arming:pre_arm_checks() then
         set_all_leds(RED, RED)
     elseif mode == ALTHOLD_MODE then
         -- 1 white blink on green background

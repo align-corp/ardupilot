@@ -12,7 +12,7 @@
 
 // update rate
 #define AP_MOUNT_G3P_REQUEST_ATTITUDE_MS 50
-#define AP_MOUNT_G3P_SEND_LOCATION_MS 100
+#define AP_MOUNT_G3P_SEND_LOCATION_MS 50
 
 
 #define BYTE1(i) ((uint8_t)(i))
@@ -307,7 +307,7 @@ void AP_Mount_G3P::process_packet()
         }
         _last_current_angle_rad_ms = AP_HAL::millis();
         _current_angle_rad.z = -radians((int16_t)UINT16_VALUE(_msg_buff[AP_MOUNT_G3P_MSG_BUF_DATA_START], _msg_buff[AP_MOUNT_G3P_MSG_BUF_DATA_START+1])/182.0444);   // yaw angle
-        _current_angle_rad.x = radians((int16_t)UINT16_VALUE(_msg_buff[AP_MOUNT_G3P_MSG_BUF_DATA_START+2], _msg_buff[AP_MOUNT_G3P_MSG_BUF_DATA_START+3])/182.0444);  // roll angle
+        _current_angle_rad.x = -radians((int16_t)UINT16_VALUE(_msg_buff[AP_MOUNT_G3P_MSG_BUF_DATA_START+2], _msg_buff[AP_MOUNT_G3P_MSG_BUF_DATA_START+3])/182.0444);  // roll angle
         _current_angle_rad.y = radians((int16_t)UINT16_VALUE(_msg_buff[AP_MOUNT_G3P_MSG_BUF_DATA_START+4], _msg_buff[AP_MOUNT_G3P_MSG_BUF_DATA_START+5])/182.0444);  // pitch angle
         break;
     }
@@ -513,6 +513,18 @@ void AP_Mount_G3P::send_gps_position()
     send_packet_dv(AP_MOUNT_DV_CMD1, AP_MOUNT_DV_CMD2_LONH, BYTE4(here.lng), BYTE3(here.lng));
     send_packet_dv(AP_MOUNT_DV_CMD1, AP_MOUNT_DV_CMD2_LONL, BYTE2(here.lng), BYTE1(here.lng));
     send_packet_dv(AP_MOUNT_DV_CMD1, AP_MOUNT_DV_CMD2_ALT, HIGHBYTE(alt_dm), LOWBYTE(alt_dm));
+
+    // send gimbal angles
+    float ahrs_yaw = AP::ahrs().get_yaw();
+    if (isnan(ahrs_yaw)) {
+        return;
+    }
+    uint16_t roll = uint16_t(wrap_360(degrees(_current_angle_rad.x)) * 10);
+    uint16_t pitch = uint16_t(wrap_360(degrees(_current_angle_rad.y) + 90) * 10); // 0 deg when looking down
+    uint16_t yaw = uint16_t(wrap_360(degrees(_current_angle_rad.z + ahrs_yaw)) * 10); // convert to earth frame
+    send_packet_dv(AP_MOUNT_DV_CMD1, AP_MOUNT_DV_CMD2_PITCH, HIGHBYTE(pitch), LOWBYTE(pitch));
+    send_packet_dv(AP_MOUNT_DV_CMD1, AP_MOUNT_DV_CMD2_YAW, HIGHBYTE(yaw), LOWBYTE(yaw));
+    send_packet_dv(AP_MOUNT_DV_CMD1, AP_MOUNT_DV_CMD2_ROLL, HIGHBYTE(roll), LOWBYTE(roll));
 }
 
 #endif // HAL_MOUNT_G3P_ENABLED

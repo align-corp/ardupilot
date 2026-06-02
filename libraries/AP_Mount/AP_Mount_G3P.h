@@ -51,6 +51,9 @@
 #define AP_MOUNT_DV_HEADER2_SEND        0xA1
 #define AP_MOUNT_DV_HEADER2_RECEIVE     0xA2
 #define AP_MOUNT_DV_CMD1                0x00
+#define AP_MOUNT_DV_CMD2_PITCH          0x91
+#define AP_MOUNT_DV_CMD2_YAW            0x92
+#define AP_MOUNT_DV_CMD2_ROLL           0x93
 #define AP_MOUNT_DV_CMD2_LATH           0xA8
 #define AP_MOUNT_DV_CMD2_LATL           0xA9
 #define AP_MOUNT_DV_CMD2_LONH           0xAA

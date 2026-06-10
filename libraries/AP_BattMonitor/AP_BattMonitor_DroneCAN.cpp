@@ -26,6 +26,13 @@ const AP_Param::GroupInfo AP_BattMonitor_DroneCAN::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("CURR_MULT", 30, AP_BattMonitor_DroneCAN, _curr_mult, 1.0),
 
+    // @Param: VOLT_MULT
+    // @DisplayName: Scales reported power monitor voltage
+    // @Description: Multiplier applied to all voltage related reports to allow for adjustment if no UAVCAN param access or resistor divider mismatch
+    // @Range: .1 10
+    // @User: Advanced
+    AP_GROUPINFO("VOLT_MULT", 31, AP_BattMonitor_DroneCAN, _volt_mult, 1.0),
+
     // Param indexes must be between 30 and 39 to avoid conflict with other battery monitor param tables loaded by pointer
 
     AP_GROUPEND
@@ -131,7 +138,7 @@ void AP_BattMonitor_DroneCAN::update_interim_state(const float voltage, const fl
 {
     WITH_SEMAPHORE(_sem_battmon);
 
-    _interim_state.voltage = voltage;
+    _interim_state.voltage = _volt_mult * voltage;
     _interim_state.current_amps = _curr_mult * current;
     _soc = soc;
 

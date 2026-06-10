@@ -101,6 +101,7 @@ private:
     uint8_t _instance;                  // instance of this battery monitor
 
     AP_Float _curr_mult;                 // scaling multiplier applied to current reports for adjustment
+    AP_Float _volt_mult;                 // scaling multiplier applied to voltage reports for adjustment
     // MPPT variables
     struct {
         bool is_detected;               // true if this UAVCAN device is a Packet Digital MPPT

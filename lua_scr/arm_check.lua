@@ -37,5 +37,5 @@ function update() -- this is the loop which periodically runs
 end
 
 -- set ARM_AUTH to 0
-ARM_AUTH:set_and_save(0)
+ARM_AUTH:set(0)
 return update()

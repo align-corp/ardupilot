@@ -38,6 +38,7 @@ define ALIGN_AP6_M450_A10_CAN       0x0306000A
 define ALIGN_AP6_M450_A10_OF_CAN    0x0306010A
 define ALIGN_AP6_M450_NOGPS_CAN     0x0306000B
 define ALIGN_AP6_M4P_PLUS           0x03090001
+define ALIGN_AP6_M4T40              0x030A0001
 define ALIGN_AP6_E1                 0x03400001
 define ALIGN_AP6_TB70               0x03410001
 define ALIGN_AP6_E2                 0x03420001

@@ -1,0 +1,52 @@
+include ../AP6/hwdef.dat
+
+# use PWM pins for ADC
+undef PB1 # PWM 5
+undef PB0 # PWM 6
+undef PA3 # RPM
+undef PC1 # current
+PB1 LOAD_CELL1 ADC1 SCALE(1)
+PB0 LOAD_CELL2 ADC1 SCALE(1)
+PA3 LOAD_CELL3 ADC1 SCALE(1)
+PC1 LOAD_CELL4 ADC1 SCALE(1)
+
+# we use can for mot 1-4, so remap pwm1-4
+undef PE11
+undef PE13
+undef PE14
+undef PD15
+PE11 TIM1_CH2 TIM1 PWM(13) GPIO(62)
+PE13 TIM1_CH3 TIM1 PWM(14) GPIO(63)
+PE14 TIM1_CH4 TIM1 PWM(15) GPIO(64)
+PD15 TIM4_CH4 TIM4 PWM(16) GPIO(65) 
+
+# no need battery monitor, use CAN
+undef PC0
+undef HAL_BATT_MONITOR_DEFAULT 
+undef HAL_BATT_VOLT_PIN 
+undef HAL_BATT_CURR_PIN
+undef HAL_BATT_VOLT_SCALE
+undef HAL_BATT_CURR_SCALE
+
+# define custom Align frame code (only for testing)
+define ALIGN_FRAME ALIGN_AP6_M4T40
+
+# decrease arming delay
+define ARMING_DELAY_SEC 0.5f
+
+# Telemetry on Serial 1
+define DEFAULT_SERIAL1_BAUD 115
+
+# Rangefinders on Serial 2-3
+undef DEFAULT_SERIAL2_PROTOCOL
+define DEFAULT_SERIAL2_PROTOCOL SerialProtocol_Rangefinder
+define DEFAULT_SERIAL2_BAUD 921
+undef DEFAULT_SERIAL3_PROTOCOL
+define DEFAULT_SERIAL3_PROTOCOL SerialProtocol_Rangefinder
+define DEFAULT_SERIAL3_BAUD 115
+
+# list of files to put in ROMFS (Lua scripts)
+ROMFS scripts/rng_auto.lua lua_scr/rng_auto.lua
+ROMFS scripts/arm_check.lua lua_scr/arm_check.lua
+ROMFS scripts/agricolture_load.lua lua_scr/agricolture_load.lua
+ROMFS scripts/can_cycles.lua lua_scr/can_cycles.lua

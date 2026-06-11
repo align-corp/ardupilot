@@ -8,7 +8,7 @@ local PARAM_TABLE_KEY = 46
 local PARAM_TABLE_PREFIX = "LED_"
 assert(param:add_table(PARAM_TABLE_KEY, PARAM_TABLE_PREFIX, 2), 'could not add param table')
 assert(param:add_param(PARAM_TABLE_KEY, 1, 'ENABLE', 1), 'could not add LED_ENABLE param')
-assert(param:add_param(PARAM_TABLE_KEY, 2, 'COLOR', 0), 'could not add LED_COLOR param')
+assert(param:add_param(PARAM_TABLE_KEY, 2, 'COLOR', 1), 'could not add LED_COLOR param')
 local led_enable = Parameter("LED_ENABLE")
 local led_color = Parameter("LED_COLOR")
 

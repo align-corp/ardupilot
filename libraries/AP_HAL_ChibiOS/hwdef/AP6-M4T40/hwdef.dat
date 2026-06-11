@@ -4,11 +4,11 @@ include ../AP6/hwdef.dat
 undef PB1 # PWM 5
 undef PB0 # PWM 6
 undef PA3 # RPM
-undef PC1 # current
+undef PC0 # current
 PB1 LOAD_CELL1 ADC1 SCALE(1)
 PB0 LOAD_CELL2 ADC1 SCALE(1)
 PA3 LOAD_CELL3 ADC1 SCALE(1)
-PC1 LOAD_CELL4 ADC1 SCALE(1)
+PC0 LOAD_CELL4 ADC1 SCALE(1)
 
 # we use can for mot 1-4, so remap pwm1-4
 undef PE11
@@ -21,7 +21,7 @@ PE14 TIM1_CH4 TIM1 PWM(15) GPIO(64)
 PD15 TIM4_CH4 TIM4 PWM(16) GPIO(65) 
 
 # no need battery monitor, use CAN
-undef PC0
+undef PC1
 undef HAL_BATT_MONITOR_DEFAULT 
 undef HAL_BATT_VOLT_PIN 
 undef HAL_BATT_CURR_PIN
@@ -49,4 +49,4 @@ define DEFAULT_SERIAL3_BAUD 115
 ROMFS scripts/rng_auto.lua lua_scr/rng_auto.lua
 ROMFS scripts/arm_check.lua lua_scr/arm_check.lua
 ROMFS scripts/agricolture_load.lua lua_scr/agricolture_load.lua
-ROMFS scripts/can_cycles.lua lua_scr/can_cycles.lua
+ROMFS scripts/batt_cycles.lua lua_scr/batt_cycles.lua

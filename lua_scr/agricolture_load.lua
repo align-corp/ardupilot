@@ -3,7 +3,7 @@
 
 -- user constants
 local MILLIS_UPDATE = 1000
-local LOAD_PINS = {5, 9, 15, 11} -- analog pins num
+local LOAD_PINS = {5, 9, 15, 10} -- analog pins num
 local NUM_CELLS = #LOAD_PINS
 
 -- parameters

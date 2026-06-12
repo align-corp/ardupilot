@@ -572,6 +572,13 @@ bool NavEKF3_core::readyToUseGPS(void) const
     return validOrigin && tiltAlignComplete && yawAlignComplete && (delAngBiasLearned || assume_zero_sideslip()) && gpsGoodToAlign && gpsDataToFuse;
 }
 
+// return true if the filter is ready to start aiding from GPS
+bool NavEKF3_core::gpsReadyForAiding(void) const
+{
+    const bool gpsDataFresh = (dal.millis() - gpsVelInnovTime_ms < 500);
+    return validOrigin && tiltAlignComplete && yawAlignComplete && (delAngBiasLearned || assume_zero_sideslip()) && gpsGoodToAlign && gpsDataFresh;
+}
+
 // return true if the filter to be ready to use the beacon range measurements
 bool NavEKF3_core::readyToUseRangeBeacon(void) const
 {

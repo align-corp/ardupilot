@@ -1512,6 +1512,15 @@ bool NavEKF3::getVelInnovationsAndVariancesForSource(AP_NavEKF_Source::SourceXY 
     return false;
 }
 
+// return true if the primary core is ready to start aiding from GPS
+bool NavEKF3::gpsReadyForAiding(void) const
+{
+    if (core) {
+        return core[primary].gpsReadyForAiding();
+    }
+    return false;
+}
+
 // should we use the compass? This is public so it can be used for
 // reporting via ahrs.use_compass()
 bool NavEKF3::use_compass(void) const

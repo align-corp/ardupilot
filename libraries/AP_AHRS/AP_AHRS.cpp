@@ -2325,6 +2325,15 @@ bool AP_AHRS::get_filter_status(nav_filter_status &status) const
 
 bool AP_AHRS::get_gps_position_valid() const
 {
+#if HAL_NAVEKF3_AVAILABLE
+    if (active_EKF_type() == EKFType::THREE) {
+        // full GPS aiding readiness (origin, tilt/yaw alignment, gyro bias
+        // learned, GPS quality checks, fresh data at the fusion horizon), not
+        // just the gps_quality_good receiver checks: switching the position
+        // source to GPS before all of these pass stops EKF aiding entirely
+        return EKF3.gpsReadyForAiding();
+    }
+#endif
     nav_filter_status filt_status;
     if (!get_filter_status(filt_status)) {
         return false;

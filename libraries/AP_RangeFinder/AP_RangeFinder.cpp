@@ -893,6 +893,12 @@ bool RangeFinder::prearm_healthy(char *failure_msg, const uint8_t failure_msg_le
             continue;
         }
 
+        if (external_failure_flag[i]) {
+            // vehicle has latched this sensor as failed and ignores its data,
+            // so its status must not block re-arming (e.g. after landing on baro)
+            continue;
+        }
+
         if (drivers[i] == nullptr) {
             hal.util->snprintf(failure_msg, failure_msg_len, "Rangefinder %X: Not Detected", i + 1);
             return false;

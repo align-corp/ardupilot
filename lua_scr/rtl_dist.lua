@@ -53,6 +53,7 @@ local land_engaged = false
 local cells_num = 6
 local voltage_drop = 0
 local last_sent_percent = nil
+local first = true
 
 -- add a parameter and bind it to a variable
 local function bind_add_param(name, idx, default_value)
@@ -69,6 +70,17 @@ local RTLS_ENABLE = bind_add_param('ENABLE', 1, 1)
 local RTLS_DIST = bind_add_param('DIST', 2, MINIMUM_RTL_DIST)
 
 function update()
+    -- immediately update percentage at first boot
+    if first then
+        local voltage = battery:voltage(0)
+        if not voltage then
+            return update, UPDATE_VOLTAGE_MS
+        end
+        local percent = voltage_to_percent(voltage)
+        battery:override_percentage(0, percent)
+        first = false
+    end
+
     -- Collect voltage samples for specified duration
     if sample_count < VOLTAGES_SAMPLES_TO_MEDIAN then
         local voltage = battery:voltage(0)

@@ -2817,14 +2817,20 @@ Please run: Tools/scripts/build_bootloaders.py %s
         return ret
 
     def write_processed_defaults_file(self, filepath):
-        # see if board has a defaults.parm file or a --default-parameters file was specified
-        defaults_filename = os.path.join(os.path.dirname(args.hwdef[0]), 'defaults.parm')
-        defaults_path = os.path.join(os.path.dirname(args.hwdef[0]), args.params)
+        # see if board has a default param file. Check for 'defaults.parm',
+        # 'defaults-generated.parm' or --default-parameters argument
+        hwdef_dir = os.path.dirname(args.hwdef[0])
+        defaults_filename = os.path.join(hwdef_dir, 'defaults.parm')
+        generated_defaults_filename = os.path.join(hwdef_dir, 'defaults-generated.parm')
+        defaults_path = os.path.join(hwdef_dir, args.params)
 
         defaults_abspath = None
         if os.path.exists(defaults_path):
             defaults_abspath = os.path.abspath(self.default_params_filepath)
             self.progress("Default parameters path from command line: %s" % self.default_params_filepath)
+        elif os.path.exists(generated_defaults_filename):
+            defaults_abspath = os.path.abspath(generated_defaults_filename)
+            self.progress("Default parameters path from hwdef (generated): %s" % generated_defaults_filename)
         elif os.path.exists(defaults_filename):
             defaults_abspath = os.path.abspath(defaults_filename)
             self.progress("Default parameters path from hwdef: %s" % defaults_filename)

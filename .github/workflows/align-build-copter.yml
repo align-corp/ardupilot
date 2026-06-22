@@ -48,6 +48,9 @@ jobs:
           - AP6m-M3
           - AP6m-M3-A10
           - AP6m-M3-OF
+          - AP6m-nobuzz-M3
+          - AP6m-nobuzz-M3-A10
+          - AP6m-nobuzz-M3-OF
           - AP6m-MR25
           - AP6m-MR25-A10
           - AP6m-MR25-no-gps

@@ -92,9 +92,10 @@ jobs:
 
           python3 Tools/scripts/align_params_modifier.py
 
-          # Validate defaults file exists
-          if [ ! -f "libraries/AP_HAL_ChibiOS/hwdef/${{ matrix.board }}/defaults.parm" ]; then
-            echo "❌ Error: default parameter file not found for ${{ matrix.board }}"
+          # Validate defaults file exists (committed defaults.parm or generated defaults-generated.parm)
+          board_dir="libraries/AP_HAL_ChibiOS/hwdef/${{ matrix.board }}"
+          if [ ! -f "${board_dir}/defaults.parm" ] && [ ! -f "${board_dir}/defaults-generated.parm" ]; then
+            echo "Error: default parameter file not found for ${{ matrix.board }}"
             exit 1
           fi
 

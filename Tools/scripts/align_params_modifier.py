@@ -4,8 +4,16 @@ ArduPilot Parameter File Modifier
 
 This script modifies ArduPilot parameter files by removing specified parameters
 and appending new ones at the end. Supports multiple base files with different operations.
+
+Output files are written as 'defaults-generated.parm' (not 'defaults.parm') so they
+can be gitignored with a single pattern. The ChibiOS hwdef build picks up
+'defaults-generated.parm' in preference to a committed 'defaults.parm'.
 """
 import os
+
+# Generated output files use this name instead of 'defaults.parm' so they can be
+# gitignored by a single pattern and never collide with hand-written defaults.parm.
+GENERATED_FILENAME = "defaults-generated.parm"
 
 # =============================================================================
 # CONFIGURATION SECTION - MODIFY THIS PART
@@ -442,6 +450,8 @@ def main():
         
         # Process each operation for this base file
         for configs, output_path in operations:
+            # Redirect output to the gitignored generated filename
+            output_path = os.path.join(os.path.dirname(output_path), GENERATED_FILENAME)
             if process_parameter_file(base_file, output_path, configs):
                 success_count += 1
                 total_success += 1

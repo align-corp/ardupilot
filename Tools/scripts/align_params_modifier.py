@@ -17,6 +17,9 @@ BASE_FILES_CONFIG = {
     "libraries/AP_HAL_ChibiOS/hwdef/AP6m-M3/defaults.parm": [
         (["A10","A10-M3"], "libraries/AP_HAL_ChibiOS/hwdef/AP6m-M3-A10/defaults.parm"),
         (["OF","OF-M3"], "libraries/AP_HAL_ChibiOS/hwdef/AP6m-M3-OF/defaults.parm"),
+        (["AP6M-NOBUZZ"], "libraries/AP_HAL_ChibiOS/hwdef/AP6m-nobuzz-M3/defaults.parm"),
+        (["AP6M-NOBUZZ","A10","A10-M3"], "libraries/AP_HAL_ChibiOS/hwdef/AP6m-nobuzz-M3-A10/defaults.parm"),
+        (["AP6M-NOBUZZ","OF","OF-M3"], "libraries/AP_HAL_ChibiOS/hwdef/AP6m-nobuzz-M3-OF/defaults.parm"),
     ],
 
     # M450/M460/M490 4in1
@@ -299,6 +302,14 @@ PSC_VELXY_P 1
 RC8_OPTION 19
 RNGFND1_TYPE 10
 RNGFND2_TYPE 10
+"""
+    },
+
+    "AP6M-NOBUZZ": {
+        "remove": "SERVO5_FUNCTION",
+        "add": """
+# Gripper port as buzzer
+SERVO5_FUNCTION 138
 """
     },
 

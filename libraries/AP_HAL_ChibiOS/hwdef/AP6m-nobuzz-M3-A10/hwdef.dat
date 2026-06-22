@@ -1,0 +1,25 @@
+include ../AP6m/hwdef.dat
+
+# define custom Align frame code
+define ALIGN_FRAME ALIGN_AP6M_NOBUZZ_M3_A10
+
+# use flight mode switch for compass calibration
+define FLTMODE_SWITCH_COMPASS_CALIBRATION
+
+# use custom Align Status LED
+define ALIGN_RGB_STATUS_LED
+
+# decrease arming delay
+define ARMING_DELAY_SEC 0.5f
+
+# no buzzer
+undef PB0
+undef PB1
+PB0 TIM3_CH3 TIM3 PWM(5) GPIO(54) # Gripper or Buzzer
+
+# bootloader embedding / bootloader flashing not available
+define AP_BOOTLOADER_FLASHING_ENABLED 0
+
+# list of files to put in ROMFS (Lua scripts)
+ROMFS scripts/led.lua lua_scr/led.lua
+ROMFS scripts/rtl_dist.lua lua_scr/rtl_dist.lua

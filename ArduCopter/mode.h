@@ -1265,7 +1265,7 @@ private:
 
     LandingState landing_state;
     uint32_t landing_request_start_ms = 0;
-    int32_t landing_baro_alt_ref_cm = 0;  // baro altitude snapshot taken when entering ALTITUDE_LOW; sanity-checks rangefinder before LANDING
+    int32_t landing_alt_ref_cm = 0;  // EKF altitude snapshot taken when entering ALTITUDE_LOW; sanity-checks rangefinder before LANDING
     AltHoldModeState loiter_state;
 
 #if AC_PRECLAND_ENABLED

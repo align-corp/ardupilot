@@ -92,7 +92,7 @@ void ModeLoiter::update_landing_state(AltHoldModeState alt_hold_state)
 #if RANGEFINDER_ENABLED == ENABLED && RANGEFINDER_INERTIAL_CONSISTENCY_ENABLED == ENABLED
     // rangefinder healthy check
     if (landing_state != LandingState::ALTITUDE_HIGH &&
-        abs(copter.baro_alt - landing_baro_alt_ref_cm) > 3.0f * g.pilot_land_alt)
+        abs(inertial_nav.get_position_z_up_cm() - landing_alt_ref_cm) > 4.0f * g.pilot_land_alt)
     {
         copter.rangefinder.set_external_failure(ROTATION_PITCH_270, true);
         gcs().send_text(MAV_SEVERITY_CRITICAL, "Loiter: rangefinder inconsistent with baro");
@@ -118,7 +118,7 @@ void ModeLoiter::update_landing_state(AltHoldModeState alt_hold_state)
         if (channel_throttle->norm_input_ignore_trim() > 0.1f || !motors->armed()) {
             // when landing controller is landing loiter mode should be initialized again
             init(true);
-            landing_baro_alt_ref_cm = copter.baro_alt;
+            landing_alt_ref_cm = inertial_nav.get_position_z_up_cm();
             landing_state = LandingState::ALTITUDE_LOW;
             LOGGER_WRITE_EVENT(LogEvent::LOITER_LAND_ABORT);
         }
@@ -153,8 +153,8 @@ void ModeLoiter::update_landing_state(AltHoldModeState alt_hold_state)
     // check landing state based on rangefinder altitude
     if (get_alt_above_ground_cm() < lgr_land_low_alt+30) {
         if (landing_state != LandingState::ALTITUDE_LOW) {
-            // store barometer altitude when entering ALTITUDE_LOW 
-            landing_baro_alt_ref_cm = copter.baro_alt;
+            // store EKF altitude when entering ALTITUDE_LOW
+            landing_alt_ref_cm = inertial_nav.get_position_z_up_cm();
             landing_state = LandingState::ALTITUDE_LOW;
         }
         // full negative throttle and 0.8 s delay for landing routine when altitude < 80 cm
@@ -181,7 +181,7 @@ void ModeLoiter::update_landing_state(AltHoldModeState alt_hold_state)
     } else if (get_alt_above_ground_cm() < lgr_land_alt) {
         landing_request_start_ms = 0;
         if (landing_state != LandingState::ALTITUDE_LOW) {
-            landing_baro_alt_ref_cm = copter.baro_alt;
+            landing_alt_ref_cm = inertial_nav.get_position_z_up_cm();
         }
         landing_state = LandingState::ALTITUDE_LOW;
     } else {

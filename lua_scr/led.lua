@@ -78,6 +78,9 @@ local function setup_channels()
     elseif align_frame > 0x04070000 and align_frame < 0x04080000 then
         -- AP6m-M3
         align_vehicle = M3
+    elseif align_frame > 0x05070000 and align_frame < 0x05080000 then
+        -- AP6m-nobuzz-M3
+        align_vehicle = M3
     end
 
     if align_vehicle == M3 then

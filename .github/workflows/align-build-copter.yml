@@ -27,10 +27,13 @@ jobs:
           - AP6-M460-ds
           - AP6-M460-A10-ds
           - AP6-M460-can
+          - AP6-M460-A10-can
           - AP6-M490
           - AP6-M490-A10
           - AP6-M490-ds
           - AP6-M490-A10-ds
+          - AP6-M490-can
+          - AP6-M490-A10-can
           - AP6-M6T22
           - AP6-M4T12
           - AP6-M4P
@@ -44,6 +47,8 @@ jobs:
           - AP6-M450-A10
           - AP6-M450-A10-ds
           - AP6-M450-A10-OF-ds
+          - AP6-M450-can
+          - AP6-M450-A10-can
           - AP6-SoH
           - AP6m-M3
           - AP6m-M3-A10

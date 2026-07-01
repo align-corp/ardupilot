@@ -38,6 +38,7 @@ local MINIMUM_ARM_PERCENT = 25
 --- script start, don't change below this line
 ----------------------------------------------
 local UPDATE_VOLTAGE_MS = 200
+local UPDATE_NOT_READY_MS = 1000
 local VOLTAGES_SAMPLES_TO_MEDIAN = 51
 local RTL_MODE = 6
 local LAND_MODE = 9
@@ -117,28 +118,28 @@ function update()
     if not arming:is_armed() then
         rtl_engaged = false
         land_engaged = false
-        return update, 1000
+        return update, UPDATE_NOT_READY_MS
     end
 
     -- return if battery is not correctly set
     if percent < 0 or batt_id < 0 then
-        return update, 1000
+        return update, UPDATE_NOT_READY_MS
     end
 
     -- return if not enabled
     if RTLS_ENABLE:get() < 1 then
-        return update, 1000
+        return update, UPDATE_NOT_READY_MS
     end
 
     -- return if percentage is > 60 %
     if percent > 60 then
-        return update, 1000
+        return update, UPDATE_NOT_READY_MS
     end
 
     -- return if already in LAND
     local mode = vehicle:get_mode()
     if mode == LAND_MODE or land_engaged then
-        return update, 1000
+        return update, UPDATE_NOT_READY_MS
     end
 
     if percent < LAND_PERCENTAGE then
@@ -150,7 +151,12 @@ function update()
 
     -- return if already in RTL
     if mode == RTL_MODE or rtl_engaged then
-        return update, 1000
+        return update, UPDATE_NOT_READY_MS
+    end
+
+    -- return if home position is not valid
+    if not ahrs:home_is_set() then
+        return update, UPDATE_NOT_READY_MS
     end
 
     -- Get distance from home and altitude
@@ -158,30 +164,32 @@ function update()
     local current_loc = ahrs:get_position()
     local negative_alt = ahrs:get_relative_position_D_home()
 
-    if home and current_loc and negative_alt then
-        local alt = -negative_alt
-        local distance_m = home:get_distance(current_loc)
+    if not home or not current_loc or not negative_alt then
+        return update, UPDATE_VOLTAGE_MS
+    end
 
-        -- return if distance from home is < MINIMUM_RTL_DIST
-        local minimum_dist = RTLS_DIST:get()
-        if minimum_dist < 0 or minimum_dist > 1000 then
-            minimum_dist = MINIMUM_RTL_DIST
-        end
-        if distance_m < minimum_dist and alt < minimum_dist then
-            return update, UPDATE_VOLTAGE_MS
-        end
+    local alt = -negative_alt
+    local distance_m = home:get_distance(current_loc)
 
-        -- Calculate required battery percentage for return trip
-        local required_percent_horizontal = distance_m * VOLTAGE_TO_PERCENT_TABLE[3][batt_id]
-        local required_percent_down = alt * VOLTAGE_TO_PERCENT_TABLE[4][batt_id]
-        local required_percent = required_percent_horizontal + required_percent_down
+    -- return if distance from home is < MINIMUM_RTL_DIST
+    local minimum_dist = RTLS_DIST:get()
+    if minimum_dist < 0 or minimum_dist > 1000 then
+        minimum_dist = MINIMUM_RTL_DIST
+    end
+    if distance_m < minimum_dist and alt < minimum_dist then
+        return update, UPDATE_VOLTAGE_MS
+    end
 
-        -- trigger RTL if battery is low
-        if percent < (required_percent + MIN_SAFE_PERCENT) then
-            gcs:send_text(3, string.format("Low battery! %.1f%% remaining, start RTL", percent))
-            vehicle:set_mode(RTL_MODE)
-            rtl_engaged = true
-        end
+    -- Calculate required battery percentage for return trip
+    local required_percent_horizontal = distance_m * VOLTAGE_TO_PERCENT_TABLE[3][batt_id]
+    local required_percent_down = alt * VOLTAGE_TO_PERCENT_TABLE[4][batt_id]
+    local required_percent = required_percent_horizontal + required_percent_down
+
+    -- trigger RTL if battery is low
+    if percent < (required_percent + MIN_SAFE_PERCENT) then
+        gcs:send_text(3, string.format("Low battery! %.1f%% remaining, start RTL", percent))
+        vehicle:set_mode(RTL_MODE)
+        rtl_engaged = true
     end
 
     return update, UPDATE_VOLTAGE_MS
@@ -268,4 +276,4 @@ function voltage_to_percent(voltage)
 end
 
 gcs:send_text(6, "rtl_dist.lua is running")
-return update, 1000
+return update, UPDATE_NOT_READY_MS

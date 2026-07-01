@@ -7,7 +7,6 @@ on:
       - 'v*'
     branches:
       - 'dev/**'
-      - main
 
 concurrency:
   group: ci-${{github.workflow}}-${{ github.ref }}

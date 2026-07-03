@@ -540,9 +540,12 @@ private:
     AP_Rally_Copter rally;
 #endif
 
-    // Crop Sprayer
+    // Crop Sprayer and spreader
 #if HAL_SPRAYER_ENABLED
-    AC_Sprayer sprayer;
+    AC_Sprayer sprayer{0};
+#if HAL_SPRAYER2_ENABLED
+    AC_Sprayer sprayer2{1};
+#endif
 #endif
 
     // Parachute release

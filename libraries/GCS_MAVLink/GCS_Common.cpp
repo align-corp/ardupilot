@@ -4711,18 +4711,28 @@ MAV_RESULT GCS_MAVLINK::handle_command_do_gripper(const mavlink_command_int_t &p
 #if HAL_SPRAYER_ENABLED
 MAV_RESULT GCS_MAVLINK::handle_command_do_sprayer(const mavlink_command_int_t &packet)
 {
-    AC_Sprayer *sprayer = AP::sprayer();
-    if (sprayer == nullptr) {
-        return MAV_RESULT_FAILED;
+    // only act on an explicit start (1) or stop (0) request
+    if (!is_equal(packet.param1, 1.0f) && !is_zero(packet.param1)) {
+        return MAV_RESULT_DENIED;
     }
 
-    if (is_equal(packet.param1, 1.0f)) {
-        sprayer->run(true);
-    } else if (is_zero(packet.param1)) {
-        sprayer->run(false);
+    // control every sprayer instance that allows it
+    bool controlled = false;
+    for (uint8_t i = 0; i < AC_SPRAYER_MAX_INSTANCES; i++) {
+        AC_Sprayer *sprayer = AP::sprayer(i);
+        if (sprayer == nullptr) {
+            continue;
+        }
+
+        // SPRAY_ENABLE = 2 restricts control to the RC aux function
+        if (!sprayer->mavlink_control_enabled()) {
+            continue;
+        }
+        sprayer->run(is_equal(packet.param1, 1.0f));
+        controlled = true;
     }
 
-    return MAV_RESULT_ACCEPTED;
+    return controlled ? MAV_RESULT_ACCEPTED : MAV_RESULT_FAILED;
 }
 #endif
 

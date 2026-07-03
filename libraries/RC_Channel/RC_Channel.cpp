@@ -237,6 +237,7 @@ const AP_Param::GroupInfo RC_Channel::var_info[] = {
     // @Values{Copter, Rover, Plane, Blimp}: 175:Camera Lens
     // @Values{Plane}: 176:Quadplane Fwd Throttle Override enable
     // @Values{Copter, Rover, Plane, Blimp}: 177:Mount LRF enable
+    // @Values{Copter}: 178:Sprayer2 Enable
     // @Values{Rover}: 201:Roll
     // @Values{Rover}: 202:Pitch
     // @Values{Rover}: 207:MainSail
@@ -691,6 +692,9 @@ void RC_Channel::init_aux_function(const aux_func_t ch_option, const AuxSwitchPo
     case AUX_FUNC::RUNCAM_CONTROL:
     case AUX_FUNC::RUNCAM_OSD_CONTROL:
     case AUX_FUNC::SPRAYER:
+#if HAL_SPRAYER2_ENABLED
+    case AUX_FUNC::SPRAYER2:
+#endif
     case AUX_FUNC::DISABLE_AIRSPEED_USE:
     case AUX_FUNC::FFT_NOTCH_TUNE:
 #if HAL_MOUNT_ENABLED
@@ -726,6 +730,7 @@ const RC_Channel::LookupTable RC_Channel::lookuptable[] = {
     { AUX_FUNC::RANGEFINDER,"Rangefinder"},
     { AUX_FUNC::FENCE,"Fence"},
     { AUX_FUNC::SPRAYER,"Sprayer"},
+    { AUX_FUNC::SPRAYER2,"Sprayer2"},
     { AUX_FUNC::PARACHUTE_ENABLE,"ParachuteEnable"},
     { AUX_FUNC::PARACHUTE_RELEASE,"ParachuteRelease"},
     { AUX_FUNC::PARACHUTE_3POS,"Parachute3Position"},
@@ -1129,9 +1134,9 @@ void RC_Channel::do_aux_function_generator(const AuxSwitchPos ch_flag)
 #endif
 
 #if HAL_SPRAYER_ENABLED
-void RC_Channel::do_aux_function_sprayer(const AuxSwitchPos ch_flag)
+void RC_Channel::do_aux_function_sprayer(uint8_t instance, const AuxSwitchPos ch_flag)
 {
-    AC_Sprayer *sprayer = AP::sprayer();
+    AC_Sprayer *sprayer = AP::sprayer(instance);
     if (sprayer == nullptr) {
         return;
     }
@@ -1345,8 +1350,14 @@ bool RC_Channel::do_aux_function(const aux_func_t ch_option, const AuxSwitchPos 
 
 #if HAL_SPRAYER_ENABLED
     case AUX_FUNC::SPRAYER:
-        do_aux_function_sprayer(ch_flag);
+        do_aux_function_sprayer(0, ch_flag);
         break;
+
+#if HAL_SPRAYER2_ENABLED
+    case AUX_FUNC::SPRAYER2:
+        do_aux_function_sprayer(1, ch_flag);
+        break;
+#endif
 #endif
 
     case AUX_FUNC::LOST_VEHICLE_SOUND:

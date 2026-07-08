@@ -68,6 +68,7 @@ jobs:
           - AP6-E1v2
           - AP6-E2
           - AP6-TB40-A10
+          - AP6-TB60-A10
 
     steps:
       - uses: actions/checkout@v6
@@ -110,7 +111,7 @@ jobs:
           ./waf configure --board ${{ matrix.board }}
           ./waf clean
           case "${{ matrix.board }}" in
-            AP6-E1|AP6-E1v2|AP6-E2|AP6-TB40-A10)
+            AP6-E1|AP6-E1v2|AP6-E2|AP6-TB40-A10|AP6-TB60-A10)
               ./waf heli
               cp build/${{ matrix.board }}/bin/arducopter-heli.apj ${{ matrix.board }}.apj
               ;;

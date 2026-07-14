@@ -1091,6 +1091,17 @@ void RC_Channel::do_aux_function_relay(const uint8_t relay, bool val)
     if (servorelayevents == nullptr) {
         return;
     }
+
+    if (val && !relay_seen_off) {
+        // a switch left high across a reboot must be cycled low before it
+        // can turn the relay back on
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "RC%u: Relay%u on ignored, cycle switch", unsigned(ch_in+1), unsigned(relay+1));
+        return;
+    }
+    if (!val) {
+        relay_seen_off = true;
+    }
+
     servorelayevents->do_set_relay(relay, val);
 }
 #endif

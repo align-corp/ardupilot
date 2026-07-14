@@ -394,6 +394,10 @@ private:
     uint16_t override_value;
     uint32_t last_override_time;
 
+    // true once the relay switch has been seen off after boot, a switch
+    // left high across a reboot must be cycled before it takes effect
+    bool relay_seen_off;
+
     int16_t pwm_to_angle() const;
     int16_t pwm_to_angle_dz(uint16_t dead_zone) const;
 

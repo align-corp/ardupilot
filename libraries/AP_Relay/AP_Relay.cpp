@@ -369,6 +369,44 @@ void AP_Relay::init()
 #endif
 
     }
+
+    hal.scheduler->register_io_process(FUNCTOR_BIND_MEMBER(&AP_Relay::timeout_update, void));
+}
+
+// IO thread callback, turns relays off when the disarmed timeout expires
+void AP_Relay::timeout_update()
+{
+    const uint32_t now_ms = AP_HAL::millis();
+    if (now_ms - _timeout_last_check_ms < 100) {
+        // limit the checks to 10Hz
+        return;
+    }
+    _timeout_last_check_ms = now_ms;
+
+    if (hal.util->get_soft_armed()) {
+        // armed: the user has direct control of the relays, no timeout is applied
+        memset(_timeout_start_ms, 0, sizeof(_timeout_start_ms));
+        return;
+    }
+
+    for (uint8_t instance = 0; instance < ARRAY_SIZE(_params); instance++) {
+        const int16_t timeout_s = _params[instance].timeout.get();
+        if ((timeout_s <= 0) ||
+            (_params[instance].function != AP_Relay_Params::FUNCTION::RELAY) ||
+            !get(instance)) {
+            _timeout_start_ms[instance] = 0;
+            continue;
+        }
+
+        if (_timeout_start_ms[instance] == 0) {
+            // relay on while disarmed, start the timeout
+            _timeout_start_ms[instance] = now_ms;
+        } else if (now_ms - _timeout_start_ms[instance] >= uint32_t(timeout_s) * 1000U) {
+            off(instance);
+            _timeout_start_ms[instance] = 0;
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Relay%u off: disarmed timeout", unsigned(instance+1));
+        }
+    }
 }
 
 void AP_Relay::set(const AP_Relay_Params::FUNCTION function, const bool value) {

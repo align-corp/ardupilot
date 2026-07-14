@@ -65,6 +65,14 @@ const AP_Param::GroupInfo AP_Relay_Params::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("DEFAULT", 3, AP_Relay_Params, default_state, (float)DefaultState::OFF),
 
+    // @Param: TIMEOUT
+    // @DisplayName: Relay disarmed timeout
+    // @Description: Timeout in seconds after which the relay is automatically turned off while the vehicle is disarmed. The timeout starts when the relay is turned on (or at disarm if the relay was already on). While the vehicle is armed the relay is fully user controlled and no timeout is applied. Only applies to RELAYx_FUNC "Relay" (1). Set to 0 to disable.
+    // @Range: 0 3600
+    // @Units: s
+    // @User: Standard
+    AP_GROUPINFO("TIMEOUT", 4, AP_Relay_Params, timeout, 0),
+
     AP_GROUPEND
 
 };

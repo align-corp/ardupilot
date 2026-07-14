@@ -78,6 +78,15 @@ private:
 
     AP_Relay_Params _params[AP_RELAY_NUM_RELAYS];
 
+    // IO thread callback, turns relays off when the disarmed timeout expires
+    void timeout_update();
+
+    // time of the last timeout check
+    uint32_t _timeout_last_check_ms;
+
+    // time the disarmed timeout started for each relay, 0 if not running
+    uint32_t _timeout_start_ms[AP_RELAY_NUM_RELAYS];
+
     // Return true is function is valid
     bool function_valid(AP_Relay_Params::FUNCTION function) const;
 

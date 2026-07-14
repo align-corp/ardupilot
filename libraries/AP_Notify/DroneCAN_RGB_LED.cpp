@@ -99,7 +99,7 @@ void DroneCAN_RGB_LED::update()
         // battery driver is not ready
         return;
     }
-    if (percentage >= 100) {
+    if (percentage >= 99) {
         // Wait rtl_dist.lua to override the percentage, to prevent glitch. 
         // 100% is already handled corrected by PCU for all battery types.
         return;

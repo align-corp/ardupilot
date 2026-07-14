@@ -376,34 +376,32 @@ void AP_Relay::init()
 // IO thread callback, turns relays off when the disarmed timeout expires
 void AP_Relay::timeout_update()
 {
+    if (hal.util->get_soft_armed()) {
+        return;
+    }
+
     const uint32_t now_ms = AP_HAL::millis();
-    if (now_ms - _timeout_last_check_ms < 100) {
-        // limit the checks to 10Hz
+    if (now_ms - _timeout_last_check_ms < 500) {
+        // limit the checks to 2Hz
         return;
     }
     _timeout_last_check_ms = now_ms;
 
-    if (hal.util->get_soft_armed()) {
-        // armed: the user has direct control of the relays, no timeout is applied
-        memset(_timeout_start_ms, 0, sizeof(_timeout_start_ms));
-        return;
-    }
-
     for (uint8_t instance = 0; instance < ARRAY_SIZE(_params); instance++) {
-        const int16_t timeout_s = _params[instance].timeout.get();
-        if ((timeout_s <= 0) ||
-            (_params[instance].function != AP_Relay_Params::FUNCTION::RELAY) ||
-            !get(instance)) {
-            _timeout_start_ms[instance] = 0;
+        if (_timeout_start_ms[instance] == 0) {
+            // relay has not been turned on
             continue;
         }
 
-        if (_timeout_start_ms[instance] == 0) {
-            // relay on while disarmed, start the timeout
-            _timeout_start_ms[instance] = now_ms;
-        } else if (now_ms - _timeout_start_ms[instance] >= uint32_t(timeout_s) * 1000U) {
+        const int16_t timeout_s = _params[instance].timeout.get();
+        if ((timeout_s <= 0) ||
+            (_params[instance].function != AP_Relay_Params::FUNCTION::RELAY)) {
+            continue;
+        }
+
+        if (now_ms - _timeout_start_ms[instance] >= uint32_t(timeout_s) * 1000U) {
+            // off() clears _timeout_start_ms via set_pin_by_instance
             off(instance);
-            _timeout_start_ms[instance] = 0;
             GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Relay%u off: disarmed timeout", unsigned(instance+1));
         }
     }
@@ -439,6 +437,9 @@ void AP_Relay::set_pin_by_instance(uint8_t instance, bool value)
         return;
     }
 #endif
+
+    // record the on-time for the disarmed timeout, 0 means off
+    _timeout_start_ms[instance] = value ? MAX(AP_HAL::millis(), 1U) : 0;
 
     const bool initial_value = get_pin(pin);
 

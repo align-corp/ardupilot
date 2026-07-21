@@ -591,7 +591,7 @@ void NavEKF3_core::send_status_report(GCS_MAVLINK &link) const
     if (!filterStatus.flags.initalized) {
         flags |= EKF_UNINITIALIZED;
     }
-    if (filterStatus.flags.gps_quality_good) {
+    if (gpsReadyForAiding()) {
         flags |= (1<<14);
     }
     if (filterStatus.flags.gps_glitching) {

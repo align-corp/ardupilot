@@ -193,24 +193,65 @@ void CompassCalibrator::update()
     if (_status == Status::RUNNING_STEP_ONE) {
         if (_fit_step >= 10) {
             if (is_equal(_fitness, _initial_fitness) || isnan(_fitness)) {  // if true, means that fitness is diverging instead of converging
+#if COMPASS_CAL_DEBUG
+                // DEBUG ONLY: this exit is silent in stock firmware
+                GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "MagCal(%u) diverged f%.1f i%.1f r%.0f",
+                              _compass_idx, (double)_fitness, (double)_initial_fitness,
+                              (double)_params.radius);
+#endif
                 set_status(Status::FAILED);
             } else {
+#if COMPASS_CAL_DEBUG
+                GCS_SEND_TEXT(MAV_SEVERITY_INFO, "MagCal(%u) s1 ok f%.1f r%.0f cov%u/80",
+                              _compass_idx, (double)_fitness, (double)_params.radius,
+                              completion_mask_bits());
+#endif
                 set_status(Status::RUNNING_STEP_TWO);
             }
         } else {
             if (_fit_step == 0) {
                 calc_initial_offset();
+#if COMPASS_CAL_DEBUG
+                // DEBUG ONLY: how fast the 300-sample buffer filled, and how much
+                // of the sphere those samples actually cover
+                GCS_SEND_TEXT(MAV_SEVERITY_INFO, "MagCal(%u) buf full %.1fs cov%u/80",
+                              _compass_idx,
+                              (double)((AP_HAL::millis() - _start_time_ms) * 1.0e-3f),
+                              completion_mask_bits());
+#endif
             }
             run_sphere_fit();
             _fit_step++;
         }
     } else if (_status == Status::RUNNING_STEP_TWO) {
         if (_fit_step >= 35) {
+#if COMPASS_CAL_DEBUG
+            // DEBUG ONLY: split out fit_acceptable() so its failure is visible.
+            // fix_radius() and calculate_orientation() already report themselves.
+            // Evaluation order is unchanged from the stock short-circuit below.
+            if (!fit_acceptable()) {
+                GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "MagCal(%u) bad fit f%.1f r%.0f cov%u/80",
+                              _compass_idx, (double)_fitness, (double)_params.radius,
+                              completion_mask_bits());
+                GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "MagCal(%u) ofs %.0f %.0f %.0f max%u",
+                              _compass_idx, (double)_params.offset.x, (double)_params.offset.y,
+                              (double)_params.offset.z, (unsigned)_offset_max);
+                GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "MagCal(%u) dia %.2f %.2f %.2f tol%.0f",
+                              _compass_idx, (double)_params.diag.x, (double)_params.diag.y,
+                              (double)_params.diag.z, (double)sq(_tolerance));
+                set_status(Status::FAILED);
+            } else if (fix_radius() && calculate_orientation()) {
+                set_status(Status::SUCCESS);
+            } else {
+                set_status(Status::FAILED);
+            }
+#else
             if (fit_acceptable() && fix_radius() && calculate_orientation()) {
                 set_status(Status::SUCCESS);
             } else {
                 set_status(Status::FAILED);
             }
+#endif
         } else if (_fit_step < 15) {
             run_sphere_fit();
             _fit_step++;
@@ -285,6 +326,20 @@ void CompassCalibrator::update_completion_mask()
         update_completion_mask(_sample_buffer[i].get());
     }
 }
+
+#if COMPASS_CAL_DEBUG
+// DEBUG ONLY: number of geodesic sections holding at least one sample, out of
+// the 80 AP_GeodesicGrid sections. A low count means the samples are confined
+// to part of the sphere and the sphere fit will be poorly conditioned.
+uint8_t CompassCalibrator::completion_mask_bits() const
+{
+    uint8_t count = 0;
+    for (uint8_t i = 0; i < sizeof(_completion_mask); i++) {
+        count += __builtin_popcount(_completion_mask[i]);
+    }
+    return count;
+}
+#endif
 
 void CompassCalibrator::update_cal_status()
 {

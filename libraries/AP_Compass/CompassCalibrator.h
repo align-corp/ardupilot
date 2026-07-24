@@ -10,6 +10,13 @@
 #define COMPASS_CAL_NUM_ELLIPSOID_PARAMS    9
 #define COMPASS_CAL_NUM_SAMPLES             300     // number of samples required before fitting begins
 
+// DEBUG ONLY: report the two calibration failure paths (step-one divergence and
+// fit_acceptable()) which are silent in stock firmware. Set to 0 to restore
+// stock behaviour.
+#ifndef COMPASS_CAL_DEBUG
+#define COMPASS_CAL_DEBUG 1
+#endif
+
 class CompassCalibrator {
 public:
     CompassCalibrator();
@@ -193,6 +200,11 @@ private:
 
     // reset and updated the completion mask using all samples in the sample buffer
     void update_completion_mask();
+
+#if COMPASS_CAL_DEBUG
+    // DEBUG ONLY: count of geodesic sections containing at least one sample (max 80)
+    uint8_t completion_mask_bits() const;
+#endif
 
     // calculate compass orientation
     Vector3f calculate_earth_field(CompassSample &sample, enum Rotation r);

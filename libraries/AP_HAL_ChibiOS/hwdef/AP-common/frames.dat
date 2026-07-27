@@ -20,6 +20,7 @@ define ALIGN_AP6_M490_A10_DSH       0x03020004
 define ALIGN_AP6_M490_CAN           0x03020009
 define ALIGN_AP6_M490_A10_CAN       0x0302000A
 define ALIGN_AP6_M6T22              0x03030001
+define ALIGN_AP6_M6T22_BCM          0x0303000B
 define ALIGN_AP6_M4T12              0x03040001
 define ALIGN_AP6_M4T12_RTK          0x03040002
 define ALIGN_AP6_M4P                0x03050001

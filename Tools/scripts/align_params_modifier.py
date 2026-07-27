@@ -79,6 +79,11 @@ BASE_FILES_CONFIG = {
     "libraries/AP_HAL_ChibiOS/hwdef/AP6-M4P/defaults.parm": [
         ("M4P+", "libraries/AP_HAL_ChibiOS/hwdef/AP6-M4P+/defaults.parm"),
     ],
+
+    # M6T22 tethered with Vicor BCM bus converter
+    "libraries/AP_HAL_ChibiOS/hwdef/AP6-M6T22/defaults.parm": [
+        ("BCM", "libraries/AP_HAL_ChibiOS/hwdef/AP6-M6T22-bcm/defaults.parm"),
+    ],
 }
 
 # Configuration rules
@@ -325,6 +330,17 @@ RNGFND2_TYPE 10
         "add": """
 # Gripper port as buzzer
 SERVO5_FUNCTION 138
+"""
+    },
+
+    "BCM": {
+        "remove": ["BATT3_MONITOR", "BATT4_MONITOR"],
+        "add": """
+# Tethered (BCM bus converter)
+BATT3_MONITOR 29
+BATT4_MONITOR 29
+BCM_LO_IDX 3
+BCM_HI_IDX 4
 """
     },
 

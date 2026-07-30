@@ -325,7 +325,7 @@ local function start()
                     string.format("BCM: not found on I2C%d addr 0x%02x (%s)",
                                   math.floor(BCM_BUS:get()), math.floor(BCM_ADDR:get()), err))
       -- keep retrying, the BCM is unpowered until the HI side bus comes up
-      return start, 2000
+      return start, 5000
    end
 
    dev:write_register(CMD_CLEAR_FAULTS, 0)

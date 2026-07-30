@@ -118,7 +118,7 @@ local SCALE_TEMP = 1.0    -- READ_TEMPERATURE_1  m=1 R=0
 -- 100kHz rather than the 400kHz the BCM supports: the chassis-mount module is
 -- reached over a signal harness, so keep some margin on bus capacitance.
 local BUS_CLOCK = 100000
-local UPDATE_MS = 200          -- 5Hz, well inside the 5s scripting battery timeout
+local UPDATE_MS = 500          -- 2Hz, well inside the 5s scripting battery timeout
 local FAIL_LIMIT = 5           -- consecutive failed reads before declaring unhealthy
 
 local dev = i2c:get_device(BCM_BUS:get(), BCM_ADDR:get(), BUS_CLOCK, false)

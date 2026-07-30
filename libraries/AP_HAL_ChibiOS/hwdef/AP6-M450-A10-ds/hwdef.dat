@@ -3,6 +3,12 @@ include ../AP6/hwdef.dat
 # define custom Align frame code
 define ALIGN_FRAME ALIGN_AP6_M450_A10_DSH
 
+# Notify PCU CAN LED driver
+define ALIGN_PCU_CAN
+
+# use custom Align Status LED
+define ALIGN_RGB_STATUS_LED
+
 # use flight mode switch for compass calibration
 define FLTMODE_SWITCH_COMPASS_CALIBRATION
 

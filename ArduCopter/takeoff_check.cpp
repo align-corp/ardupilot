@@ -38,19 +38,19 @@ void Copter::takeoff_check()
         return;
     }
 
-    // warn user telem inactive or rpm is inadequate every 5 seconds
+    // warn the user and disarm if telem is inactive or rpm is inadequate for 5 seconds.
     uint32_t now_ms = AP_HAL::millis();
     if (takeoff_check_warning_ms == 0) {
         takeoff_check_warning_ms = now_ms;
     }
     if (now_ms - takeoff_check_warning_ms > 5000) {
         takeoff_check_warning_ms = now_ms;
-        const char* prefix_str = "Takeoff blocked:";
         if (!telem_active) {
-            gcs().send_text(MAV_SEVERITY_CRITICAL, "%s waiting for ESC RPM", prefix_str);
-        } else if (!rpm_adequate) {
-            gcs().send_text(MAV_SEVERITY_CRITICAL, "%s ESC RPM out of range", prefix_str);
+            gcs().send_text(MAV_SEVERITY_CRITICAL, "Disarming: no ESC telemetry");
+        } else {
+            gcs().send_text(MAV_SEVERITY_CRITICAL, "Disarming: ESC RPM out of range");
         }
+        arming.disarm(AP_Arming::Method::TAKEOFFCHECKFAILED);
     }
 #endif
 }

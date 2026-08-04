@@ -80,13 +80,11 @@ local BCM_HI_IDX  = bind_add_param('HI_IDX',  5, 0)
 --[[
   // @Param: BCM_OPTIONS
   // @DisplayName: BCM driver options
-  // @Description: Vicor BCM driver options
-  // @Bitmask: 0:FaultsMarkUnhealthy
+  // @Description: Vicor BCM driver options. No option bits are defined yet, the parameter is reserved for future use.
   // @User: Advanced
 --]]
 local BCM_OPTIONS = bind_add_param('OPTIONS', 6, 0)
-
-local OPTION_FAULT_UNHEALTHY = 0x01
+local _ = BCM_OPTIONS   -- reserved, not read by the driver yet
 
 if BCM_ENABLE:get() == 0 then
    return
@@ -119,7 +117,7 @@ local SCALE_TEMP = 1.0    -- READ_TEMPERATURE_1  m=1 R=0
 -- reached over a signal harness, so keep some margin on bus capacitance.
 local BUS_CLOCK = 100000
 local UPDATE_MS = 500          -- 2Hz, well inside the 5s scripting battery timeout
-local FAIL_LIMIT = 5           -- consecutive failed reads before declaring unhealthy
+local FAIL_LIMIT = 5           -- consecutive failed reads before reporting lost comms
 
 local dev = i2c:get_device(BCM_BUS:get(), BCM_ADDR:get(), BUS_CLOCK, false)
 if not dev then
@@ -201,7 +199,7 @@ local STATUS_WORD_BITS = {
 }
 
 -- STATUS_WORD bits that mean the powertrain is in trouble, as opposed to
--- merely being off or busy. Used for the FaultsMarkUnhealthy option.
+-- merely being off or busy. Sets the severity of the GCS status message.
 local FAULT_MASK = (1<<4) | (1<<3) | (1<<2) | (1<<9) | (1<<10) | (1<<11)
 
 local function status_word_text(sw)
@@ -228,17 +226,21 @@ local warned_lo_idx = false
 local warned_hi_idx = false
 
 --[[
-   Push one set of readings into a scripting battery instance.
+   Push one set of readings into a scripting battery instance. Returns whether
+   the instance took them (false means BATTn_MONITOR is not 29), leaving it to
+   the caller to decide how loudly to complain.
+   The instance is always reported healthy: PMBus faults and loss of
+   communication with the BCM are reported to the GCS, but they must not take
+   the battery monitor itself down.
    consumed_mah and consumed_wh are deliberately left unset (NaN), which makes
    AP_BattMonitor_Scripting integrate them from the current we supply.
 --]]
-local function publish(idx_param, volts, amps, temp, healthy, warned)
-   local idx = math.floor(idx_param:get())
+local function publish(idx, volts, amps, temp)
    if idx <= 0 then
-      return warned
+      return true
    end
    local state = BattMonitorScript_State()
-   state:healthy(healthy)
+   state:healthy(true)
    state:voltage(volts or 0)
    if amps then
       state:current_amps(amps)
@@ -246,69 +248,67 @@ local function publish(idx_param, volts, amps, temp, healthy, warned)
    if temp then
       state:temperature(temp)
    end
-   if not battery:handle_scripting(idx-1, state) and not warned then
-      gcs:send_text(MAV_SEVERITY.ERROR,
-                    string.format("BCM: BATT%d_MONITOR must be 29", idx))
-      return true
-   end
-   return warned
+   return battery:handle_scripting(idx-1, state)
 end
 
 local function update()
-   local hi_enabled = math.floor(BCM_HI_IDX:get()) > 0
+   local lo_idx = math.floor(BCM_LO_IDX:get())
+   local hi_idx = math.floor(BCM_HI_IDX:get())
 
    local vout_raw = read_word(CMD_READ_VOUT)
    local iout_raw = read_word(CMD_READ_IOUT)
    local temp_raw = read_word(CMD_READ_TEMP_1)
    local status   = read_word_raw(CMD_STATUS_WORD)
-   local vin_raw  = hi_enabled and read_word(CMD_READ_VIN) or nil
+   local vin_raw  = (hi_idx > 0) and read_word(CMD_READ_VIN) or nil
+
+   local vout, iout, temp, vin
 
    -- Voltage is the one reading we cannot do without
    if vout_raw == nil or status == nil then
       fail_count = fail_count + 1
-      if fail_count >= FAIL_LIMIT then
-         comms_ok = false
-         if not reported_comms_fail then
-            gcs:send_text(MAV_SEVERITY.ERROR, "BCM: lost PMBus communication")
-            reported_comms_fail = true
+      if fail_count < FAIL_LIMIT then
+         return update, UPDATE_MS
+      end
+      comms_ok = false
+      if not reported_comms_fail then
+         gcs:send_text(MAV_SEVERITY.ERROR, "BCM: lost PMBus communication")
+         reported_comms_fail = true
+      end
+      vout, vin = 0, 0
+   else
+      if not comms_ok then
+         comms_ok = true
+         if reported_comms_fail then
+            gcs:send_text(MAV_SEVERITY.INFO, "BCM: PMBus communication restored")
+            reported_comms_fail = false
          end
-         warned_lo_idx = publish(BCM_LO_IDX, 0, nil, nil, false, warned_lo_idx)
-         warned_hi_idx = publish(BCM_HI_IDX, 0, nil, nil, false, warned_hi_idx)
       end
-      return update, UPDATE_MS
-   end
+      fail_count = 0
 
-   if not comms_ok then
-      comms_ok = true
-      if reported_comms_fail then
-         gcs:send_text(MAV_SEVERITY.INFO, "BCM: PMBus communication restored")
-         reported_comms_fail = false
+      vout = vout_raw * SCALE_VOUT
+      iout = iout_raw and (iout_raw * SCALE_IOUT)
+      temp = temp_raw and (to_signed16(temp_raw) * SCALE_TEMP)
+      vin  = vin_raw  and (vin_raw  * SCALE_VIN) or 0
+
+      -- Report status changes to the GCS as they happen
+      if status ~= last_status_word then
+         local severity = ((status & FAULT_MASK) ~= 0) and MAV_SEVERITY.ERROR or MAV_SEVERITY.INFO
+         gcs:send_text(severity, string.format("BCM: status 0x%04x %s", status, status_word_text(status)))
+         last_status_word = status
       end
    end
-   fail_count = 0
 
-   local vout = vout_raw * SCALE_VOUT
-   local iout = iout_raw and (iout_raw * SCALE_IOUT)
-   local temp = temp_raw and (to_signed16(temp_raw) * SCALE_TEMP)
-   local vin  = vin_raw  and (vin_raw  * SCALE_VIN)
-
-   -- Report status changes to the GCS as they happen
-   if status ~= last_status_word then
-      local severity = ((status & FAULT_MASK) ~= 0) and MAV_SEVERITY.ERROR or MAV_SEVERITY.INFO
-      gcs:send_text(severity, string.format("BCM: status 0x%04x %s", status, status_word_text(status)))
-      last_status_word = status
+   if not publish(lo_idx, vout, iout, temp) and not warned_lo_idx then
+      gcs:send_text(MAV_SEVERITY.ERROR,
+                    string.format("BCM: BATT%d_MONITOR must be 29", lo_idx))
+      warned_lo_idx = true
    end
-
-   local healthy = true
-   if (BCM_OPTIONS:get() & OPTION_FAULT_UNHEALTHY) ~= 0 and (status & FAULT_MASK) ~= 0 then
-      healthy = false
-   end
-
-   warned_lo_idx = publish(BCM_LO_IDX, vout, iout, temp, healthy, warned_lo_idx)
 
    -- The BCM has no READ_IIN, so the HI side gets voltage and temperature only
-   if hi_enabled then
-      warned_hi_idx = publish(BCM_HI_IDX, vin or 0, nil, temp, healthy, warned_hi_idx)
+   if not publish(hi_idx, vin, nil, temp) and not warned_hi_idx then
+      gcs:send_text(MAV_SEVERITY.ERROR,
+                    string.format("BCM: BATT%d_MONITOR must be 29", hi_idx))
+      warned_hi_idx = true
    end
 
    return update, UPDATE_MS

@@ -66,7 +66,7 @@ local BCM_ADDR    = bind_add_param('ADDR',    3, 0x57)
   // @Range: 0 9
   // @User: Standard
 --]]
-local BCM_LO_IDX  = bind_add_param('LO_IDX',  4, 2)
+local BCM_LO_IDX  = bind_add_param('LO_IDX',  4, 3)
 
 --[[
   // @Param: BCM_HI_IDX
@@ -75,12 +75,12 @@ local BCM_LO_IDX  = bind_add_param('LO_IDX',  4, 2)
   // @Range: 0 9
   // @User: Standard
 --]]
-local BCM_HI_IDX  = bind_add_param('HI_IDX',  5, 0)
+local BCM_HI_IDX  = bind_add_param('HI_IDX',  5, 4)
 
 --[[
   // @Param: BCM_OPTIONS
   // @DisplayName: BCM driver options
-  // @Description: Vicor BCM driver options. No option bits are defined yet, the parameter is reserved for future use.
+  // @Description: Vicor BCM driver options.
   // @User: Advanced
 --]]
 local BCM_OPTIONS = bind_add_param('OPTIONS', 6, 0)
@@ -227,13 +227,8 @@ local warned_hi_idx = false
 
 --[[
    Push one set of readings into a scripting battery instance. Returns whether
-   the instance took them (false means BATTn_MONITOR is not 29), leaving it to
-   the caller to decide how loudly to complain.
-   The instance is always reported healthy: PMBus faults and loss of
-   communication with the BCM are reported to the GCS, but they must not take
-   the battery monitor itself down.
-   consumed_mah and consumed_wh are deliberately left unset (NaN), which makes
-   AP_BattMonitor_Scripting integrate them from the current we supply.
+   the instance took them (false means BATTn_MONITOR is not 29)
+   The instance is always reported healthy
 --]]
 local function publish(idx, volts, amps, temp)
    if idx <= 0 then

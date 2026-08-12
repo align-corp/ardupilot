@@ -1,0 +1,9 @@
+# FUNCTION 10/11 = DroneCAN_HARDPOINT_0/_1: FCU drives these with
+# uavcan.equipment.hardpoint.Command id 0 and 1. PIN = GPIO() in hwdef.
+RELAY1_FUNCTION 10
+RELAY1_PIN 1
+RELAY2_FUNCTION 11
+RELAY2_PIN 2
+
+# OUT1..OUT4 default to RCIN1..RCIN4, commanded over DroneCAN.
+OUT_RATE 50

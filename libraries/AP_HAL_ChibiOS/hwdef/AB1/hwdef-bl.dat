@@ -1,4 +1,4 @@
-# hw definition file Align L431 CAN node
+# hw definition file for the Align AB1 (M4T40 PCU) bootloader
 
 # MCU class and specific type
 MCU STM32L431 STM32L431xx
@@ -7,7 +7,7 @@ MCU STM32L431 STM32L431xx
 OSCILLATOR_HZ 24000000
 
 # board ID for firmware load
-APJ_BOARD_ID 155
+APJ_BOARD_ID 156
 
 # setup build for a peripheral firmware
 env AP_PERIPH 1
@@ -19,13 +19,17 @@ FLASH_SIZE_KB 256
 # reserve some space for params
 APP_START_OFFSET_KB 4
 
-# LED
+# LED. PLACEHOLDER: the PCU schematic has no MCU driven LED at all, the
+# red LED1 is wired to its own net and never reaches the MCU. PB12 is
+# just a free pin, picked because it is the ACT LED on AS1. Check the
+# PCB and fix the pin and HAL_LED_ON here and in hwdef.dat before relying
+# on the blink codes.
 PB12 LED_BOOTLOADER OUTPUT LOW
 define HAL_LED_ON 1
 
 # CAN
-PA11 CAN1_RX CAN1
-PA12 CAN1_TX CAN1
+PB8 CAN1_RX CAN1
+PB9 CAN1_TX CAN1
 CAN_ORDER 1
 
 # use a small bootloader timeout
@@ -48,4 +52,3 @@ define HAL_DISABLE_LOOP_DELAY
 # debugger support
 PA13 JTMS-SWDIO SWD
 PA14 JTCK-SWCLK SWD
-

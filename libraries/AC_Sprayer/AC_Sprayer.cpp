@@ -231,7 +231,12 @@ void AC_Sprayer::update()
 void AC_Sprayer::update_copter(int32_t terrain_altitude_cm)
 {
     // update altitude
-    _current_altitude = terrain_altitude_cm;
+    if (terrain_altitude_cm <= 0) {
+        // Protect against negative terrain altitude (= crash lol)
+        _current_altitude = INT32_MAX;
+    } else {
+        _current_altitude = terrain_altitude_cm;
+    }
 
     // run default update function without alititude enable
     update();

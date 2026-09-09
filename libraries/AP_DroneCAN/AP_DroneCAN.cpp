@@ -950,7 +950,8 @@ void AP_DroneCAN::SRV_push_servos()
         if (SRV_Channels::channel_function(i) >= SRV_Channel::k_none) {
             _SRV_conf[i].pulse = SRV_Channels::srv_channel(i)->get_output_pwm();
             _SRV_conf[i].esc_pending = true;
-            _SRV_conf[i].servo_pending = true;
+            // a zero pulse means the channel has no output, so set pending as false 
+            _SRV_conf[i].servo_pending = _SRV_conf[i].pulse != 0;
         }
     }
 

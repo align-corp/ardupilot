@@ -10106,6 +10106,115 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         self.progress("Sprayer OK")
 
+    def SprayerAltMin(self):
+        """Test sprayer minimum altitude."""
+        self.context_push()
+
+        rc_ch = 9
+        pump_ch = 5
+        spinner_ch = 6
+        pump_ch_min = 1050
+        pump_ch_trim = 1520
+        pump_ch_max = 1950
+        spinner_ch_min = 975
+        spinner_ch_trim = 1510
+        spinner_ch_max = 1975
+        spinner_ch_set = 1300
+
+        # a non-zero SPRAY_PUMP_MIN gives the pump a distinctive output while
+        # hovering, so we can tell spraying from not-spraying without having
+        # to fly forwards:
+        pump_min_pct = 20
+        pump_ch_spraying = int(pump_ch_min + (pump_min_pct / 100.0) * (pump_ch_max - pump_ch_min))
+
+        self.set_parameters({
+            "SPRAY_ENABLE": 1,
+
+            "SERVO%u_FUNCTION" % pump_ch: 22,
+            "SERVO%u_MIN" % pump_ch: pump_ch_min,
+            "SERVO%u_TRIM" % pump_ch: pump_ch_trim,
+            "SERVO%u_MAX" % pump_ch: pump_ch_max,
+
+            "SERVO%u_FUNCTION" % spinner_ch: 23,
+            "SERVO%u_MIN" % spinner_ch: spinner_ch_min,
+            "SERVO%u_TRIM" % spinner_ch: spinner_ch_trim,
+            "SERVO%u_MAX" % spinner_ch: spinner_ch_max,
+
+            "SIM_SPR_ENABLE": 1,
+            "SIM_SPR_PUMP": pump_ch,
+            "SIM_SPR_SPIN": spinner_ch,
+
+            "RC%u_OPTION" % rc_ch: 15,
+        })
+        # the altitude the sprayer checks comes from the rangefinder:
+        self.set_analog_rangefinder_parameters()
+
+        self.reboot_sitl()
+
+        self.set_parameters({
+            "SPRAY_SPINNER": spinner_ch_set,
+            "SPRAY_SPIN_DEL": 0,
+            "SPRAY_PUMP_MIN": pump_min_pct,
+            # take the speed condition out of the picture, we only want to
+            # exercise the altitude one:
+            "SPRAY_SPEED_MIN": 0,
+            "SPRAY_ALT_MIN": 500,
+        })
+
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.takeoff(10, mode='LOITER')
+
+        # the sprayer's altitude comes from the rangefinder, so check the
+        # rangefinder is working before we hold the sprayer responsible:
+        self.wait_rangefinder_distance(8, 16)
+
+        self.progress("Enabling sprayer")
+        self.set_rc(rc_ch, 2000)
+
+        self.start_subtest("Spraying while above SPRAY_ALT_MIN")
+        self.wait_servo_channel_value(pump_ch, pump_ch_spraying, timeout=10)
+        self.wait_servo_channel_value(spinner_ch, spinner_ch_set, timeout=10)
+
+        self.start_subtest("Raising SPRAY_ALT_MIN above the vehicle stops spraying")
+        self.set_parameter("SPRAY_ALT_MIN", 2000)
+        self.wait_servo_channel_value(pump_ch, pump_ch_min, timeout=10)
+        self.wait_servo_channel_value(spinner_ch, spinner_ch_min, timeout=10)
+
+        self.start_subtest("Lowering SPRAY_ALT_MIN below the vehicle resumes spraying")
+        self.set_parameter("SPRAY_ALT_MIN", 700)
+        self.wait_servo_channel_value(pump_ch, pump_ch_spraying, timeout=10)
+
+        # note that we do not use setAlt() here: it returns as soon as the
+        # altitude enters its window, which would leave us hovering right on
+        # the SPRAY_ALT_MIN threshold.  Aim well clear of it in both
+        # directions instead, and stay above 0 so that the sprayer doesn't
+        # take the "no rangefinder" path.
+        self.start_subtest("Descending below SPRAY_ALT_MIN stops spraying")
+        self.set_rc(3, 1300)
+        self.wait_altitude(3, 5, relative=True, timeout=60)
+        self.hover()
+        self.wait_servo_channel_value(pump_ch, pump_ch_min, timeout=10)
+        self.wait_servo_channel_value(spinner_ch, spinner_ch_min, timeout=10)
+
+        self.start_subtest("Climbing back above SPRAY_ALT_MIN resumes spraying")
+        self.set_rc(3, 1800)
+        self.wait_altitude(12, 25, relative=True, timeout=60)
+        self.hover()
+        self.wait_servo_channel_value(pump_ch, pump_ch_spraying, timeout=10)
+
+        self.progress("Turning sprayer off")
+        self.set_rc(rc_ch, 1000)
+        self.wait_servo_channel_value(pump_ch, pump_ch_min, timeout=10)
+
+        self.do_RTL()
+
+        self.context_pop()
+
+        self.reboot_sitl()
+
+        self.progress("SprayerAltMin OK")
+
     def tests1a(self):
         '''return list of all tests'''
         ret = super(AutoTestCopter, self).tests()  # about 5 mins and ~20 initial tests from autotest/vehicle_test_suite.py
@@ -10781,6 +10890,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.WatchAlts,
             self.GuidedEKFLaneChange,
             self.Sprayer,
+            self.SprayerAltMin,
             self.EK3_RNG_USE_HGT,
             self.TerrainDBPreArm,
             self.ThrottleGainBoost,

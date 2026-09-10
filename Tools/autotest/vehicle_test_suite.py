@@ -13670,7 +13670,13 @@ switch value'''
                     continue
             # terminate the connection, or it may still be in progress the next time an FTP is attempted:
             mavproxy.send("ftp cancel\n")
-            mavproxy.expect("Terminated session")
+            try:
+                mavproxy.expect("Terminated session", timeout=5)
+            except pexpect.TIMEOUT:
+                # MAVProxy terminates the session itself once the transfer
+                # completes, so "ftp cancel" often has nothing left to cancel
+                # and says nothing.  Either way the session is closed.
+                pass
         except Exception as e:
             self.print_exception_caught(e)
             ex = e

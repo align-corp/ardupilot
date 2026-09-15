@@ -42,6 +42,9 @@ local RNG_ROTATION_DOWN = 25
 local VOTE_COUNT_MAX = 100 -- when a vote counter reaches this number (i.e. 10sec) source may be switched
 local MODE_LOITER = 5
 local MODE_LAND = 9
+local AUX_FUNC_SURFACE_TRACKING = 75 -- RCx_OPTION 75 (Surface Tracking)
+local SURFTRAK_DOWN = 0   -- aux switch low: track the ground
+local SURFTRAK_NONE = 1   -- aux switch middle: surface tracking disabled
 
 -- variables
 local source_prev = EKF_SRC_OPTICALFLOW -- opticalflow for takeoff
@@ -49,6 +52,7 @@ local gps_vs_opticalflow_vote = 0       -- vote counter for GPS vs optical (-100
 local optical_flow_dangerous_count = 0  -- count of dangerous optical flow quality
 local opticalflow_state_dangerous = false
 local led_on_count = 0
+local surftrak_prev = -1                -- last surface tracking position sent (-1 = never sent)
 local last_send_ekf_source = uint32_t(0)
 
 local PARAM_TABLE_KEY = 81
@@ -116,7 +120,10 @@ function update()
                 ahrs:set_posvelyaw_source_set(source_prev) -- switch to GPS
                 gcs:send_text(0, "FLGP disabled: switched to Source " .. string.format("%d", source_prev + 1))
             end
+            set_surface_tracking(SURFTRAK_NONE)
             return update, 100
+        else
+            set_surface_tracking(SURFTRAK_DOWN)
         end
     end
 
@@ -350,6 +357,15 @@ function update()
         -- end
     end
     return update, 100
+end
+
+-- set surface tracking through the aux function, only when it changes
+function set_surface_tracking(switch_pos)
+    if surftrak_prev == switch_pos then
+        return
+    end
+    surftrak_prev = switch_pos
+    rc:run_aux_function(AUX_FUNC_SURFACE_TRACKING, switch_pos)
 end
 
 -- send ekf source to GCS at 1 Hz or when changed 

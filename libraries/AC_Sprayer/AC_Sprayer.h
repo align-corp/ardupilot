@@ -24,7 +24,8 @@
 #define AC_SPRAYER_DEFAULT_PUMP_RATE        10.0f   ///< default quantity of spray per meter travelled
 #define AC_SPRAYER_DEFAULT_PUMP_MIN         0       ///< default minimum pump speed expressed as a percentage from 0 to 100
 #define AC_SPRAYER_DEFAULT_SPINNER_PWM      1300    ///< default speed of spinner (higher means spray is throw further horizontally
-#define AC_SPRAYER_DEFAULT_SPINNER_DELAY_PWM 100
+#define AC_SPRAYER_DEFAULT_SPIN_LOW         0       ///< default low spinner speed held after the pump stops (0: spinner stops with the pump)
+#define AC_SPRAYER_DEFAULT_SPIN_DOWN_SEC    0       ///< default time in seconds the spinner is held at the spin down pwm after the pump stops
 #define AC_SPRAYER_DEFAULT_MIN_ALT          0
 #define AC_SPRAYER_DEFAULT_SPEED_MIN        100     ///< we must be travelling at least 1m/s to begin spraying
 #define AC_SPRAYER_DEFAULT_TURN_ON_DELAY    100     ///< delay between when we reach the minimum speed and we begin spraying.  This reduces the likelihood of constantly turning on/off the pump
@@ -79,7 +80,15 @@ public:
     bool spraying() const { return _flags.spraying; }
 
     /// test_pump - set to true to turn on pump as if travelling at 1m/s as a test
-    void test_pump(bool true_false) { _flags.testing = true_false; }
+    void test_pump(bool true_false) {
+        _flags.testing = true_false;
+        if (true_false) {
+            // a freshly requested test clears any previous timeout, so that switching
+            // the sprayer off and straight back on always restarts the test
+            _flags.test_timed_out = false;
+            _test_start_ms = 0;
+        }
+    }
 
     /// To-Do: add function to decode pilot input from channel 6 tuning knob
 
@@ -105,7 +114,8 @@ private:
     AP_Float        _pump_pct_1ms;          ///< desired pump rate (expressed as a percentage of top rate) when travelling at 1m/s
     AP_Int8         _pump_min_pct;          ///< minimum pump rate (expressed as a percentage from 0 to 100)
     AP_Int16        _spinner_pwm;           ///< pwm rate of spinner
-    AP_Int16        _spinner_delay_pwm;     ///< delay to prevent spinner malfunction
+    AP_Int16        _spin_low;              ///< low spinner speed held after the pump stops, same percentage/pwm rule as _spinner_pwm (0: stop with the pump)
+    AP_Int16        _spin_down_sec;         ///< time in seconds the spinner is held at _spin_low after the pump stops (0: stop with the pump)
     AP_Float        _speed_min;             ///< minimum speed in cm/s above which the sprayer will be started
     AP_Int16        _min_alt;               ///< minimum altitude in cm at which we will begin spraying
     AP_Int8         _test_timeout_s;        ///< time in seconds after which a ground test of the pump is stopped, 0 to disable
@@ -123,6 +133,7 @@ private:
         uint8_t running     : 1;            ///< 1 if we are permitted to run sprayer
         uint8_t spray_req   : 1;            ///< 1 if spraying is currently requested (used to detect start/stop transitions for the pump/spinner delays)
         uint8_t spinner_on  : 1;            ///< 1 if the spinner is currently commanded on (latched so start/stop delays behave across quick start/stop toggles)
+        uint8_t test_timed_out : 1;         ///< 1 if a ground test hit its timeout and spraying must stay off until the sprayer is switched off and on again
     } _flags;
 
     // internal variables
@@ -139,9 +150,11 @@ private:
     uint32_t _spray_start_ms = 0;           ///< time at which spraying was last requested (used for the start delay between pump and spinner)
     uint32_t _spray_stop_ms = 0;            ///< time at which spraying was last stopped (used for the stop delay between pump and spinner)
     float _last_pump_pos = 0;               ///< last commanded pump servo position, held during the stop delay tail
+    uint32_t _spinner_off_ms = 0;           ///< time at which the spinner was commanded off, 0 if the spin down tail is not running
 
     void stop_spraying();
-    void stop_spinner();                    ///< turn off (or gradually slow) the spinner
+    void stop_spinner();                    ///< turn the spinner off immediately
+    void drive_spinner(int16_t speed);      ///< drive the spinner, values at or below AC_SPRAYER_SPINNER_PCT_MAX are a percentage of the servo range, above that a raw pwm
 
     // flow control - closed loop control of pump output from a flow meter
     bool flow_control_active() const;

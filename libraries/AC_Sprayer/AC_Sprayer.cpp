@@ -53,12 +53,12 @@ const AP_Param::GroupInfo AC_Sprayer::var_info[] = {
     AP_GROUPINFO("PUMP_MIN",   4, AC_Sprayer, _pump_min_pct, AC_SPRAYER_DEFAULT_PUMP_MIN),
 
     // @Param: SPIN_DEL
-    // @DisplayName: Spinner delay
-    // @Description: Spinner's delay in PWM (a higher rate will disperse the spray over a wider area horizontally)
-    // @Units: ms
-    // @Range: 1000 2000
+    // @DisplayName: Spinner spin down time
+    // @Description: Time the spinner is held at SPIN_LOW after the pump stops, before it is turned off. Set to 0 to stop the spinner together with the pump
+    // @Units: s
+    // @Range: 0 60
     // @User: Standard
-    AP_GROUPINFO("SPIN_DEL",   5, AC_Sprayer, _spinner_delay_pwm, AC_SPRAYER_DEFAULT_SPINNER_DELAY_PWM),
+    AP_GROUPINFO("SPIN_DEL",   5, AC_Sprayer, _spin_down_sec, AC_SPRAYER_DEFAULT_SPIN_DOWN_SEC),
 
     // @Param: ALT_MIN
     // @DisplayName: Sprayer minimum altitude
@@ -118,6 +118,13 @@ const AP_Param::GroupInfo AC_Sprayer::var_info[] = {
     // @Range: -5000 5000
     // @User: Standard
     AP_GROUPINFO("STOP_MS",  13, AC_Sprayer, _stop_delay_ms, 0),
+
+    // @Param: SPIN_LOW
+    // @DisplayName: Spinner low speed
+    // @Description: Low spinner speed held for SPIN_DEL seconds after the pump stops, before the spinner is turned off. Values above 100 are used directly as PWM, values of 100 or below are a percentage of the servo output range (SERVOx_MIN to SERVOx_MAX), the same rule as SPINNER. Set to 0 to stop the spinner together with the pump
+    // @Range: 0 2000
+    // @User: Standard
+    AP_GROUPINFO("SPIN_LOW", 14, AC_Sprayer, _spin_low, AC_SPRAYER_DEFAULT_SPIN_LOW),
 
     AP_GROUPEND
 };
@@ -189,23 +196,20 @@ void AC_Sprayer::stop_spraying()
 
 void AC_Sprayer::stop_spinner()
 {
-    // if no delay is set then turn off spinner immediately
-    if (_spinner_delay_pwm == 0) {
-        SRV_Channels::set_output_limit(_spinner_function, SRV_Channel::Limit::MIN);
-        return;
-    }
+    SRV_Channels::set_output_limit(_spinner_function, SRV_Channel::Limit::MIN);
+    _spinner_off_ms = 0;
+}
 
-    // some delay is set, so reduce spinner speed gradually
-    SRV_Channel* chan = SRV_Channels::get_channel_for(_spinner_function);
-
-    // prevent segmentation fault if channel is not set
-    if (chan == nullptr) {
-        return;
+/// drive_spinner - command the spinner to the given speed.  Values at or below
+/// AC_SPRAYER_SPINNER_PCT_MAX are a percentage of the servo range (SERVOx_MIN to
+/// SERVOx_MAX), above that the value is used directly as a pwm
+void AC_Sprayer::drive_spinner(int16_t speed)
+{
+    if (speed <= AC_SPRAYER_SPINNER_PCT_MAX) {
+        SRV_Channels::move_servo(_spinner_function, speed, 0, AC_SPRAYER_SPINNER_PCT_MAX);
+    } else {
+        SRV_Channels::set_output_pwm(_spinner_function, speed);
     }
-    uint16_t spinner_pwm_now = chan->get_output_pwm();
-    uint16_t spinner_pwm_min = chan->get_output_min();
-    uint16_t spinner_pwm_set = MAX(spinner_pwm_now - _spinner_delay_pwm, spinner_pwm_min);
-    chan->set_output_pwm(spinner_pwm_set);
 }
 
 /// update - adjust pwm of servo controlling pump speed according to the desired quantity and our horizontal speed
@@ -290,11 +294,26 @@ void AC_Sprayer::update()
             _test_start_ms = now;
         } else if ((now - _test_start_ms) > test_timeout_ms) {
             // timed out, stop the test
-            test_pump(false);
+            _flags.testing = false;
+            _flags.test_timed_out = true;
             should_be_spraying = false;
         }
     } else {
         _test_start_ms = 0;
+    }
+
+    // a ground test that timed out must stay stopped until the sprayer switch is turned off and
+    // on again.  Clearing the testing flag alone is not enough: on the ground the normal spray
+    // conditions can already both be true (SPEED_MIN of zero makes the speed check pass, and an
+    // unhealthy rangefinder reports the altitude as INT32_MAX), which would otherwise restart
+    // the pump on the very next iteration.  Only the switch going low releases the latch, so
+    // that arming can never start the pump on its own
+    if (_flags.test_timed_out) {
+        if (!_flags.running) {
+            _flags.test_timed_out = false;
+        } else {
+            should_be_spraying = false;
+        }
     }
 
     // spraying also requires the pilot/GCS to have requested it via run(),
@@ -367,14 +386,20 @@ void AC_Sprayer::update()
 
     // drive the spinner
     if (spinner_on) {
-        // spinner values of 100 or below are a percentage of the servo range (SERVOx_MIN to SERVOx_MAX), above that a raw pwm
-        if (_spinner_pwm <= AC_SPRAYER_SPINNER_PCT_MAX) {
-            SRV_Channels::move_servo(_spinner_function, _spinner_pwm, 0, AC_SPRAYER_SPINNER_PCT_MAX);
-        } else {
-            SRV_Channels::set_output_pwm(_spinner_function, _spinner_pwm);
-        }
+        drive_spinner(_spinner_pwm);
+        _spinner_off_ms = 0;
     } else {
-        stop_spinner();
+        // the spinner has just been commanded off, start the spin down tail
+        if (_flags.spinner_on) {
+            _spinner_off_ms = now;
+        }
+        // hold the spinner at SPIN_LOW for SPIN_DEL seconds, then turn it off
+        const uint32_t spin_down_ms = _spin_down_sec > 0 ? uint32_t(_spin_down_sec) * 1000 : 0;
+        if (_spin_low > 0 && _spinner_off_ms != 0 && (now - _spinner_off_ms) < spin_down_ms) {
+            drive_spinner(_spin_low);
+        } else {
+            stop_spinner();
+        }
     }
 
     _flags.spraying = pump_on;

@@ -28,6 +28,8 @@
 #define AC_SPRAYER_DEFAULT_SHUT_OFF_DELAY   1000    ///< shut-off delay in milli seconds.  This reduces the likelihood of constantly turning on/off the pump
 #define AC_SPRAYER_DEFAULT_ALT_TURN_ON_DELAY 100    ///< delay before spraying starts after reaching minimum altitude (ms)
 #define AC_SPRAYER_DEFAULT_ALT_SHUT_OFF_DELAY 2500  ///< delay before spraying stops after going below minimum altitude (ms)
+#define AC_SPRAYER_DEFAULT_TEST_TIMEOUT     20      ///< default time in seconds after which a ground test of the pump is stopped
+#define AC_SPRAYER_SPINNER_OFF_PWM          1000    ///< spinner pwm at or below which the spinner is considered to be off
 
 #ifndef HAL_SPRAYER_ENABLED
 #define HAL_SPRAYER_ENABLED 1
@@ -80,6 +82,7 @@ private:
     AP_Int16        _spinner_delay_pwm;     ///< delay to prevent spinner malfunction
     AP_Float        _speed_min;             ///< minimum speed in cm/s above which the sprayer will be started
     AP_Int16        _min_alt;               ///< minimum altitude in cm at which we will begin spraying
+    AP_Int8         _test_timeout_s;        ///< time in seconds after which a ground test of the pump is stopped, 0 to disable
 
     /// flag bitmask
     struct sprayer_flags_type {
@@ -96,6 +99,7 @@ private:
     int32_t _current_altitude = 0;          ///< current altitude in cm, no use if == 0
     bool _altitude_ok = false;              ///< true if we are above minimum altitude
     bool _speed_ok = false;                 ///< true if we are above minimum speed
+    uint32_t _test_start_ms = 0;            ///< time at which the current ground test of the pump started, 0 if not timing a test
 
     void stop_spraying();
 };

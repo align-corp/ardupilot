@@ -62,10 +62,18 @@ const AP_Param::GroupInfo AC_Sprayer::var_info[] = {
     // @Param: ALT_MIN
     // @DisplayName: Sprayer minimum altitude
     // @Description: Minimum altitude in cm at which we will begin spraying
-    // @Units: %
+    // @Units: cm
     // @Range: 0 500
     // @User: Standard
     AP_GROUPINFO("ALT_MIN",   6, AC_Sprayer, _min_alt, AC_SPRAYER_DEFAULT_MIN_ALT),
+
+    // @Param: TIMEOUT
+    // @DisplayName: Sprayer test timeout
+    // @Description: When testing the sprayer (vehicle disarmed) the pump and spinner will be stopped after this time.  The test switch must be toggled off and on again to restart the test.  Set to 0 to disable the timeout
+    // @Units: s
+    // @Range: 0 127
+    // @User: Standard
+    AP_GROUPINFO("TIMEOUT",   7, AC_Sprayer, _test_timeout_s, AC_SPRAYER_DEFAULT_TEST_TIMEOUT),
 
     AP_GROUPEND
 };
@@ -213,6 +221,20 @@ void AC_Sprayer::update()
     if (_flags.testing) {
         ground_speed = 100.0f;
         should_be_spraying = true;
+
+        // stop the test after the timeout. Disabled when set to zero or when spinner is not driven
+        const uint32_t test_timeout_ms = _test_timeout_s > 0 ? uint32_t(_test_timeout_s) * 1000 : 0;
+        if (test_timeout_ms == 0 || _spinner_pwm <= AC_SPRAYER_SPINNER_OFF_PWM) {
+            _test_start_ms = 0;
+        } else if (_test_start_ms == 0) {
+            _test_start_ms = now;
+        } else if ((now - _test_start_ms) > test_timeout_ms) {
+            // timed out, stop the test
+            test_pump(false);
+            should_be_spraying = false;
+        }
+    } else {
+        _test_start_ms = 0;
     }
 
     // if spraying or testing update the pump servo position

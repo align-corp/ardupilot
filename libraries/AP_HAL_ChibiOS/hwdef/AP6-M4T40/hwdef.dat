@@ -1,10 +1,10 @@
 include ../AP6/hwdef.dat
 
 # use PWM pins for ADC
-undef PB1 # PWM 5
-undef PB0 # PWM 6
-undef PA3 # RPM
-undef PC0 # current
+undef PB1 # PWM 5, PIN 5
+undef PB0 # PWM 6, PIN 9
+undef PA3 # RPM, PIN 15
+undef PC0 # current, PIN 10
 PB1 LOAD_CELL1 ADC1 SCALE(1)
 PB0 LOAD_CELL2 ADC1 SCALE(1)
 PA3 LOAD_CELL3 ADC1 SCALE(1)

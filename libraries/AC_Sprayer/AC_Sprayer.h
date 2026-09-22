@@ -154,6 +154,13 @@ private:
 
     void stop_spraying();
     void stop_spinner();                    ///< turn the spinner off immediately
+
+    /// spinner_speed_off - true if the given spinner speed leaves the spinner un-driven.  Values at or
+    /// below AC_SPRAYER_SPINNER_PCT_MAX are a percentage of the servo range and above that a raw pwm,
+    /// so which value means "off" depends on the mode
+    static bool spinner_speed_off(int16_t speed) {
+        return speed <= AC_SPRAYER_SPINNER_PCT_MAX ? speed <= 0 : speed <= AC_SPRAYER_SPINNER_OFF_PWM;
+    }
     void drive_spinner(int16_t speed);      ///< drive the spinner, values at or below AC_SPRAYER_SPINNER_PCT_MAX are a percentage of the servo range, above that a raw pwm
 
     // flow control - closed loop control of pump output from a flow meter

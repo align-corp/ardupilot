@@ -282,13 +282,9 @@ void AC_Sprayer::update()
         ground_speed = 100.0f;
         should_be_spraying = true;
 
-        // stop the test after the timeout. Disabled when set to zero or when spinner is not driven.
-        // SPRAY_SPINNER is a percentage of the servo range at or below AC_SPRAYER_SPINNER_PCT_MAX
-        // and a raw pwm above it, so which value means "off" depends on the mode
+        // stop the test after the timeout. Disabled when set to zero or when spinner is not driven
         const uint32_t test_timeout_ms = _test_timeout_s > 0 ? uint32_t(_test_timeout_s) * 1000 : 0;
-        const bool spinner_off = _spinner_pwm <= AC_SPRAYER_SPINNER_PCT_MAX ? _spinner_pwm <= 0
-                                                                            : _spinner_pwm <= AC_SPRAYER_SPINNER_OFF_PWM;
-        if (test_timeout_ms == 0 || spinner_off) {
+        if (test_timeout_ms == 0 || spinner_speed_off(_spinner_pwm)) {
             _test_start_ms = 0;
         } else if (_test_start_ms == 0) {
             _test_start_ms = now;
@@ -393,9 +389,11 @@ void AC_Sprayer::update()
         if (_flags.spinner_on) {
             _spinner_off_ms = now;
         }
-        // hold the spinner at SPIN_LOW for SPIN_DEL seconds, then turn it off
+        // hold the spinner at SPIN_LOW for SPIN_DEL seconds, then turn it off.  There is nothing to
+        // spin down if the spinner is not driven in the first place
         const uint32_t spin_down_ms = _spin_down_sec > 0 ? uint32_t(_spin_down_sec) * 1000 : 0;
-        if (_spin_low > 0 && _spinner_off_ms != 0 && (now - _spinner_off_ms) < spin_down_ms) {
+        if (!spinner_speed_off(_spinner_pwm) && !spinner_speed_off(_spin_low) &&
+            _spinner_off_ms != 0 && (now - _spinner_off_ms) < spin_down_ms) {
             drive_spinner(_spin_low);
         } else {
             stop_spinner();

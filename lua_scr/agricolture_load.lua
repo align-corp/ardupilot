@@ -3,7 +3,7 @@
 
 -- user constants
 local MILLIS_UPDATE = 1000
-local LOAD_PINS = {5, 9, 15, 10} -- analog pins num
+local LOAD_PINS = {10, 11, 12, 13} -- analog pins num
 local NUM_CELLS = #LOAD_PINS
 
 -- parameters
@@ -26,7 +26,7 @@ assert(param:add_table(PARAM_TABLE_KEY, PARAM_TABLE_PREFIX, 1 + 2 * NUM_CELLS), 
   // @Range: 0 9
   // @User: Standard
 --]]
-local LOAD_BATT_IDX = bind_add_param('_BATT_IDX', 1, 0)
+local LOAD_BATT_IDX = bind_add_param('_BATT_IDX', 1, 3)
 
 -- per cell offset and scale: weight = (voltage - LOADn_OFFSET) * LOADn_SCALE
 local LOAD_OFFSET = {}
@@ -46,7 +46,7 @@ for i = 1, NUM_CELLS do
       // @Description: Weight per volt used to convert load cell n voltage to weight
       // @User: Standard
     --]]
-    LOAD_SCALE[i] = bind_add_param(string.format('%u_SCALE', i), 2 * i + 1, 1)
+    LOAD_SCALE[i] = bind_add_param(string.format('%u_SCALE', i), 2 * i + 1, 10000) --TODO: add default scale
 end
 
 -- setup analog channels, one per load cell

@@ -62,20 +62,32 @@ define HAL_CAN_POOL_SIZE 6000
 # UART
 SERIAL_ORDER USART1 USART2
 
-# USART1 for debug
-PB6  USART1_TX USART1 SPEED_HIGH
-PB7  USART1_RX USART1 SPEED_HIGH
+# USART1 for debug. NODMA on both: L431 has 7 DMA1 channels and the ADC, both
+# timers and both uarts want 6 of them, which left USART2_RX - the only receive
+# path that actually carries data on this board - unresolved. A console does not
+# need DMA, and the lidar never transmits, so hand the channels to the lidar rx.
+PB6  USART1_TX USART1 SPEED_HIGH NODMA
+PB7  USART1_RX USART1 SPEED_HIGH NODMA
 
-# USART2 for lidar
-PA2 USART2_TX USART2 SPEED_HIGH
+# USART2 for lidar, rx is the one that matters
+PA2 USART2_TX USART2 SPEED_HIGH NODMA
 PA3 USART2_RX USART2 SPEED_HIGH
 define HAL_PERIPH_ENABLE_RANGEFINDER
 define AP_PERIPH_RANGEFINDER_PORT_DEFAULT 1
+# AP_RangeFinder_config.h gates the Align drivers on BOARD_FLASH_SIZE > 1024,
+# so on this 256K L431 the RDR01 backend is compiled out unless asked for.
+# Without it RNGFND1_TYPE 42 still reads back as 42 and init() still opens the
+# uart, but no backend is created and nothing is ever published.
+define AP_RANGEFINDER_ALIGN_ENABLED 1
 
 # PWM
-PA8   TIM1_CH1  TIM1 PWM(1) GPIO(50) # Nozzle
-PA9   TIM1_CH2  TIM1 PWM(2) GPIO(51) # Reserved
-PA10  TIM1_CH3  TIM1 PWM(3) GPIO(52) # Reserved
+# NODMA on the TIM1 group: TIM1_UP and USART2_RX both have exactly one
+# possible channel on the L431 (DMA1 ch6, see STM32L431xx.py) and TIM1 was
+# winning it, leaving the lidar receive path with no DMA at all. These three
+# are plain PWM and need none; the WS2812 on TIM2 keeps its own channel.
+PA8   TIM1_CH1  TIM1 PWM(1) GPIO(50) NODMA # Nozzle
+PA9   TIM1_CH2  TIM1 PWM(2) GPIO(51) NODMA # Reserved
+PA10  TIM1_CH3  TIM1 PWM(3) GPIO(52) NODMA # Reserved
 PA5   TIM2_CH1  TIM2 PWM(4) GPIO(53) # WS2812
 define HAL_PERIPH_ENABLE_RC_OUT
 define HAL_PERIPH_ENABLE_NOTIFY
@@ -88,6 +100,10 @@ define HAL_USE_ADC TRUE
 define STM32_ADC_USE_ADC1 TRUE
 PA1 BATT_VOLTAGE_SENS  ADC1 SCALE(1)
 define HAL_BATT_MONITOR_DEFAULT 24
+# same story as the rangefinder: AP_BattMonitor_config.h gates FuelLevel_Analog
+# on BOARD_FLASH_SIZE > 1024, so num_instances() stays 0 and can_battery_update()
+# has nothing to send
+define AP_BATTERY_FUELLEVEL_ANALOG_ENABLED 1
 
 # allow for reboot command for faster development
 define HAL_PERIPH_LISTEN_FOR_SERIAL_UART_REBOOT_CMD_PORT 0

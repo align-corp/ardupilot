@@ -79,15 +79,9 @@ PA11 TIM1_CH4 TIM1 PWM(4) GPIO(53) # Pump, CN11 + CN12
 define HAL_PERIPH_ENABLE_RC_OUT
 
 # Relay outputs: enable lines for the two lamp rails. AP_Periph maps
-# uavcan.equipment.hardpoint.Command id 0..15 onto RELAYn_FUNCTION
-# DroneCAN_HARDPOINT_0 (10) .. DroneCAN_HARDPOINT_15 (25).
-#
-# The two rails have opposite enable polarity, so they get opposite idle
-# levels here. Both start in the lamp-off state:
-#   IR_LED_EN -> U1 MP4423C EN/SYNC, active HIGH (no pulldown on the board)
-#   LED_EN    -> U8+U9 TPS16530 /EN, active LOW (100K pullup R28 to 3.3V)
-PB3 IR_LED_EN OUTPUT LOW  GPIO(1) # 100W IR LED on CN5
-PB1 LED_EN    OUTPUT HIGH GPIO(2) # 80W LED on CN6+CN7
+# uavcan.equipment.hardpoint.Command id 0..15 onto RELAYn_FUNCTION 10..25
+PB1 LED_EN    OUTPUT HIGH GPIO(1) # 80W LED, HIGH OFF
+PB3 IR_LED_EN OUTPUT LOW  GPIO(2) # 100W IR LED, LOW OFF 
 define HAL_PERIPH_ENABLE_RELAY
 # AP_Periph builds default this to 0, and AP_Periph.h errors without it
 define AP_RELAY_ENABLED 1

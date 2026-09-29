@@ -1,7 +1,7 @@
-include ../AP7/hwdef.dat
+include ../AG1/hwdef.dat
 
 # define custom Align frame code
-define ALIGN_FRAME ALIGN_AP7_M4T40
+define ALIGN_FRAME ALIGN_AG1_MT40
 
 # decrease arming delay
 define ARMING_DELAY_SEC 0.5f
@@ -10,7 +10,7 @@ define ARMING_DELAY_SEC 0.5f
 define DEFAULT_SERIAL1_BAUD 115
 
 # 360 obstacle radar on Serial 2. The protocol (Lidar360) comes from
-# AP7/hwdef.dat, only the baud rate is airframe specific.
+# AG1/hwdef.dat, only the baud rate is airframe specific.
 define DEFAULT_SERIAL2_BAUD 921
 
 # list of files to put in ROMFS (Lua scripts)

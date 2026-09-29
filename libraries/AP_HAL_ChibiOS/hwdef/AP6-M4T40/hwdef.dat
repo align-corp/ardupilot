@@ -29,7 +29,7 @@ undef HAL_BATT_VOLT_SCALE
 undef HAL_BATT_CURR_SCALE
 
 # define custom Align frame code (only for testing)
-define ALIGN_FRAME ALIGN_AP6_M4T40
+define ALIGN_FRAME ALIGN_AP6_MT40
 
 # decrease arming delay
 define ARMING_DELAY_SEC 0.5f

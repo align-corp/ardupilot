@@ -44,8 +44,8 @@ BATT2_AMP_PERVLT 1.94
 BATT2_CAPACITY 0
 BATT2_LOW_VOLT 0
 BATT2_MONITOR 11
-# AS1's analog liquid level, published as a DroneCAN battery. SERIAL_NUM
-# pins it to the id AS1 advertises; without it get_dronecan_backend() binds
+# SDB1's analog liquid level, published as a DroneCAN battery. SERIAL_NUM
+# pins it to the id SDB1 advertises; without it get_dronecan_backend() binds
 # whichever BatteryInfo arrives first to the first free DroneCAN slot.
 BATT3_MONITOR 8
 BATT3_SERIAL_NUM 3
@@ -132,7 +132,7 @@ RC4_DZ 50
 RC6_OPTION 31
 RC7_OPTION 4
 RC9_OPTION 15
-# 178 = Sprayer2, the spreader. Needs HAL_SPRAYER2_ENABLED in AP7/hwdef.dat.
+# 178 = Sprayer2, the spreader. Needs HAL_SPRAYER2_ENABLED in AG1/hwdef.dat.
 RC10_OPTION 178
 # Virtual pin 1000 broadcasts hardpoint id 0 (IR) and
 # 1001 broadcasts id 1 (LED) on DroneCAN

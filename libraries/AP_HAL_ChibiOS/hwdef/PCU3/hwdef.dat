@@ -1,4 +1,4 @@
-# hw definition file for the Align AB1 (M4T40 PCU) L431 CAN node
+# hw definition file for the Align PCU3 L431 CAN node
 # PWM outputs plus relay outputs for the lamp rails. No ADC and no I2C:
 # nothing analog reaches the MCU, every rail regulates on its own feedback.
 

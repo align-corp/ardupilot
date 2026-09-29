@@ -1,4 +1,4 @@
-# hw definition file for the Align AB1 (M4T40 PCU) bootloader
+# hw definition file for the Align PCU3 (MT40 PCU) bootloader
 
 # MCU class and specific type
 MCU STM32L431 STM32L431xx

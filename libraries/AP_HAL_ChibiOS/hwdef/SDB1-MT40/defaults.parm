@@ -8,7 +8,7 @@ NTF_LED_LEN 3
 # actuator_id 10 and AP_Periph maps onto k_rcin10 (k_rcin1 51 + 9). The FCU
 # normalises its pulse over 1000..2000 before sending, so the endpoints here
 # have to span the same range or a spinner commanded fully off still idles at
-# OUT1_MIN. Matches AB1, which carries the other nozzle on the same SERVO10.
+# OUT1_MIN. Matches PCU3, which carries the other nozzle on the same SERVO10.
 OUT1_FUNCTION 60
 OUT1_MIN 1000
 OUT1_TRIM 1500
@@ -25,7 +25,7 @@ OUT4_FUNCTION 120
 # (115200 default), not RNGFND1_*.
 #
 # can_rangefinder_update() always reads instance 0 as ROTATION_NONE and the
-# FCU applies the real orientation (AP7 RNGFND2_ORIENT 25), so leave the
+# FCU applies the real orientation (AG1 RNGFND2_ORIENT 25), so leave the
 # orientation alone here. The range limits do matter locally: status_orient()
 # clamps to OutOfRange against these before anything is sent.
 # 115200, confirmed on the bench with the radar wired straight to the FCU

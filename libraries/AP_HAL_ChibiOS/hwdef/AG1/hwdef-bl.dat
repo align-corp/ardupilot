@@ -1,5 +1,5 @@
 # hw definition file for processing by chibios_hwdef.py
-# for AP7 hardware
+# for AG1 hardware
 
 # MCU class and specific type
 MCU STM32H7xx STM32H743xx
@@ -8,7 +8,7 @@ MCU STM32H7xx STM32H743xx
 OSCILLATOR_HZ 24000000
 
 # board ID for firmware load
-APJ_BOARD_ID 154 # AP_HW_ALIGN_AP7
+APJ_BOARD_ID 154 # AP_HW_ALIGN_AG1
 
 FLASH_SIZE_KB 2048
 

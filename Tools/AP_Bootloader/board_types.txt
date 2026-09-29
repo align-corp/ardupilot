@@ -106,9 +106,9 @@ AP_HW_ALIGN_AP3                       150
 AP_HW_ALIGN_AP6                       151
 AP_HW_ALIGN_AP6v2                     152
 AP_HW_ALIGN_AP6mini                   153
-AP_HW_ALIGN_AP7                       154
-AP_HW_ALIGN_AS1                       155
-AP_HW_ALIGN_AB1                       156
+AP_HW_ALIGN_AG1                       154
+AP_HW_ALIGN_SDB1                      155
+AP_HW_ALIGN_PCU3                      156
 AP_HW_F4BY                             20 # value due to previous release by vendor
 AP_HW_VRBRAIN_V51                    1151
 AP_HW_VRBRAIN_V52                    1152

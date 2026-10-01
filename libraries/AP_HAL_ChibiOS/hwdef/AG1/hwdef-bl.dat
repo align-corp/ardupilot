@@ -10,6 +10,9 @@ OSCILLATOR_HZ 24000000
 # board ID for firmware load
 APJ_BOARD_ID 154 # AP_HW_ALIGN_AG1
 
+# faster bootloader
+define HAL_BOOTLOADER_TIMEOUT 10
+
 FLASH_SIZE_KB 2048
 
 # bootloader is installed at zero offset

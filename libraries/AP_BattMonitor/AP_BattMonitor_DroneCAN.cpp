@@ -33,6 +33,13 @@ const AP_Param::GroupInfo AP_BattMonitor_DroneCAN::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("VOLT_MULT", 31, AP_BattMonitor_DroneCAN, _volt_mult, 1.0),
 
+    // @Param: VLT_OFFSET
+    // @DisplayName: Offset for reported power monitor voltage
+    // @Description: Voltage offset subtracted from the reported voltage before VOLT_MULT is applied, to zero out a sensor that does not read 0V at its zero point. Reported voltage is (CAN_voltage - VLT_OFFSET) * VOLT_MULT.
+    // @Units: V
+    // @User: Advanced
+    AP_GROUPINFO("VLT_OFFSET", 32, AP_BattMonitor_DroneCAN, _volt_offset, 0),
+
     // Param indexes must be between 30 and 39 to avoid conflict with other battery monitor param tables loaded by pointer
 
     AP_GROUPEND
@@ -138,7 +145,7 @@ void AP_BattMonitor_DroneCAN::update_interim_state(const float voltage, const fl
 {
     WITH_SEMAPHORE(_sem_battmon);
 
-    _interim_state.voltage = _volt_mult * voltage;
+    _interim_state.voltage = (voltage - _volt_offset) * _volt_mult;
     _interim_state.current_amps = _curr_mult * current;
     _soc = soc;
 

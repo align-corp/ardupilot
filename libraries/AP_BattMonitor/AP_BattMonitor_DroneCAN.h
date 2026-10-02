@@ -102,6 +102,7 @@ private:
 
     AP_Float _curr_mult;                 // scaling multiplier applied to current reports for adjustment
     AP_Float _volt_mult;                 // scaling multiplier applied to voltage reports for adjustment
+    AP_Float _volt_offset;               // offset subtracted from voltage reports before scaling
     // MPPT variables
     struct {
         bool is_detected;               // true if this UAVCAN device is a Packet Digital MPPT

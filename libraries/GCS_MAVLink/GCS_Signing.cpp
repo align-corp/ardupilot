@@ -94,7 +94,7 @@ void GCS_MAVLINK::handle_setup_signing(const mavlink_message_t &msg) const
     for (uint8_t i=0; i<MAVLINK_COMM_NUM_BUFFERS; i++) {
         GCS_MAVLINK *backend = gcs().chan(i);
         if (backend == nullptr) {
-            return;
+            continue;
         }
         backend->load_signing_key();
     }
@@ -135,6 +135,13 @@ static bool accept_unsigned_callback(const mavlink_status_t *status, uint32_t ms
  */
 void GCS_MAVLINK::load_signing_key(void)
 {
+    const auto mavlink_protocol = uartstate->get_protocol();
+    // signing requires MAVLink2
+    if (mavlink_protocol != AP_SerialManager::SerialProtocol_MAVLink2 &&
+        mavlink_protocol != AP_SerialManager::SerialProtocol_MAVLinkHL) {
+        return;
+    }
+
     struct SigningKey key;
     if (!signing_key_load(key)) {
         return;

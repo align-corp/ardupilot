@@ -30,25 +30,25 @@ AVOID_DIST_MAX 10
 AVOID_ENABLE 7
 AVOID_MARGIN 10
 AVOID_VEL_ANGLE 20
-BATT_ARM_MAH 6000
-BATT_CAPACITY 30000
-BATT_CRT_MAH 1500
-BATT_FS_CRT_ACT 1
-BATT_FS_LOW_ACT 2
-BATT_LOW_MAH 4500
+# SDB1's analog liquid level, serial num must match SDB1 parameter
 BATT_LOW_VOLT 0
 BATT_MONITOR 8
-#TODO: add Tattu batt serial num
-BATT_SERIAL_NUM 1
+BATT_SERIAL_NUM 254
+# Flow meter
 BATT2_AMP_PERVLT 1.94
 BATT2_CAPACITY 0
 BATT2_LOW_VOLT 0
 BATT2_MONITOR 11
-# SDB1's analog liquid level, published as a DroneCAN battery. SERIAL_NUM
-# pins it to the id SDB1 advertises; without it get_dronecan_backend() binds
-# whichever BatteryInfo arrives first to the first free DroneCAN slot.
+# Main battery
+BATT3_ARM_MAH 6000
+BATT3_CAPACITY 30000
+BATT3_CRT_MAH 1500
+BATT3_FS_CRT_ACT 1
+BATT3_FS_LOW_ACT 2
+BATT3_LOW_MAH 4500
+BATT3_LOW_VOLT 0
 BATT3_MONITOR 8
-BATT3_SERIAL_NUM 3
+# Load cells
 BATT4_MONITOR 29
 CAN_P1_BITRATE 1000000
 CAN_P1_DRIVER 1
@@ -132,8 +132,6 @@ RC4_DZ 50
 RC6_OPTION 31
 RC7_OPTION 4
 RC9_OPTION 15
-# 178 = Sprayer2, the spreader. Needs HAL_SPRAYER2_ENABLED in AG1/hwdef.dat.
-RC10_OPTION 178
 # Virtual pin 1000 broadcasts hardpoint id 0 (IR) and
 # 1001 broadcasts id 1 (LED) on DroneCAN
 RELAY1_FUNCTION 1

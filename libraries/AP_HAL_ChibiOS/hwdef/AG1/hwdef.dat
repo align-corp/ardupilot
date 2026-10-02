@@ -182,6 +182,3 @@ define AP_TERRAIN_AVAILABLE 1
 # SPI6 (IMU+baro) and SPI4 (flash) need dedicated DMA — no sharing
 DMA_NOSHARE SPI1* SPI6* SPI4*
 DMA_PRIORITY SPI1* SPI6* SPI4*
-
-# bootloader embedding / bootloader flashing not available
-define AP_BOOTLOADER_FLASHING_ENABLED 0

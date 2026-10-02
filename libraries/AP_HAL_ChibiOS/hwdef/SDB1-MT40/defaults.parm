@@ -37,5 +37,5 @@ RNGFND1_MIN_CM 20
 RNGFND1_MAX_CM 4000
 
 # The fuel level is published as a DroneCAN battery. Give it an explicit id
-# so the FCU binds it to BATT3 instead of racing for the first free slot.
-BATT_SERIAL_NUM 3
+# so the FCU binds it to the right instance
+BATT_SERIAL_NUM 254

@@ -98,6 +98,9 @@ function update()
         state:cell_voltages(i - 1, grams)
     end
 
+    -- report total for logging
+    state:voltage(total * 0.001)
+
     battery:handle_scripting(LOAD_BATT_IDX:get(), state)
 
     return update, MILLIS_UPDATE

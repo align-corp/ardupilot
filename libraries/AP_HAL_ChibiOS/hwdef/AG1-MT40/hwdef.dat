@@ -18,3 +18,4 @@ ROMFS scripts/rng_auto.lua lua_scr/rng_auto.lua
 ROMFS scripts/arm_check.lua lua_scr/arm_check.lua
 ROMFS scripts/agricolture_load.lua lua_scr/agricolture_load.lua
 ROMFS scripts/batt_cycles.lua lua_scr/batt_cycles.lua
+ROMFS scripts/sprayer-switch.lua lua_scr/sprayer-switch.lua

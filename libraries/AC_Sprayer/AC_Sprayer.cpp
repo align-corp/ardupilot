@@ -84,7 +84,8 @@ const AP_Param::GroupInfo AC_Sprayer::var_info[] = {
 
     // @Param: FLOW_RATE
     // @DisplayName: Desired flow rate
-    // @Description: Desired flow rate. When this and FLOW_BATT are set the pump output is controlled to hold this flow rate using the flow meter reading instead of scaling the output with ground speed. When testing the pump or when SPEED_MIN is zero this is a fixed rate in litres/minute. When SPEED_MIN is greater than zero this is litres/km and the litres/minute target is scaled with ground speed. Set to 0 to disable flow control
+    // @Description: Desired flow per distance travelled. When FLOW_BATT is set the pump output is controlled from the flow meter to hold a litres/minute target of this rate scaled by ground speed, never less than FLOW_MIN. When testing the pump the target is computed as if travelling at 1m/s, the same as PUMP_RATE. Flow control is used when this or FLOW_MIN is above zero
+    // @Units: l/km
     // @Range: 0 100
     // @User: Standard
     AP_GROUPINFO("FLOW_RATE", 9, AC_Sprayer, _flow_rate, 0),
@@ -125,6 +126,14 @@ const AP_Param::GroupInfo AC_Sprayer::var_info[] = {
     // @Range: 0 2000
     // @User: Standard
     AP_GROUPINFO("SPIN_LOW", 14, AC_Sprayer, _spin_low, AC_SPRAYER_DEFAULT_SPIN_LOW),
+
+    // @Param: FLOW_MIN
+    // @DisplayName: Minimum flow rate
+    // @Description: Minimum flow held by the flow controller while spraying, whatever the ground speed. Set FLOW_RATE to 0 for a fixed flow of this rate. Flow control is used when this or FLOW_RATE is above zero and FLOW_BATT is set
+    // @Units: l/min
+    // @Range: 0 100
+    // @User: Standard
+    AP_GROUPINFO("FLOW_MIN", 15, AC_Sprayer, _flow_min, 0),
 
     AP_GROUPEND
 };
@@ -407,7 +416,7 @@ void AC_Sprayer::update()
 // flow control is used instead of ground speed scaling when a flow meter and target rate are configured
 bool AC_Sprayer::flow_control_active() const
 {
-    return _flow_batt > 0 && is_positive(_flow_rate);
+    return _flow_batt > 0 && (is_positive(_flow_rate) || is_positive(_flow_min));
 }
 
 // run the closed loop flow controller, returns desired pump output as a percentage (0 ~ 100)
@@ -431,12 +440,9 @@ float AC_Sprayer::flow_control_update(float ground_speed_cms)
         return _flow_integrator;
     }
 
-    // FLOW_RATE is litres/minute when testing or when SPEED_MIN is zero. Otherwise it is
-    // litres/km and the litres/minute target scales with ground speed (cm/s to km/min)
-    float target_lpm = _flow_rate;
-    if (!_flags.testing && is_positive(_speed_min)) {
-        target_lpm = _flow_rate * ground_speed_cms * (60.0f / 100000.0f);
-    }
+    // FLOW_RATE litres/km scaled with ground speed (cm/s to km/min), floored at FLOW_MIN
+    // litres/minute. Ground speed is already 1m/s while testing
+    const float target_lpm = MAX(_flow_rate * ground_speed_cms * (60.0f / 100000.0f), _flow_min.get());
 
     const float error = target_lpm - measured_lpm;
     _flow_integrator = constrain_float(_flow_integrator + error * _flow_i * dt, 0.0f, 100.0f);

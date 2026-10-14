@@ -12,7 +12,7 @@
         - set the SPRAY_PUMP_RATE to the value the pump servo should move to when the vehicle is travelling at 1m/s. This is expressed as a percentage (i.e. 0 ~ 100) of the full servo range.  I.e. 0 = the pump will not operate, 100 = maximum speed at 1m/s.  50 = 1/2 speed at 1m/s, full speed at 2m/s
         - set the SPRAY_PUMP_MIN to the minimum value that the pump servo should move to while engaged expressed as a percentage (i.e. 0 ~ 100) of the full servo range
         - set the SPRAY_SPEED_MIN to the minimum speed (in cm/s) the vehicle should be moving at before the pump and sprayer are turned on.  0 will mean the pump and spinner will always be on when the system is enabled with ch7/ch8 switch
-        - optionally set SPRAY_FLOW_BATT to a fuel-flow battery monitor instance and SPRAY_FLOW_RATE to a desired flow to have the pump speed controlled from the flow meter. The rate is litres/minute when testing the pump or when SPRAY_SPEED_MIN is 0, otherwise litres/km with the litres/minute target scaled by ground speed
+        - optionally set SPRAY_FLOW_BATT to a fuel-flow battery monitor instance to have the pump speed controlled from the flow meter instead of PUMP_RATE/PUMP_MIN. The flow target is SPRAY_FLOW_RATE (litres/km) scaled by ground speed, never less than SPRAY_FLOW_MIN (litres/minute)
 **/
 #pragma once
 
@@ -35,8 +35,8 @@
 #define AC_SPRAYER_DEFAULT_TEST_TIMEOUT     20      ///< default time in seconds after which a ground test of the pump is stopped
 #define AC_SPRAYER_SPINNER_OFF_PWM          1000    ///< in raw pwm mode, spinner pwm at or below which the spinner is considered to be off
 #define AC_SPRAYER_SPINNER_PCT_MAX          100     ///< spinner values at or below this are a percentage of the servo range, above it a raw pwm
-#define AC_SPRAYER_DEFAULT_FLOW_P           10.0f   ///< default flow controller P gain (pump % per l/min of error)
-#define AC_SPRAYER_DEFAULT_FLOW_I           5.0f    ///< default flow controller I gain (pump %/sec per l/min of error)
+#define AC_SPRAYER_DEFAULT_FLOW_P           4.0f   ///< default flow controller P gain (pump % per l/min of error)
+#define AC_SPRAYER_DEFAULT_FLOW_I           4.0f    ///< default flow controller I gain (pump %/sec per l/min of error)
 
 #ifndef HAL_SPRAYER_ENABLED
 #define HAL_SPRAYER_ENABLED 1
@@ -120,7 +120,8 @@ private:
     AP_Int16        _min_alt;               ///< minimum altitude in cm at which we will begin spraying
     AP_Int8         _test_timeout_s;        ///< time in seconds after which a ground test of the pump is stopped, 0 to disable
     AP_Int8         _flow_batt;             ///< battery monitor instance used as flow meter (0:disabled, 1:BATT, 2:BATT2 ...)
-    AP_Float        _flow_rate;             ///< desired flow rate: litres/minute when testing or SPEED_MIN is 0, otherwise litres/km scaled with ground speed (0:disabled)
+    AP_Float        _flow_rate;             ///< desired flow per distance in litres/km, scaled with ground speed
+    AP_Float        _flow_min;              ///< minimum flow in litres/minute held while spraying
     AP_Float        _flow_p;                ///< flow controller P gain
     AP_Float        _flow_i;                ///< flow controller I gain
     AP_Int16        _start_delay_ms;        ///< start delay between pump and spinner (ms). +ve: spinner starts this long after pump; -ve: pump starts this long after spinner

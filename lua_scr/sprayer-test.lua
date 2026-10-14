@@ -9,7 +9,7 @@
 
 -- user constants
 local SPRAYER = 2               -- 1 = SPRAYER, 2 = SPRAYER2
-local ON_SECONDS = 20
+local ON_SECONDS = 15
 local OFF_SECONDS = 5
 
 -- RC_Channel aux function numbers, see RC_Channel.h

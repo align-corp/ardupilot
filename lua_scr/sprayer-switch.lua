@@ -4,7 +4,10 @@
 -- CAN ESC on SERVO11 (ESC telemetry instance 10). Both are wired to the same
 -- RC switch, so this script watches that ESC's telemetry and retargets the
 -- switch: SPRAYER2 while the ESC answers, plain SPRAYER once it goes quiet.
--- version 0.1
+-- MAV_CMD_DO_SPRAYER (GCS or mission) drives every sprayer with SPRAYx_ENABLE
+-- = 1, so the same choice is mirrored there: the active sprayer gets 1, the
+-- other 2 (RC control only). A sprayer left at 0 is disabled and not touched.
+-- version 0.2
 
 -- user constants
 local MILLIS_UPDATE = 500
@@ -20,6 +23,11 @@ local AUX_FUNC_SPRAYER2 = 178
 -- RC_Channel::AuxSwitchPos
 local AUX_POS_LOW = 0
 
+-- SPRAYx_ENABLE values, see AC_Sprayer.cpp
+local SPRAY_ENABLE_DISABLED = 0
+local SPRAY_ENABLE_ALL = 1
+local SPRAY_ENABLE_RC_ONLY = 2
+
 -- state
 local rc_num = nil              -- RC channel carrying the sprayer switch
 local option_param = nil        -- its RCn_OPTION parameter
@@ -27,6 +35,7 @@ local current_option = nil      -- aux function currently assigned to it
 local pending_option = nil      -- function we are waiting to confirm
 local pending_count = 0
 local decided = false           -- false until the first swap has been applied
+local spray_enable = {}         -- aux function -> its SPRAYx_ENABLE parameter
 
 -- find the RC channel already assigned to a sprayer aux function and latch on
 -- to it. Returns false while no channel is configured.
@@ -51,6 +60,34 @@ function find_sprayer_channel()
         end
     end
     return rc_num ~= nil
+end
+
+-- bind SPRAY_ENABLE and SPRAY2_ENABLE, either may be missing from the build
+function bind_spray_enable()
+    local names = { [AUX_FUNC_SPRAYER] = 'SPRAY_ENABLE', [AUX_FUNC_SPRAYER2] = 'SPRAY2_ENABLE' }
+    for option, name in pairs(names) do
+        local p = Parameter()
+        if p:init(name) then
+            spray_enable[option] = p
+        else
+            gcs:send_text(4, string.format("sprayer-switch: no %s, MAV_CMD_DO_SPRAYER target not managed", name))
+        end
+    end
+end
+
+-- let MAV_CMD_DO_SPRAYER reach only the sprayer behind active_option
+function apply_spray_enable(active_option)
+    for option, p in pairs(spray_enable) do
+        local wanted = (option == active_option) and SPRAY_ENABLE_ALL or SPRAY_ENABLE_RC_ONLY
+        local now = math.floor(p:get())
+        -- 0 -> 1 needs a reboot and means the user disabled it, leave it alone
+        if now ~= SPRAY_ENABLE_DISABLED and now ~= wanted then
+            -- set() and not set_and_save(), redone on every boot like RCn_OPTION
+            if not p:set(wanted) then
+                gcs:send_text(3, "sprayer-switch: could not set SPRAYx_ENABLE")
+            end
+        end
+    end
 end
 
 -- true while ESC telemetry for ESC_INSTANCE is fresh. The ESC may not publish
@@ -87,6 +124,7 @@ function apply_option(wanted_option)
         return false
     end
     current_option = wanted_option
+    apply_spray_enable(wanted_option)
 
     -- read_aux() only acts on a change of switch position, so hand the current
     -- position to the incoming sprayer ourselves
@@ -111,6 +149,7 @@ function update()
         -- matches the hardware so there is nothing to toggle
         if not decided then
             decided = true
+            apply_spray_enable(wanted_option)
             report(present, "already set to")
         end
         pending_option = nil
@@ -153,5 +192,6 @@ if not esc_telem then
     return
 end
 
+bind_spray_enable()
 gcs:send_text(6, "Sprayer Switch is running")
 return wait_for_channel, 1000

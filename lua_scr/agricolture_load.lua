@@ -1,10 +1,13 @@
 -- read amplified load cells on analog pins and feed their weights
--- into a scripting battery driver via the cell_voltages array - version 0.1
+-- into a scripting battery driver via the cell_voltages array - version 0.2
 
 -- user constants
 local MILLIS_UPDATE = 1000
 local LOAD_PINS = {10, 11, 12, 13} -- analog pins num
 local NUM_CELLS = #LOAD_PINS
+-- at boot, a total weight above this (g) with the saved offsets means the
+-- drone is loaded, so the saved offsets are kept instead of recalibrating
+local BOOT_LOADED_GRAMS = 3000
 
 -- parameters
 local PARAM_TABLE_KEY = 50
@@ -35,7 +38,7 @@ for i = 1, NUM_CELLS do
     --[[
       // @Param: LOADn_OFFSET
       // @DisplayName: Load cell n voltage offset
-      // @Description: Zero-weight voltage of load cell n, subtracted before scaling
+      // @Description: Zero-weight voltage of load cell n, subtracted before scaling. Set LOAD1_OFFSET to 0 with no payload to recalibrate the zero of all cells
       // @Units: V
       // @User: Standard
     --]]
@@ -58,24 +61,56 @@ for i = 1, NUM_CELLS do
     end
 end
 
--- capture the zero-weight offsets on the first update(), once the ADC has had
--- time to accumulate samples. Doing this at script load reads 0 V because no
--- conversions have happened yet, which leaves the raw voltage in the output.
-local offsets_captured = false
+-- zero calibration runs at boot unless the saved offsets show a payload
+-- (see BOOT_LOADED_GRAMS), and whenever the user sets LOAD1_OFFSET to 0 with
+-- no payload. It saves the offsets of all cells.
+local cal_error_sent = false
+local boot_check_done = false
 
-function capture_offsets()
+function calibrate_zero()
+    local voltages = {}
     for i = 1, NUM_CELLS do
-        local voltage = channels[i]:voltage_average()
-        LOAD_OFFSET[i]:set(voltage)
+        voltages[i] = channels[i]:voltage_average()
     end
-    offsets_captured = true
-    gcs:send_text(6, "agricolture_load: offsets captured")
+    -- a 0 V reading means no ADC samples or a dead input; saving it would
+    -- keep LOAD1_OFFSET at 0 and retrigger, so refuse and retry next update
+    if voltages[1] < 0.01 then
+        if not cal_error_sent then
+            gcs:send_text(3, "agricolture_load: zero cal failed, cell 1 reads 0 V")
+            cal_error_sent = true
+        end
+        return
+    end
+    for i = 1, NUM_CELLS do
+        LOAD_OFFSET[i]:set_and_save(voltages[i])
+    end
+    cal_error_sent = false
+    gcs:send_text(6, "agricolture_load: zero cal done")
+end
+
+-- total weight in grams using the current offsets
+function total_grams()
+    local total = 0
+    for i = 1, NUM_CELLS do
+        total = total + (channels[i]:voltage_average() - LOAD_OFFSET[i]:get()) * LOAD_SCALE[i]:get()
+    end
+    return total
 end
 
 function update()
-    if not offsets_captured then
-        capture_offsets()
+    if LOAD_OFFSET[1]:get() == 0 then
+        calibrate_zero()
+    elseif not boot_check_done then
+        -- a negative or small weight with the saved offsets means the drone
+        -- is empty and the zero has drifted, so recalibrate
+        local g_tot_old = total_grams()
+        if g_tot_old > BOOT_LOADED_GRAMS then
+            gcs:send_text(6, string.format("agricolture_load: %.1f kg at boot, keeping saved offsets", g_tot_old * 0.001))
+        else
+            calibrate_zero()
+        end
     end
+    boot_check_done = true
 
     local state = BattMonitorScript_State()
     state:healthy(true)
@@ -107,6 +142,6 @@ function update()
 end
 
 gcs:send_text('6', "Agricolture Load is running")
--- delay the first update so voltage_average() has real samples before we
--- capture the offsets
+-- delay the first update so voltage_average() has real samples before the
+-- boot weight check
 return update, 2000

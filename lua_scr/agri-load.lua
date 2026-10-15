@@ -57,7 +57,7 @@ local channels = {}
 for i = 1, NUM_CELLS do
     channels[i] = analog:channel()
     if not channels[i]:set_pin(LOAD_PINS[i]) then
-        gcs:send_text(0, string.format("agricolture_load: invalid analog pin %d", LOAD_PINS[i]))
+        gcs:send_text(0, string.format("agri-load: invalid analog pin %d", LOAD_PINS[i]))
     end
 end
 
@@ -76,7 +76,7 @@ function calibrate_zero()
     -- keep LOAD1_OFFSET at 0 and retrigger, so refuse and retry next update
     if voltages[1] < 0.01 then
         if not cal_error_sent then
-            gcs:send_text(3, "agricolture_load: zero cal failed, cell 1 reads 0 V")
+            gcs:send_text(3, "agri-load: zero cal failed, cell 1 reads 0 V")
             cal_error_sent = true
         end
         return
@@ -85,7 +85,7 @@ function calibrate_zero()
         LOAD_OFFSET[i]:set_and_save(voltages[i])
     end
     cal_error_sent = false
-    gcs:send_text(6, "agricolture_load: zero cal done")
+    gcs:send_text(6, "agri-load: zero cal done")
 end
 
 -- total weight in grams using the current offsets
@@ -105,7 +105,7 @@ function update()
         -- is empty and the zero has drifted, so recalibrate
         local g_tot_old = total_grams()
         if g_tot_old > BOOT_LOADED_GRAMS then
-            gcs:send_text(6, string.format("agricolture_load: %.1f kg at boot, keeping saved offsets", g_tot_old * 0.001))
+            gcs:send_text(6, string.format("agri-load: %.1f kg at boot, keeping saved offsets", g_tot_old * 0.001))
         else
             calibrate_zero()
         end
@@ -141,7 +141,7 @@ function update()
     return update, MILLIS_UPDATE
 end
 
-gcs:send_text('6', "Agricolture Load is running")
+gcs:send_text('6', "agri-load is running")
 -- delay the first update so voltage_average() has real samples before the
 -- boot weight check
 return update, 2000

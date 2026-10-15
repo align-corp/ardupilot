@@ -16,6 +16,6 @@ define DEFAULT_SERIAL2_BAUD 921
 # list of files to put in ROMFS (Lua scripts)
 ROMFS scripts/rng_auto.lua lua_scr/rng_auto.lua
 ROMFS scripts/arm_check.lua lua_scr/arm_check.lua
-ROMFS scripts/agricolture_load.lua lua_scr/agricolture_load.lua
+ROMFS scripts/agri-load.lua lua_scr/agri-load.lua
 ROMFS scripts/batt_cycles.lua lua_scr/batt_cycles.lua
-ROMFS scripts/sprayer-switch.lua lua_scr/sprayer-switch.lua
+ROMFS scripts/agri-two-sprayer.lua lua_scr/agri-two-sprayer.lua

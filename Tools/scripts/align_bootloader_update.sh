@@ -1,19 +1,38 @@
 #!/bin/bash
+# Build the bootloader for each base FC and copy it to the base board
+# and to every derived board found as hwdef/<FC>-*
 set -e
-# Generate bootloaders
-#TODO: horrible, use loop
 
-# Align AP6m
-./waf configure --board AP6m --bootloader
-./waf bootloader
-src="build/AP6m/bin/AP_Bootloader.bin"
+# base FCs to build the bootloader for
+BOARDS=("AP6" "AP6m")
 
-# copy
-cp $src "Tools/bootloaders/AP6m_bl.bin"
-cp $src "Tools/bootloaders/AP6m-M3_bl.bin"
-cp $src "Tools/bootloaders/AP6m-M3-OF_bl.bin"
-cp $src "Tools/bootloaders/AP6m-M3-A10_bl.bin"
-cp $src "Tools/bootloaders/AP6m-MR25_bl.bin"
-cp $src "Tools/bootloaders/AP6m-MR25-A10_bl.bin"
-cp $src "Tools/bootloaders/AP6m-MR25-no-gps_bl.bin"
-echo "AP6m bootloaders updated"
+ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
+HWDEF_DIR="$ROOT/libraries/AP_HAL_ChibiOS/hwdef"
+BL_DIR="$ROOT/Tools/bootloaders"
+
+cd "$ROOT"
+
+for board in "${BOARDS[@]}"; do
+    if [ ! -f "$HWDEF_DIR/$board/hwdef-bl.dat" ]; then
+        echo "ERROR: $HWDEF_DIR/$board/hwdef-bl.dat not found" >&2
+        exit 1
+    fi
+
+    echo "=== Building bootloader for $board ==="
+    ./waf configure --board "$board" --bootloader
+    ./waf bootloader
+    src="build/$board/bin/AP_Bootloader.bin"
+
+    cp "$src" "$BL_DIR/${board}_bl.bin"
+    echo "  -> ${board}_bl.bin"
+
+    # derived boards: <board>-*, only real board dirs (with hwdef.dat)
+    for dir in "$HWDEF_DIR/$board"-*/; do
+        [ -f "$dir/hwdef.dat" ] || continue
+        name="$(basename "$dir")"
+        cp "$src" "$BL_DIR/${name}_bl.bin"
+        echo "  -> ${name}_bl.bin"
+    done
+
+    echo "$board bootloaders updated"
+done

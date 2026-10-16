@@ -10,11 +10,13 @@
 --
 -- It also ties the sprayers to return to home:
 -- - entering RTL, SMART_RTL or AUTO_RTL turns both sprayers off
+-- - leaving AUTO for any other mode with the sprayer switch high turns both
+--   sprayers off, so a resumed mission does not spray on its way back
 -- - when the drone was armed with more than RTLAG_ARM_KG on the load cells, an
 --   empty tank engages RTL. SPRAYER: pump above RTLAG_PUMP_PCT with flow below
 --   RTLAG_FLOW_LPM for RTLAG_PUMP_SEC. SPRAYER2: load below RTLAG_SPRD_KG for
 --   RTLAG_SPRD_SEC
--- version 0.3
+-- version 0.4
 
 -- user constants
 local MILLIS_UPDATE = 500
@@ -30,6 +32,7 @@ local AUX_FUNC_SPRAYER2 = 178
 
 -- RC_Channel::AuxSwitchPos
 local AUX_POS_LOW = 0
+local AUX_POS_HIGH = 2
 
 -- SPRAYx_ENABLE values, see AC_Sprayer.cpp
 local SPRAY_ENABLE_DISABLED = 0
@@ -37,6 +40,7 @@ local SPRAY_ENABLE_ALL = 1
 local SPRAY_ENABLE_RC_ONLY = 2
 
 -- Copter flight modes
+local MODE_AUTO = 3
 local MODE_RTL = 6
 local MODE_LAND = 9
 local MODE_SMART_RTL = 21
@@ -128,6 +132,7 @@ local last_channel_search_ms = nil
 -- RTH state
 local was_armed = false
 local was_rth = false
+local was_auto = false
 local arm_loaded = false        -- load at arming was above RTLAG_ARM_KG
 local empty_since_ms = nil      -- time the empty condition was first seen
 local empty_rtl_done = false    -- empty RTL already engaged since arming
@@ -340,6 +345,15 @@ function stop_sprayers()
     rc:run_aux_function(AUX_FUNC_SPRAYER2, AUX_POS_LOW)
 end
 
+-- true while the sprayer RC switch is high
+function sprayer_switch_high()
+    if not rc_num then
+        return false
+    end
+    local channel = rc:get_channel(rc_num)
+    return channel ~= nil and channel:get_aux_switch_pos() == AUX_POS_HIGH
+end
+
 -- true once the active sprayer has been empty long enough
 function tank_empty(now)
     local empty = false
@@ -377,6 +391,15 @@ function update_rth()
         gcs:send_text(5, "agri-two-sprayer: RTL, sprayer off")
     end
     was_rth = rth
+
+    -- leaving AUTO with the switch high, stop spraying until the pilot
+    -- cycles the switch. RTH modes are handled above whatever the switch says
+    local auto = (mode == MODE_AUTO)
+    if was_auto and not auto and not rth and sprayer_switch_high() then
+        stop_sprayers()
+        gcs:send_text(5, "agri-two-sprayer: AUTO exit, sprayer off")
+    end
+    was_auto = auto
 
     -- latch the load at arming, the empty checks only make sense if we took
     -- off with something in the tank

@@ -44,6 +44,8 @@ public:
 
     bool get_cycle_count(uint16_t &cycles) const override;
 
+    bool get_model_name(char *buf, uint8_t buflen) override;
+
     // return mavlink fault bitmask (see MAV_BATTERY_FAULT enum)
     uint32_t get_mavlink_fault_bitmask() const override;
 
@@ -92,6 +94,7 @@ private:
     uint8_t _soc;
     uint8_t _node_id;
     uint16_t _cycle_count;
+    char _model_name[sizeof(uavcan_equipment_power_BatteryInfo::model_name.data)+1];
     float _remaining_capacity_wh;
     float _full_charge_capacity_wh;
     bool _has_temperature;

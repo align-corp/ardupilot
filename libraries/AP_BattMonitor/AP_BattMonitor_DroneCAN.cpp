@@ -134,6 +134,10 @@ void AP_BattMonitor_DroneCAN::handle_battery_info(const uavcan_equipment_power_B
     _remaining_capacity_wh = msg.remaining_capacity_wh;
     _full_charge_capacity_wh = msg.full_charge_capacity_wh;
 
+    const uint8_t name_len = MIN(msg.model_name.len, sizeof(_model_name)-1);
+    memcpy(_model_name, msg.model_name.data, name_len);
+    _model_name[name_len] = '\0';
+
     // consume state of health
     if (msg.state_of_health_pct != UAVCAN_EQUIPMENT_POWER_BATTERYINFO_STATE_OF_HEALTH_UNKNOWN) {
         _interim_state.state_of_health_pct = msg.state_of_health_pct;
@@ -378,6 +382,18 @@ bool AP_BattMonitor_DroneCAN::get_cycle_count(uint16_t &cycles) const
         return true;
     }
     return false;
+}
+
+// get_model_name - return true if the battery reported a model name and copies it into buf
+bool AP_BattMonitor_DroneCAN::get_model_name(char *buf, uint8_t buflen)
+{
+    WITH_SEMAPHORE(_sem_battmon);
+    if (_model_name[0] == '\0') {
+        return false;
+    }
+    strncpy_noterm(buf, _model_name, buflen-1);
+    buf[buflen-1] = '\0';
+    return true;
 }
 
 // request MPPT board to power on/off depending upon vehicle arming state as specified by BATT_OPTIONS

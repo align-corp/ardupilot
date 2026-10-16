@@ -1,6 +1,14 @@
 # hw definition file for processing by chibios_hwdef.py
 # for AP6 hardware
 
+# USB setup
+USB_VENDOR 0x2A58 # ALIGN Corporation Limited
+USB_PRODUCT 0xA002 # AP6
+USB_STRING_MANUFACTURER "ALIGN"
+
+# faster bootloader
+define HAL_BOOTLOADER_TIMEOUT 10
+
 # MCU class and specific type
 MCU STM32H7xx STM32H743xx
 

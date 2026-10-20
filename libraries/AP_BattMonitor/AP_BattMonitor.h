@@ -272,6 +272,9 @@ public:
     // cycle count
     bool get_cycle_count(uint8_t instance, uint16_t &cycles) const;
 
+    // model name / serial string reported by the battery
+    bool get_model_name(uint8_t instance, char *buf, uint8_t buflen) const;
+
     // get battery resistance estimate in ohms
     float get_resistance() const { return get_resistance(AP_BATT_PRIMARY_INSTANCE); }
     float get_resistance(uint8_t instance) const { return state[instance].resistance; }

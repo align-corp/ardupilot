@@ -58,6 +58,9 @@ public:
     // return true if cycle count can be provided and fills in cycles argument
     virtual bool get_cycle_count(uint16_t &cycles) const { return false; }
 
+    // return true if a model name / serial string can be provided and copies it null-terminated into buf
+    virtual bool get_model_name(char *buf, uint8_t buflen) { return false; }
+
     // return true if state of health (as a percentage) can be provided and fills in soh_pct argument
     bool get_state_of_health_pct(uint8_t &soh_pct) const;
 

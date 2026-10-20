@@ -273,18 +273,24 @@ bool AP_Mission::command_do_set_repeat_dist(const AP_Mission::Mission_Command& c
 bool AP_Mission::start_command_do_sprayer(const AP_Mission::Mission_Command& cmd)
 {
 #if HAL_SPRAYER_ENABLED
-    AC_Sprayer *sprayer = AP::sprayer();
-    if (sprayer == nullptr) {
-        return false;
+    // control every sprayer instance that allows it
+    bool controlled = false;
+    for (uint8_t i = 0; i < AC_SPRAYER_MAX_INSTANCES; i++) {
+        AC_Sprayer *sprayer = AP::sprayer(i);
+        if (sprayer == nullptr) {
+            continue;
+        }
+
+        // SPRAY_ENABLE = 2 restricts control to the RC aux function
+        if (!sprayer->mavlink_control_enabled()) {
+            continue;
+        }
+
+        sprayer->run(cmd.p1 == 1);
+        controlled = true;
     }
 
-    if (cmd.p1 == 1) {
-        sprayer->run(true);
-    } else {
-        sprayer->run(false);
-    }
-
-    return true;
+    return controlled;
 #else
     return false;
 #endif // HAL_SPRAYER_ENABLED

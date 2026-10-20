@@ -21,6 +21,7 @@ jobs:
       matrix:
         board:
           # Copters
+          - AG1-MT40
           - AP6-M460
           - AP6-M460-A10
           - AP6-M460-ds

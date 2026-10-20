@@ -1,0 +1,33 @@
+# FUNCTION 10/11 = DroneCAN_HARDPOINT_0/_1: FCU drives these with
+# uavcan.equipment.hardpoint.Command id 0 and 1. PIN = GPIO() in hwdef.
+#
+# Polarity differs between the two rails and AP_Relay has no invert
+# option, so the command sense differs too:
+#   RELAY1 (IR_LED_EN, active high) -> command 1 = 100W IR lamp ON
+#   RELAY2 (LED_EN, TPS16530 /EN)   -> command 1 = 80W lamps OFF
+# Whoever drives the hardpoints from the FCU has to account for RELAY2.
+RELAY1_FUNCTION 10
+RELAY1_PIN 1
+RELAY2_FUNCTION 11
+RELAY2_PIN 2
+
+# OUT2/OUT3 keep their RCIN2/RCIN3 defaults; OUT1/OUT4 are remapped below.
+OUT_RATE 50
+
+# FCU sprayer channels arrive as uavcan.equipment.actuator.ArrayCommand.
+# AP_Periph maps actuator_id N onto function k_rcin<N> (k_rcin1 = 51), and
+# the FCU sends actuator_id = SERVOn channel number. FCU SERVO9 = pump
+# (k_sprayer_pump), SERVO10 = spinner (k_sprayer_spinner), so:
+OUT4_FUNCTION 59 # RCIN9  -> PA11, Pump, CN11 + CN12
+OUT1_FUNCTION 60 # RCIN10 -> PA8,  Nozzle, CN9 + CN10
+
+# The command travels as UNITLESS: the FCU normalises its pulse over
+# 1000..2000 and we expand it again over OUTn_MIN..OUTn_MAX about TRIM.
+# The defaults (1100/1500/1900) would squash the range and, worse, leave
+# ~1100us out of the pin with the pump commanded fully off.
+OUT1_MIN 1000
+OUT1_TRIM 1500
+OUT1_MAX 2000
+OUT4_MIN 1000
+OUT4_TRIM 1500
+OUT4_MAX 2000

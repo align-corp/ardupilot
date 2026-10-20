@@ -1,0 +1,41 @@
+BATT_FL_PIN 6
+BATT_FL_VLT_MIN 0
+BATT_FL_V_MULT 10
+NTF_LED_TYPES 257
+NTF_LED_LEN 3
+
+# Nozzle spinner on PA8 (OUT1). The FCU drives SERVO10, which goes out as
+# actuator_id 10 and AP_Periph maps onto k_rcin10 (k_rcin1 51 + 9). The FCU
+# normalises its pulse over 1000..2000 before sending, so the endpoints here
+# have to span the same range or a spinner commanded fully off still idles at
+# OUT1_MIN. Matches PCU3, which carries the other nozzle on the same SERVO10.
+OUT1_FUNCTION 60
+OUT1_MIN 1000
+OUT1_TRIM 1500
+OUT1_MAX 2000
+OUT_RATE 50
+
+# WS2812 strip on PA5 (OUT4, TIM2_CH1, which has TIM2_UP DMA).
+# NeoPixel::init_ports() binds to k_LED_neopixel1 (120); NTF_LED_TYPES 257
+# above is built-in LED (bit 0) plus NeoPixel (bit 8).
+OUT4_FUNCTION 120
+
+# Down lidar on USART2, RNGFND_PORT 1 comes from the hwdef. Type 42 is the
+# Align RDR01 that used to hang off the FCU directly. Baud is RNGFND_BAUDRATE
+# (115200 default), not RNGFND1_*.
+#
+# can_rangefinder_update() always reads instance 0 as ROTATION_NONE and the
+# FCU applies the real orientation (AG1 RNGFND2_ORIENT 25), so leave the
+# orientation alone here. The range limits do matter locally: status_orient()
+# clamps to OutOfRange against these before anything is sent.
+# 115200, confirmed on the bench with the radar wired straight to the FCU
+# (SERIAL6_BAUD 115 / SERIAL6_PROTOCOL 9). This is also RNGFND_BAUDRATE's
+# default, but pin it so a default change cannot move it.
+RNGFND_BAUDRATE 115200
+RNGFND1_TYPE 42
+RNGFND1_MIN_CM 20
+RNGFND1_MAX_CM 4000
+
+# The fuel level is published as a DroneCAN battery. Give it an explicit id
+# so the FCU binds it to the right instance
+BATT_SERIAL_NUM 254

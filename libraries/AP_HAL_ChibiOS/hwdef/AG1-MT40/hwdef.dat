@@ -1,0 +1,20 @@
+include ../AG1/hwdef.dat
+
+# define custom Align frame code
+define ALIGN_FRAME ALIGN_AG1_MT40
+
+# decrease arming delay
+define ARMING_DELAY_SEC 0.5f
+
+# Telemetry on Serial 1
+define DEFAULT_SERIAL1_BAUD 115
+
+# 360 obstacle radar on Serial 2. The protocol (Lidar360) comes from
+# AG1/hwdef.dat, only the baud rate is airframe specific.
+define DEFAULT_SERIAL2_BAUD 921
+
+# list of files to put in ROMFS (Lua scripts)
+ROMFS scripts/rng_auto.lua lua_scr/rng_auto.lua
+ROMFS scripts/arm_check.lua lua_scr/arm_check.lua
+ROMFS scripts/agri-load.lua lua_scr/agri-load.lua
+ROMFS scripts/agri-two-sprayer.lua lua_scr/agri-two-sprayer.lua

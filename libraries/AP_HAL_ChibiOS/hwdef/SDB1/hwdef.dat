@@ -1,0 +1,116 @@
+# hw definition file for Align L431 CAN node
+
+# MCU class and specific type
+MCU STM32L431 STM32L431xx
+
+# bootloader starts firmware at 36k + 4k (STORAGE_FLASH)
+FLASH_RESERVE_START_KB 40
+FLASH_SIZE_KB 256
+
+# store parameters in pages 18 and 19
+STORAGE_FLASH_PAGE 18
+define HAL_STORAGE_SIZE 800
+
+# ChibiOS system timer
+STM32_ST_USE_TIMER 15
+define CH_CFG_ST_RESOLUTION 16
+
+# board ID for firmware load
+APJ_BOARD_ID 155
+
+# crystal frequency
+OSCILLATOR_HZ 24000000
+
+env AP_PERIPH 1
+
+STDOUT_SERIAL SD1
+STDOUT_BAUDRATE 57600
+
+define HAL_NO_GPIO_IRQ
+define SERIAL_BUFFERS_SIZE 512
+define PORT_INT_REQUIRED_STACK 64
+
+define DMA_RESERVE_SIZE 0
+
+# MAIN_STACK is stack for ISR handlers
+MAIN_STACK 0x300
+
+# PROCESS_STACK controls stack for main thread
+PROCESS_STACK 0xA00
+
+define HAL_DISABLE_LOOP_DELAY
+
+define HAL_NO_MONITOR_THREAD
+
+# we setup a small defaults.parm
+define AP_PARAM_MAX_EMBEDDED_PARAM 512
+
+# LED0 marked as ACT
+PB12 LED OUTPUT HIGH
+define HAL_LED_ON 1
+
+# debugger support
+PA13 JTMS-SWDIO SWD
+PA14 JTCK-SWCLK SWD
+
+# CAN
+PA11 CAN1_RX CAN1
+PA12 CAN1_TX CAN1
+CAN_ORDER 1
+define HAL_CAN_POOL_SIZE 6000
+
+# UART
+SERIAL_ORDER USART1 USART2
+
+# USART1 for debug. NODMA on both: L431 has 7 DMA1 channels and the ADC, both
+# timers and both uarts want 6 of them, which left USART2_RX - the only receive
+# path that actually carries data on this board - unresolved. A console does not
+# need DMA, and the lidar never transmits, so hand the channels to the lidar rx.
+PB6  USART1_TX USART1 SPEED_HIGH NODMA
+PB7  USART1_RX USART1 SPEED_HIGH NODMA
+
+# USART2 for lidar, rx is the one that matters
+PA2 USART2_TX USART2 SPEED_HIGH NODMA
+PA3 USART2_RX USART2 SPEED_HIGH
+define HAL_PERIPH_ENABLE_RANGEFINDER
+define AP_PERIPH_RANGEFINDER_PORT_DEFAULT 1
+# AP_RangeFinder_config.h gates the Align drivers on BOARD_FLASH_SIZE > 1024,
+# so on this 256K L431 the RDR01 backend is compiled out unless asked for.
+# Without it RNGFND1_TYPE 42 still reads back as 42 and init() still opens the
+# uart, but no backend is created and nothing is ever published.
+define AP_RANGEFINDER_ALIGN_ENABLED 1
+
+# PWM
+# NODMA on the TIM1 group: TIM1_UP and USART2_RX both have exactly one
+# possible channel on the L431 (DMA1 ch6, see STM32L431xx.py) and TIM1 was
+# winning it, leaving the lidar receive path with no DMA at all. These three
+# are plain PWM and need none; the WS2812 on TIM2 keeps its own channel.
+PA8   TIM1_CH1  TIM1 PWM(1) GPIO(50) NODMA # Nozzle
+PA9   TIM1_CH2  TIM1 PWM(2) GPIO(51) NODMA # Reserved
+PA10  TIM1_CH3  TIM1 PWM(3) GPIO(52) NODMA # Reserved
+PA5   TIM2_CH1  TIM2 PWM(4) GPIO(53) # WS2812
+define HAL_PERIPH_ENABLE_RC_OUT
+define HAL_PERIPH_ENABLE_NOTIFY
+# AP_Periph builds default this to 0; needed for the WS2812 on PA5
+define AP_SERIALLED_ENABLED 1
+
+# Battery Monitor (Liquid level)
+define HAL_PERIPH_ENABLE_BATTERY
+define HAL_USE_ADC TRUE
+define STM32_ADC_USE_ADC1 TRUE
+PA1 BATT_VOLTAGE_SENS  ADC1 SCALE(1)
+define HAL_BATT_MONITOR_DEFAULT 24
+# same story as the rangefinder: AP_BattMonitor_config.h gates FuelLevel_Analog
+# on BOARD_FLASH_SIZE > 1024, so num_instances() stays 0 and can_battery_update()
+# has nothing to send
+define AP_BATTERY_FUELLEVEL_ANALOG_ENABLED 1
+
+# allow for reboot command for faster development
+define HAL_PERIPH_LISTEN_FOR_SERIAL_UART_REBOOT_CMD_PORT 0
+
+# keep ROMFS uncompressed as we don't have enough RAM
+# to uncompress the bootloader at runtime
+env ROMFS_UNCOMPRESSED True
+
+# don't embed bootloader
+define AP_BOOTLOADER_FLASHING_ENABLED 0

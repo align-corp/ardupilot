@@ -138,6 +138,8 @@ const AP_Param::GroupInfo SRV_Channel::var_info[] = {
     // @Values: 94:Script1,95:Script2,96:Script3,97:Script4,98:Script5,99:Script6,100:Script7,101:Script8,102:Script9,103:Script10,104:Script11,105:Script12,106:Script13,107:Script14,108:Script15,109:Script16
     // @Values{Plane, Copter, Rover}: 94:Script1,95:Script2,96:Script3,97:Script4,98:Script5,99:Script6,100:Script7,101:Script8,102:Script9,103:Script10,104:Script11,105:Script12,106:Script13,107:Script14,108:Script15,109:Script16
     // @Values{Plane}: 110:Airbrakes
+    // @Values: 111:Sprayer2Pump,112:Sprayer2Spinner
+    // @Values{Plane, Copter, Rover}: 111:Sprayer2Pump,112:Sprayer2Spinner
     // @Values: 120:NeoPixel1,121:NeoPixel2,122:NeoPixel3,123:NeoPixel4
     // @Values{Plane, Copter, Rover}: 120:NeoPixel1,121:NeoPixel2,122:NeoPixel3,123:NeoPixel4
     // @Values: 124:RateRoll,125:RatePitch,126:RateThrust,127:RateYaw

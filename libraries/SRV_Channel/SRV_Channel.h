@@ -152,6 +152,8 @@ public:
         k_scripting15           = 108,
         k_scripting16           = 109,
         k_airbrake              = 110,
+        k_sprayer2_pump         = 111,           ///< crop sprayer 2 (spreader) pump channel
+        k_sprayer2_spinner      = 112,           ///< crop sprayer 2 (spreader) spinner channel
         k_LED_neopixel1         = 120,
         k_LED_neopixel2         = 121,
         k_LED_neopixel3         = 122,

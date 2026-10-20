@@ -44,6 +44,8 @@ public:
 
     bool get_cycle_count(uint16_t &cycles) const override;
 
+    bool get_model_name(char *buf, uint8_t buflen) override;
+
     // return mavlink fault bitmask (see MAV_BATTERY_FAULT enum)
     uint32_t get_mavlink_fault_bitmask() const override;
 
@@ -92,6 +94,7 @@ private:
     uint8_t _soc;
     uint8_t _node_id;
     uint16_t _cycle_count;
+    char _model_name[sizeof(uavcan_equipment_power_BatteryInfo::model_name.data)+1];
     float _remaining_capacity_wh;
     float _full_charge_capacity_wh;
     bool _has_temperature;
@@ -102,6 +105,7 @@ private:
 
     AP_Float _curr_mult;                 // scaling multiplier applied to current reports for adjustment
     AP_Float _volt_mult;                 // scaling multiplier applied to voltage reports for adjustment
+    AP_Float _volt_offset;               // offset subtracted from voltage reports before scaling
     // MPPT variables
     struct {
         bool is_detected;               // true if this UAVCAN device is a Packet Digital MPPT

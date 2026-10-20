@@ -33,6 +33,13 @@ const AP_Param::GroupInfo AP_BattMonitor_DroneCAN::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("VOLT_MULT", 31, AP_BattMonitor_DroneCAN, _volt_mult, 1.0),
 
+    // @Param: VLT_OFFSET
+    // @DisplayName: Offset for reported power monitor voltage
+    // @Description: Voltage offset subtracted from the reported voltage before VOLT_MULT is applied, to zero out a sensor that does not read 0V at its zero point. Reported voltage is (CAN_voltage - VLT_OFFSET) * VOLT_MULT.
+    // @Units: V
+    // @User: Advanced
+    AP_GROUPINFO("VLT_OFFSET", 32, AP_BattMonitor_DroneCAN, _volt_offset, 0),
+
     // Param indexes must be between 30 and 39 to avoid conflict with other battery monitor param tables loaded by pointer
 
     AP_GROUPEND
@@ -127,6 +134,10 @@ void AP_BattMonitor_DroneCAN::handle_battery_info(const uavcan_equipment_power_B
     _remaining_capacity_wh = msg.remaining_capacity_wh;
     _full_charge_capacity_wh = msg.full_charge_capacity_wh;
 
+    const uint8_t name_len = MIN(msg.model_name.len, sizeof(_model_name)-1);
+    memcpy(_model_name, msg.model_name.data, name_len);
+    _model_name[name_len] = '\0';
+
     // consume state of health
     if (msg.state_of_health_pct != UAVCAN_EQUIPMENT_POWER_BATTERYINFO_STATE_OF_HEALTH_UNKNOWN) {
         _interim_state.state_of_health_pct = msg.state_of_health_pct;
@@ -138,7 +149,7 @@ void AP_BattMonitor_DroneCAN::update_interim_state(const float voltage, const fl
 {
     WITH_SEMAPHORE(_sem_battmon);
 
-    _interim_state.voltage = _volt_mult * voltage;
+    _interim_state.voltage = (voltage - _volt_offset) * _volt_mult;
     _interim_state.current_amps = _curr_mult * current;
     _soc = soc;
 
@@ -371,6 +382,18 @@ bool AP_BattMonitor_DroneCAN::get_cycle_count(uint16_t &cycles) const
         return true;
     }
     return false;
+}
+
+// get_model_name - return true if the battery reported a model name and copies it into buf
+bool AP_BattMonitor_DroneCAN::get_model_name(char *buf, uint8_t buflen)
+{
+    WITH_SEMAPHORE(_sem_battmon);
+    if (_model_name[0] == '\0') {
+        return false;
+    }
+    strncpy_noterm(buf, _model_name, buflen-1);
+    buf[buflen-1] = '\0';
+    return true;
 }
 
 // request MPPT board to power on/off depending upon vehicle arming state as specified by BATT_OPTIONS

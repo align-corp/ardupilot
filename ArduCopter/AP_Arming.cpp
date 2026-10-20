@@ -757,6 +757,9 @@ bool AP_Arming_Copter::arm(const AP_Arming::Method method, const bool do_arming_
 #if HAL_SPRAYER_ENABLED
     // turn off sprayer's test if on
     copter.sprayer.test_pump(false);
+#if HAL_SPRAYER2_ENABLED
+    copter.sprayer2.test_pump(false);
+#endif
 #endif
 
     // output lowest possible value to motors

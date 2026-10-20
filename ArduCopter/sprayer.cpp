@@ -11,6 +11,9 @@ void Copter::sprayer_update()
         height_cm = INT32_MAX;
     }
     sprayer.update_copter(height_cm);
+#if HAL_SPRAYER2_ENABLED
+    sprayer2.update_copter(height_cm);
+#endif
 }
 
 #endif

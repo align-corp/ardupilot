@@ -4,7 +4,7 @@
 set -e
 
 # base FCs to build the bootloader for
-BOARDS=("AP6" "AP6m")
+BOARDS=("AP6" "AP6m" "AG1" "SDB1" "PCU3")
 
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 HWDEF_DIR="$ROOT/libraries/AP_HAL_ChibiOS/hwdef"

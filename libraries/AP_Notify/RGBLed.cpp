@@ -107,8 +107,12 @@ uint32_t RGBLed::get_colour_sequence(void) const
     }
 
     // Check GNSS status only
-    if (!rc().has_had_rc_receiver() &&
-        !rc().has_had_rc_override() &&
+#if AP_RC_CHANNEL_ENABLED
+    const bool rc_seen = rc().has_had_rc_receiver() || rc().has_had_rc_override();
+#else
+    const bool rc_seen = true;
+#endif
+    if (!rc_seen &&
         !AP_Notify::flags.armed &&
         AP_HAL::millis() < 120000) {
             if (AP_Notify::flags.gps_status >= AP_GPS::GPS_OK_FIX_3D && AP_Notify::flags.gps_num_sats >= 8) {

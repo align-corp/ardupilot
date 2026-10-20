@@ -382,6 +382,49 @@ bool GCS_MAVLINK::send_battery_status()
     }
     return true;
 }
+
+// send SMART_BATTERY_INFO for one battery instance; only sent on request (MAV_CMD_REQUEST_MESSAGE, param2=instance)
+MAV_RESULT GCS_MAVLINK::send_smart_battery_info(const uint8_t instance)
+{
+    const AP_BattMonitor &battery = AP::battery();
+    if (instance >= AP_BATT_MONITOR_MAX_INSTANCES ||
+        battery.get_type(instance) == AP_BattMonitor::Type::NONE) {
+        return MAV_RESULT_FAILED;
+    }
+    if (!HAVE_PAYLOAD_SPACE(chan, SMART_BATTERY_INFO)) {
+        return MAV_RESULT_TEMPORARILY_REJECTED;
+    }
+
+    uint16_t cycle_count;
+    if (!battery.get_cycle_count(instance, cycle_count)) {
+        cycle_count = UINT16_MAX;
+    }
+    const char serial_number[MAVLINK_MSG_SMART_BATTERY_INFO_FIELD_SERIAL_NUMBER_LEN] {};
+    // model name string from the battery (e.g. DroneCAN BatteryInfo.model_name)
+    char device_name[MAVLINK_MSG_SMART_BATTERY_INFO_FIELD_DEVICE_NAME_LEN+1] {};
+    battery.get_model_name(instance, device_name, sizeof(device_name));
+    const char manufacture_date[MAVLINK_MSG_SMART_BATTERY_INFO_FIELD_MANUFACTURE_DATE_LEN] {};
+
+    mavlink_msg_smart_battery_info_send(chan,
+                                        instance, // id
+                                        MAV_BATTERY_FUNCTION_UNKNOWN, // function
+                                        MAV_BATTERY_TYPE_UNKNOWN, // type
+                                        battery.pack_capacity_mah(instance), // capacity_full_specification
+                                        -1, // capacity_full, not provided
+                                        cycle_count,
+                                        serial_number,
+                                        device_name,
+                                        0, // weight, not provided
+                                        UINT16_MAX, // discharge_minimum_voltage, not provided
+                                        UINT16_MAX, // charging_minimum_voltage, not provided
+                                        UINT16_MAX, // resting_minimum_voltage, not provided
+                                        0, // charging_maximum_voltage, not provided
+                                        0, // cells_in_series, not provided
+                                        0, // discharge_maximum_current, not provided
+                                        0, // discharge_maximum_burst_current, not provided
+                                        manufacture_date);
+    return MAV_RESULT_ACCEPTED;
+}
 #endif  // AP_BATTERY_ENABLED
 
 #if AP_RANGEFINDER_ENABLED
@@ -2985,6 +3028,12 @@ uint8_t GCS::get_channel_from_port_number(uint8_t port_num)
 MAV_RESULT GCS_MAVLINK::handle_command_request_message(const mavlink_command_int_t &packet)
 {
     const uint32_t mavlink_id = (uint32_t)packet.param1;
+#if AP_BATTERY_ENABLED
+    if (mavlink_id == MAVLINK_MSG_ID_SMART_BATTERY_INFO) {
+        // param2 is the battery instance (same as BATTERY_STATUS.id)
+        return send_smart_battery_info((uint8_t)packet.param2);
+    }
+#endif
     const ap_message id = mavlink_id_to_ap_message_id(mavlink_id);
     if (id == MSG_LAST) {
         return MAV_RESULT_FAILED;
@@ -4711,18 +4760,28 @@ MAV_RESULT GCS_MAVLINK::handle_command_do_gripper(const mavlink_command_int_t &p
 #if HAL_SPRAYER_ENABLED
 MAV_RESULT GCS_MAVLINK::handle_command_do_sprayer(const mavlink_command_int_t &packet)
 {
-    AC_Sprayer *sprayer = AP::sprayer();
-    if (sprayer == nullptr) {
-        return MAV_RESULT_FAILED;
+    // only act on an explicit start (1) or stop (0) request
+    if (!is_equal(packet.param1, 1.0f) && !is_zero(packet.param1)) {
+        return MAV_RESULT_DENIED;
     }
 
-    if (is_equal(packet.param1, 1.0f)) {
-        sprayer->run(true);
-    } else if (is_zero(packet.param1)) {
-        sprayer->run(false);
+    // control every sprayer instance that allows it
+    bool controlled = false;
+    for (uint8_t i = 0; i < AC_SPRAYER_MAX_INSTANCES; i++) {
+        AC_Sprayer *sprayer = AP::sprayer(i);
+        if (sprayer == nullptr) {
+            continue;
+        }
+
+        // SPRAY_ENABLE = 2 restricts control to the RC aux function
+        if (!sprayer->mavlink_control_enabled()) {
+            continue;
+        }
+        sprayer->run(is_equal(packet.param1, 1.0f));
+        controlled = true;
     }
 
-    return MAV_RESULT_ACCEPTED;
+    return controlled ? MAV_RESULT_ACCEPTED : MAV_RESULT_FAILED;
 }
 #endif
 

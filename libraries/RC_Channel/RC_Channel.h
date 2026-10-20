@@ -250,6 +250,7 @@ public:
         CAMERA_LENS =        175, // camera lens selection
         VFWD_THR_OVERRIDE =  176, // force enabled VTOL forward throttle method
         MOUNT_LRF_ENABLE =   177,  // mount LRF enable/disable
+        SPRAYER2 =           178, // enable/disable the second crop sprayer (spreader)
 
 
         // inputs from 200 will eventually used to replace RCMAP
@@ -359,7 +360,7 @@ protected:
     void do_aux_function_mission_reset(const AuxSwitchPos ch_flag);
     void do_aux_function_rc_override_enable(const AuxSwitchPos ch_flag);
     void do_aux_function_relay(uint8_t relay, bool val);
-    void do_aux_function_sprayer(const AuxSwitchPos ch_flag);
+    void do_aux_function_sprayer(uint8_t instance, const AuxSwitchPos ch_flag);
     void do_aux_function_generator(const AuxSwitchPos ch_flag);
     void do_aux_function_fft_notch_tune(const AuxSwitchPos ch_flag);
 

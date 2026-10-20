@@ -17,5 +17,5 @@ function check_level()
     return check_level, MILLIS_UPDATE
 end
 
-gcs:send_text('6', "Agricolture Level is running")
+gcs:send_text('6', "agri-level is running")
 return check_level, 1000

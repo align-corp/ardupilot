@@ -1,5 +1,16 @@
 -- read amplified load cells on analog pins and feed their weights
--- into a scripting battery driver via the cell_voltages array - version 0.2
+-- into a scripting battery driver via the cell_voltages array
+--
+-- It also scales the EKF3 drag model with the payload, so the wind estimate
+-- (and the baro wind compensation that uses it) stays right as the tank
+-- empties. LOAD_BCOEF_X/Y and LOAD_MCOEF hold the coefficients fitted with an
+-- empty tank, and for a total mass m = LOAD_EMPTY_KG + payload:
+--   EK3_DRAG_BCOEF_x = LOAD_BCOEF_x * m / LOAD_EMPTY_KG  (mass / drag area)
+--   EK3_DRAG_MCOEF   = LOAD_MCOEF * sqrt(LOAD_EMPTY_KG / m)
+-- rotor momentum drag force grows with sqrt(thrust), so its acceleration
+-- falls with 1/sqrt(m). The EK3 values are set but never saved, so after a
+-- reboot they still hold whatever was saved before
+-- version 0.3
 
 -- user constants
 local MILLIS_UPDATE = 1000
@@ -8,6 +19,13 @@ local NUM_CELLS = #LOAD_PINS
 -- at boot, a total weight above this (g) with the saved offsets means the
 -- drone is loaded, so the saved offsets are kept instead of recalibrating
 local BOOT_LOADED_GRAMS = 3000
+-- in flight the cells read m * (g + vertical accel), filter that out. The
+-- payload only changes over minutes so a slow filter costs nothing
+local DRAG_FILTER_TC_S = 10
+-- rewrite the EK3 coefficients only when the mass moves more than this
+local DRAG_UPDATE_RATIO = 0.01
+-- bound a bad load reading, max payload as a multiple of the empty mass
+local DRAG_MAX_MASS_RATIO = 2.5
 
 -- parameters
 local PARAM_TABLE_KEY = 50
@@ -19,8 +37,8 @@ function bind_add_param(name, idx, default_value)
     return Parameter(PARAM_TABLE_PREFIX .. name)
 end
 
--- 1 (battery index) + 2 params per cell
-assert(param:add_table(PARAM_TABLE_KEY, PARAM_TABLE_PREFIX, 1 + 2 * NUM_CELLS), 'could not add param table')
+-- 1 (battery index) + 2 params per cell + 4 drag scaling
+assert(param:add_table(PARAM_TABLE_KEY, PARAM_TABLE_PREFIX, 1 + 2 * NUM_CELLS + 4), 'could not add param table')
 
 --[[
   // @Param: LOAD_BATT_IDX
@@ -50,6 +68,51 @@ for i = 1, NUM_CELLS do
       // @User: Standard
     --]]
     LOAD_SCALE[i] = bind_add_param(string.format('%u_SCALE', i), 2 * i + 1, 10000) --TODO: add default scale
+end
+
+local DRAG_PARAM_IDX = 2 * NUM_CELLS + 2
+--[[
+  // @Param: LOAD_EMPTY_KG
+  // @DisplayName: Empty drone mass
+  // @Description: Take-off mass with an empty tank, the load cell payload is added to it to scale the EKF3 drag coefficients. Set to 0 to leave EK3_DRAG_BCOEF_X, EK3_DRAG_BCOEF_Y and EK3_DRAG_MCOEF alone
+  // @Units: kg
+  // @User: Standard
+--]]
+local LOAD_EMPTY_KG = bind_add_param('_EMPTY_KG', DRAG_PARAM_IDX, 34)
+--[[
+  // @Param: LOAD_BCOEF_X
+  // @DisplayName: Empty ballistic coefficient X
+  // @Description: EK3_DRAG_BCOEF_X fitted with an empty tank, scaled up with the payload. 0 leaves EK3_DRAG_BCOEF_X alone
+  // @Units: kg/m/m
+  // @User: Advanced
+--]]
+local LOAD_BCOEF_X = bind_add_param('_BCOEF_X', DRAG_PARAM_IDX + 1, 101)
+--[[
+  // @Param: LOAD_BCOEF_Y
+  // @DisplayName: Empty ballistic coefficient Y
+  // @Description: EK3_DRAG_BCOEF_Y fitted with an empty tank, scaled up with the payload. 0 leaves EK3_DRAG_BCOEF_Y alone
+  // @Units: kg/m/m
+  // @User: Advanced
+--]]
+local LOAD_BCOEF_Y = bind_add_param('_BCOEF_Y', DRAG_PARAM_IDX + 2, 108)
+--[[
+  // @Param: LOAD_MCOEF
+  // @DisplayName: Empty momentum drag coefficient
+  // @Description: EK3_DRAG_MCOEF fitted with an empty tank, scaled down with the payload. 0 leaves EK3_DRAG_MCOEF alone
+  // @Units: 1/s
+  // @User: Advanced
+--]]
+local LOAD_MCOEF = bind_add_param('_MCOEF', DRAG_PARAM_IDX + 3, 0.14)
+
+-- EK3 drag parameters, bound in two steps as a build may lack EKF3 drag fusion
+local ek3_bcoef_x = Parameter()
+local ek3_bcoef_y = Parameter()
+local ek3_mcoef = Parameter()
+local ek3_drag_ok = ek3_bcoef_x:init('EK3_DRAG_BCOEF_X') and
+                    ek3_bcoef_y:init('EK3_DRAG_BCOEF_Y') and
+                    ek3_mcoef:init('EK3_DRAG_MCOEF')
+if not ek3_drag_ok then
+    gcs:send_text(4, "agri-load: no EK3 drag params, drag scaling off")
 end
 
 -- setup analog channels, one per load cell
@@ -97,6 +160,48 @@ function total_grams()
     return total
 end
 
+local payload_kg_filt = nil     -- filtered payload, nil until the first sample
+local drag_mass_ratio = nil     -- mass ratio the EK3 coefficients were last set for
+
+-- set an EK3 drag coefficient from its empty tank reference, a reference of 0
+-- means the user manages it by hand
+function set_drag_coef(ek3_param, ref_param, factor)
+    local ref = ref_param:get()
+    if ref <= 0 then
+        return
+    end
+    ek3_param:set(ref * factor)
+end
+
+-- scale the EKF3 drag model with the measured payload
+function update_drag(payload_kg)
+    local empty_kg = LOAD_EMPTY_KG:get()
+    if not ek3_drag_ok or empty_kg <= 0 then
+        return
+    end
+
+    payload_kg = math.max(payload_kg, 0)
+    if not payload_kg_filt or not arming:is_armed() then
+        -- on the ground follow the reading, so a tank filled before take-off
+        -- is right at arming
+        payload_kg_filt = payload_kg
+    else
+        local dt = MILLIS_UPDATE * 0.001
+        payload_kg_filt = payload_kg_filt + (dt / (dt + DRAG_FILTER_TC_S)) * (payload_kg - payload_kg_filt)
+    end
+
+    local ratio = math.min((empty_kg + payload_kg_filt) / empty_kg, DRAG_MAX_MASS_RATIO)
+    if drag_mass_ratio and math.abs(ratio - drag_mass_ratio) < DRAG_UPDATE_RATIO * drag_mass_ratio then
+        return
+    end
+    drag_mass_ratio = ratio
+
+    -- set() and not set_and_save(), redone on every boot
+    set_drag_coef(ek3_bcoef_x, LOAD_BCOEF_X, ratio)
+    set_drag_coef(ek3_bcoef_y, LOAD_BCOEF_Y, ratio)
+    set_drag_coef(ek3_mcoef, LOAD_MCOEF, 1 / math.sqrt(ratio))
+end
+
 function update()
     if LOAD_OFFSET[1]:get() == 0 then
         calibrate_zero()
@@ -137,6 +242,11 @@ function update()
     state:voltage(total * 0.001)
 
     battery:handle_scripting(LOAD_BATT_IDX:get(), state)
+
+    -- the zero is not trusted until a calibration has succeeded
+    if LOAD_OFFSET[1]:get() ~= 0 then
+        update_drag(total * 0.001)
+    end
 
     return update, MILLIS_UPDATE
 end

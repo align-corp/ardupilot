@@ -10,13 +10,14 @@
 --
 -- It also ties the sprayers to return to home:
 -- - entering RTL, SMART_RTL or AUTO_RTL turns both sprayers off
--- - leaving AUTO for any other mode with the sprayer switch high turns both
---   sprayers off, so a resumed mission does not spray on its way back
+-- - leaving AUTO for any other mode turns both sprayers off, whatever the
+--   switch position or whoever started them
 -- - when the drone was armed with more than RTLAG_ARM_KG on the load cells, an
 --   empty tank engages RTL. SPRAYER: pump above RTLAG_PUMP_PCT with flow below
 --   RTLAG_FLOW_LPM for RTLAG_PUMP_SEC. SPRAYER2: load below RTLAG_SPRD_KG for
---   RTLAG_SPRD_SEC
--- version 0.4
+--   RTLAG_SPRD_SEC. RTLAG_ENABLE bit 0 allows this in AUTO, bit 1 in every
+--   other mode
+-- version 0.6
 
 -- user constants
 local MILLIS_UPDATE = 500
@@ -32,7 +33,6 @@ local AUX_FUNC_SPRAYER2 = 178
 
 -- RC_Channel::AuxSwitchPos
 local AUX_POS_LOW = 0
-local AUX_POS_HIGH = 2
 
 -- SPRAYx_ENABLE values, see AC_Sprayer.cpp
 local SPRAY_ENABLE_DISABLED = 0
@@ -45,6 +45,10 @@ local MODE_RTL = 6
 local MODE_LAND = 9
 local MODE_SMART_RTL = 21
 local MODE_AUTO_RTL = 27
+
+-- RTLAG_ENABLE bits
+local RTLAG_ENABLE_AUTO = 1     -- bit 0, empty RTL while in AUTO
+local RTLAG_ENABLE_OTHER = 2    -- bit 1, empty RTL in every other mode
 
 -- SRV_Channel function of the SPRAYER pump
 local SERVO_FUNC_SPRAYER_PUMP = 22
@@ -64,8 +68,8 @@ assert(param:add_table(PARAM_TABLE_KEY, PARAM_TABLE_PREFIX, 7), 'agri-two-spraye
 --[[
   // @Param: RTLAG_ENABLE
   // @DisplayName: Sprayer empty RTL enable
-  // @Description: Engage RTL when the active sprayer runs empty. Turning the sprayers off on RTL is always active
-  // @Values: 0:Disabled,1:Enabled
+  // @Description: Engage RTL when the active sprayer runs empty, in the selected flight modes. Turning the sprayers off on RTL is always active
+  // @Bitmask: 0:AUTO,1:All other modes
   // @User: Standard
 --]]
 local RTLAG_ENABLE = bind_add_param('ENABLE', 1, 1)
@@ -345,15 +349,6 @@ function stop_sprayers()
     rc:run_aux_function(AUX_FUNC_SPRAYER2, AUX_POS_LOW)
 end
 
--- true while the sprayer RC switch is high
-function sprayer_switch_high()
-    if not rc_num then
-        return false
-    end
-    local channel = rc:get_channel(rc_num)
-    return channel ~= nil and channel:get_aux_switch_pos() == AUX_POS_HIGH
-end
-
 -- true once the active sprayer has been empty long enough
 function tank_empty(now)
     local empty = false
@@ -392,10 +387,9 @@ function update_rth()
     end
     was_rth = rth
 
-    -- leaving AUTO with the switch high, stop spraying until the pilot
-    -- cycles the switch. RTH modes are handled above whatever the switch says
+    -- leaving AUTO for any mode, stop spraying
     local auto = (mode == MODE_AUTO)
-    if was_auto and not auto and not rth and sprayer_switch_high() then
+    if was_auto and not auto and not rth then
         stop_sprayers()
         gcs:send_text(5, "agri-two-sprayer: AUTO exit, sprayer off")
     end
@@ -415,7 +409,8 @@ function update_rth()
     end
     was_armed = armed
 
-    if not armed or not arm_loaded or empty_rtl_done or RTLAG_ENABLE:get() < 1 then
+    local enable_bit = auto and RTLAG_ENABLE_AUTO or RTLAG_ENABLE_OTHER
+    if not armed or not arm_loaded or empty_rtl_done or (math.floor(RTLAG_ENABLE:get()) & enable_bit) == 0 then
         empty_since_ms = nil
         return
     end

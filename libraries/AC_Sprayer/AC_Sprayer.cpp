@@ -403,7 +403,8 @@ void AC_Sprayer::update()
         const uint32_t spin_down_ms = _spin_down_sec > 0 ? uint32_t(_spin_down_sec) * 1000 : 0;
         if (!spinner_speed_off(_spinner_pwm) && !spinner_speed_off(_spin_low) &&
             _spinner_off_ms != 0 && (now - _spinner_off_ms) < spin_down_ms) {
-            drive_spinner(_spin_low);
+            int16_t spinner_low = _spinner_pwm < _spin_low ? _spinner_pwm : _spin_low;
+            drive_spinner(spinner_low);
         } else {
             stop_spinner();
         }

@@ -87,11 +87,18 @@ GPS_TYPE2 5
 INITIAL_MODE 5
 INS_ACCEL_FILTER 20
 INS_GYRO_FILTER 20
-INS_HNTCH_BW 50
+# one notch per motor from ESC telemetry rpm on the 1x (imbalance), 2x
+# (blade pass), 4x and 6x harmonics. Gyro FFT with 30 kg payload, two motors at 33 Hz and two at
+# 38 Hz: peaks at ~66, ~132 and ~195 Hz, the last one exciting a pitch mode.
+# BW scales with the harmonic, ~48 Hz wide at 4x and ~72 Hz at 6x
+# (hover ~1600 rpm = 26.7 Hz empty)
+INS_HNTCH_BW 12
 INS_HNTCH_ENABLE 1
 INS_HNTCH_FM_RAT 1
-INS_HNTCH_FREQ 115
-INS_HNTCH_MODE 0
+INS_HNTCH_FREQ 25
+INS_HNTCH_HMNCS 43
+INS_HNTCH_MODE 3
+INS_HNTCH_OPTS 2
 INS_HNTCH_REF 1
 INS_POS1_X 0.18
 INS_POS2_X 0.18
@@ -102,6 +109,9 @@ LOIT_BRK_ACCEL 100
 LOIT_BRK_DELAY 0
 LOIT_BRK_JERK 200
 LOIT_SPEED 600
+# voltage compensation from the main battery (BATT3), index 0 is the SDB1
+# liquid level
+MOT_BAT_IDX 2
 MOT_BAT_VOLT_MAX 60.9
 MOT_BAT_VOLT_MIN 46.2
 MOT_SLEW_UP_TIME 0.3

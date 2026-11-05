@@ -17,7 +17,11 @@
 --   RTLAG_FLOW_LPM for RTLAG_PUMP_SEC. SPRAYER2: load below RTLAG_SPRD_KG for
 --   RTLAG_SPRD_SEC. RTLAG_ENABLE bit 0 allows this in AUTO, bit 1 in every
 --   other mode
--- version 0.6
+-- - running dry burns out the pump and spinner motors, so the same empty tank
+--   checks always turn both sprayers off, armed or not, whatever RTLAG_ENABLE
+--   and the load at arming. For SPRAYER2 this only applies while its pump or
+--   spinner output is above SPRD_RUN_PCT
+-- version 0.7
 
 -- user constants
 local MILLIS_UPDATE = 500
@@ -26,6 +30,7 @@ local CONFIRM_COUNT = 4         -- consecutive agreeing samples before switching
 local STARTUP_GRACE_MS = 10000  -- wait this long for a CAN ESC to come up at boot
 local NUM_RC_CHANNELS = 16
 local CHANNEL_RETRY_MS = 5000   -- how often to look again for a sprayer switch
+local SPRD_RUN_PCT = 5          -- SPRAYER2 output above which it counts as running
 
 -- RC_Channel aux function numbers, see RC_Channel.h
 local AUX_FUNC_SPRAYER = 15
@@ -50,8 +55,10 @@ local MODE_AUTO_RTL = 27
 local RTLAG_ENABLE_AUTO = 1     -- bit 0, empty RTL while in AUTO
 local RTLAG_ENABLE_OTHER = 2    -- bit 1, empty RTL in every other mode
 
--- SRV_Channel function of the SPRAYER pump
+-- SRV_Channel functions, see SRV_Channel.h
 local SERVO_FUNC_SPRAYER_PUMP = 22
+local SERVO_FUNC_SPRAYER2_PUMP = 111
+local SERVO_FUNC_SPRAYER2_SPINNER = 112
 
 -- parameters
 local PARAM_TABLE_KEY = 52
@@ -68,7 +75,7 @@ assert(param:add_table(PARAM_TABLE_KEY, PARAM_TABLE_PREFIX, 7), 'agri-two-spraye
 --[[
   // @Param: RTLAG_ENABLE
   // @DisplayName: Sprayer empty RTL enable
-  // @Description: Engage RTL when the active sprayer runs empty, in the selected flight modes. Turning the sprayers off on RTL is always active
+  // @Description: Engage RTL when the active sprayer runs empty, in the selected flight modes. Turning the sprayers off on RTL or on an empty tank is always active
   // @Bitmask: 0:AUTO,1:All other modes
   // @User: Standard
 --]]
@@ -140,6 +147,8 @@ local was_auto = false
 local arm_loaded = false        -- load at arming was above RTLAG_ARM_KG
 local empty_since_ms = nil      -- time the empty condition was first seen
 local empty_rtl_done = false    -- empty RTL already engaged since arming
+local dry_since_ms = nil        -- time the active sprayer was first seen running dry
+local dry_stopped = false       -- sprayers stopped for this dry run, until it clears
 local load_batt_param = nil     -- LOAD_BATT_IDX from agri-load.lua
 local flow_batt_param = nil     -- SPRAY_FLOW_BATT
 
@@ -315,11 +324,11 @@ function flow_lpm()
     return battery:current_amps(instance - 1)
 end
 
--- SPRAYER pump output as a percentage of its SERVOn_MIN..SERVOn_MAX range,
--- nil if no output is assigned to the pump
-function pump_pct()
-    local chan = SRV_Channels:find_channel(SERVO_FUNC_SPRAYER_PUMP)
-    local pwm = SRV_Channels:get_output_pwm(SERVO_FUNC_SPRAYER_PUMP)
+-- output of servo_func as a percentage of its SERVOn_MIN..SERVOn_MAX range,
+-- nil if no output is assigned to it
+function output_pct(servo_func)
+    local chan = SRV_Channels:find_channel(servo_func)
+    local pwm = SRV_Channels:get_output_pwm(servo_func)
     if not chan or not pwm then
         return nil
     end
@@ -349,29 +358,51 @@ function stop_sprayers()
     rc:run_aux_function(AUX_FUNC_SPRAYER2, AUX_POS_LOW)
 end
 
--- true once the active sprayer has been empty long enough
-function tank_empty(now)
-    local empty = false
-    local hold_ms = 0
+-- true while any output of the SPRAYER2 pump or spinner is running
+function spreader_running()
+    local pump = output_pct(SERVO_FUNC_SPRAYER2_PUMP)
+    local spinner = output_pct(SERVO_FUNC_SPRAYER2_SPINNER)
+    return (pump ~= nil and pump > SPRD_RUN_PCT) or (spinner ~= nil and spinner > SPRD_RUN_PCT)
+end
+
+-- instantaneous empty tank check for the active sprayer. Returns whether the
+-- tank reads empty, whether the sprayer is running on it, and how long either
+-- must last before acting
+function empty_state()
     if current_option == AUX_FUNC_SPRAYER then
-        local pct = pump_pct()
+        local pct = output_pct(SERVO_FUNC_SPRAYER_PUMP)
         local lpm = flow_lpm()
-        empty = pct ~= nil and lpm ~= nil and pct > RTLAG_PUMP_PCT:get() and lpm < RTLAG_FLOW_LPM:get()
-        hold_ms = RTLAG_PUMP_SEC:get() * 1000
+        -- low flow only means empty with the pump pushing, so this is running dry
+        local empty = pct ~= nil and lpm ~= nil and pct > RTLAG_PUMP_PCT:get() and lpm < RTLAG_FLOW_LPM:get()
+        return empty, empty, RTLAG_PUMP_SEC:get() * 1000
     elseif current_option == AUX_FUNC_SPRAYER2 then
         local kg = load_kg()
-        empty = kg ~= nil and kg < RTLAG_SPRD_KG:get()
-        hold_ms = RTLAG_SPRD_SEC:get() * 1000
+        local empty = kg ~= nil and kg < RTLAG_SPRD_KG:get()
+        return empty, empty and spreader_running(), RTLAG_SPRD_SEC:get() * 1000
     end
+    return false, false, 0
+end
 
-    if not empty then
-        empty_since_ms = nil
-        return false
+-- stop the sprayers once they have run dry for hold_ms. Not gated by
+-- RTLAG_ENABLE, arming or the load at arming: it protects the motors
+function update_dry(now, dry, hold_ms)
+    if not dry then
+        dry_since_ms = nil
+        dry_stopped = false
+        return
     end
-    if not empty_since_ms then
-        empty_since_ms = now
+    -- the stop delays keep the outputs up for a while, stop only once
+    if dry_stopped then
+        return
     end
-    return (now - empty_since_ms) >= hold_ms
+    if not dry_since_ms then
+        dry_since_ms = now
+    end
+    if (now - dry_since_ms) >= hold_ms then
+        dry_stopped = true
+        stop_sprayers()
+        gcs:send_text(2, "agri-two-sprayer: tank empty, sprayer off")
+    end
 end
 
 function update_rth()
@@ -379,6 +410,9 @@ function update_rth()
     local armed = arming:is_armed()
     local mode = vehicle:get_mode()
     local rth = is_rth_mode(mode)
+    local empty, dry, hold_ms = empty_state()
+
+    update_dry(now, dry, hold_ms)
 
     -- turn the sprayers off on entering RTH, from any source
     if rth and not was_rth then
@@ -420,7 +454,14 @@ function update_rth()
         return
     end
 
-    if tank_empty(now) then
+    if not empty then
+        empty_since_ms = nil
+        return
+    end
+    if not empty_since_ms then
+        empty_since_ms = now
+    end
+    if (now - empty_since_ms) >= hold_ms then
         -- only once per flight, the pilot may take over and finish by hand
         empty_rtl_done = true
         empty_since_ms = nil

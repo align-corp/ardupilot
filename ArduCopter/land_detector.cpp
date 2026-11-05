@@ -9,6 +9,10 @@
 // counter to verify landings
 static uint32_t land_detector_count = 0;
 
+// counter of loops where all land conditions except the rangefinder check are met
+// used to bypass a stuck rangefinder that never reads below LAND_RANGEFINDER_MIN_ALT_CM
+static uint32_t land_rangefinder_bypass_count = 0;
+
 // run land and crash detectors
 // called at MAIN_LOOP_RATE
 void Copter::update_land_and_crash_detectors()
@@ -61,6 +65,7 @@ void Copter::update_land_detector()
     } else if (standby_active) {
         // land detector will not run in standby mode
         land_detector_count = 0;
+        land_rangefinder_bypass_count = 0;
     } else {
 
         float land_trigger_sec = LAND_DETECTOR_TRIGGER_SEC;
@@ -106,6 +111,22 @@ void Copter::update_land_detector()
         const bool WoW_check = true;
 #endif
 
+        // stuck rangefinder protection: if every other land condition has held for
+        // LAND_RANGEFINDER_BYPASS_SEC while the rangefinder still reads high, ignore the rangefinder
+        const bool other_land_conditions = motor_at_lower_limit && accel_stationary && descent_rate_low && WoW_check;
+        if (!other_land_conditions) {
+            land_rangefinder_bypass_count = 0;
+        } else if (!rangefinder_check) {
+            const uint32_t bypass_count_max = LAND_RANGEFINDER_BYPASS_SEC * scheduler.get_loop_rate_hz();
+            if (land_rangefinder_bypass_count < bypass_count_max) {
+                land_rangefinder_bypass_count++;
+                if (land_rangefinder_bypass_count == bypass_count_max) {
+                    gcs().send_text(MAV_SEVERITY_WARNING, "Land detector: ignoring rangefinder");
+                }
+            }
+            rangefinder_check = (land_rangefinder_bypass_count >= bypass_count_max);
+        }
+
         if (motor_at_lower_limit && accel_stationary && descent_rate_low && rangefinder_check && WoW_check) {
             // landed criteria met - increment the counter and check if we've triggered
             if( land_detector_count < land_trigger_sec*scheduler.get_loop_rate_hz()) {
@@ -130,6 +151,7 @@ void Copter::set_land_complete(bool b)
         return;
 
     land_detector_count = 0;
+    land_rangefinder_bypass_count = 0;
 
 #if HAL_LOGGING_ENABLED
     if(b){

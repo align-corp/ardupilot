@@ -379,6 +379,9 @@
 #ifndef LAND_RANGEFINDER_MIN_ALT_CM
 #define LAND_RANGEFINDER_MIN_ALT_CM 200
 #endif
+#ifndef LAND_RANGEFINDER_BYPASS_SEC
+ # define LAND_RANGEFINDER_BYPASS_SEC 10.0f // ignore rangefinder land check after all other land conditions have held this long (stuck rangefinder protection)
+#endif
 
 // Automatic land in loiter
 #ifndef PILOT_LAND_ALT_DEFAULT

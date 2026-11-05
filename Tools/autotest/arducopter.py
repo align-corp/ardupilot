@@ -3644,6 +3644,48 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         if ex is not None:
             raise ex
 
+    def RangeFinderStuckLandDetect(self):
+        '''Check land detector ignores a downward rangefinder stuck high so the vehicle can disarm'''
+        self.set_parameters({
+            "SCR_ENABLE": 1,
+            "RNGFND1_TYPE": 36,     # Lua
+            "RNGFND1_ORIENT": 25,   # down
+            "RNGFND1_MIN_CM": 20,
+            "RNGFND1_MAX_CM": 4000,
+            "SURFTRAK_MODE": 0,     # stuck reading must not fight the descent
+            "DISARM_DELAY": 2,
+        })
+        # script feeds a constant 6m reading
+        self.install_test_script_context("rangefinder_stuck.lua")
+        self.reboot_sitl()
+
+        stuck_cm = 600
+        self.context_collect('STATUSTEXT')
+
+        self.takeoff(10, mode='LOITER')
+
+        self.progress("Checking rangefinder reports the stuck value")
+        self.assert_received_message_field_values('RANGEFINDER', {
+            "distance": stuck_cm * 0.01,
+        }, epsilon=0.1)
+
+        self.progress("Descending in LOITER with throttle stick down")
+        self.set_rc(3, 1000)
+        self.wait_altitude(-5, 0.3, relative=True, timeout=60)
+        self.progress("On the ground; rangefinder still reads %.1fm" % (stuck_cm * 0.01))
+
+        # without the bypass the land detector never triggers; normally it
+        # takes ~1s, so still being armed here shows the rangefinder blocked it
+        self.delay_sim_time(7)
+        if not self.armed():
+            raise NotAchievedException("Disarmed before rangefinder bypass should have triggered")
+        if self.statustext_in_collections("Land detector: ignoring rangefinder"):
+            raise NotAchievedException("Rangefinder bypass triggered too early")
+
+        self.wait_statustext("Land detector: ignoring rangefinder", check_context=True, timeout=15)
+        self.wait_disarmed(timeout=10)
+        self.set_rc(3, 1500)
+
     def SplineTerrain(self):
         '''Test Splines and Terrain'''
         self.set_parameter("TERRAIN_ENABLE", 0)
@@ -10325,6 +10367,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
              self.Button,
              self.ShipTakeoff,
              self.RangeFinder,
+             self.RangeFinderStuckLandDetect,
              self.BaroDrivers,
              self.SurfaceTracking,
              self.Parachute,

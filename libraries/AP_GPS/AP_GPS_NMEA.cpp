@@ -266,6 +266,11 @@ bool AP_GPS_NMEA::_have_new_message()
         _last_KSXT_pos_ms = 0;
     }
 
+    if (now - _last_PSTI032_ms > 2000) {
+        // we have lost PSTI,032 baseline data
+        _last_PSTI032_ms = 0;
+    }
+
 #if AP_GPS_NMEA_UNICORE_ENABLED
     if (now - _last_AGRICA_ms > 500) {
         if (_last_AGRICA_ms != 0) {
@@ -381,6 +386,10 @@ bool AP_GPS_NMEA::_term_complete()
                     // use AGRICA
                     break;
                 }
+                if (_last_PSTI032_ms != 0) {
+                    // use PSTI,032, which lets us check the baseline
+                    break;
+                }
                 if (isnan(_new_gps_yaw)) {
                     // empty sentence
                     break;
@@ -440,7 +449,7 @@ bool AP_GPS_NMEA::_term_complete()
                     velocity_to_speed_course(state);
                     _last_3D_velocity_ms = now;
                 }
-                if (is_equal(3.0f, float(_ksxt.fields[10]))) {
+                if (is_equal(3.0f, float(_ksxt.fields[10])) && _last_PSTI032_ms == 0) {
                     // have good yaw (from RTK fixed moving baseline solution)
                     _last_yaw_ms = now;
                     state.gps_yaw = _ksxt.fields[4];
@@ -449,6 +458,36 @@ bool AP_GPS_NMEA::_term_complete()
                     state.gps_yaw_configured = true;
                 }
                 break;
+#if GPS_MOVING_BASELINE
+            case _GPS_SENTENCE_PSTI: {
+                if (_psti.msg_id != 32) {
+                    // other SkyTraq messages are not used
+                    break;
+                }
+                _last_PSTI032_ms = now;
+                state.gps_yaw_configured = true;
+                const auto &p = _psti;
+                if (p.status != 'A' || p.mode != 'R' ||
+                    isnan(p.up) || isnan(p.length) || isnan(p.course)) {
+                    // need an RTK fixed baseline for yaw
+                    state.have_gps_yaw = false;
+                    break;
+                }
+                // baseline is from the primary to the secondary
+                // antenna, convert Up to Down
+                const float down = -p.up;
+                state.relPosHeading = p.course;
+                state.relPosLength = p.length;
+                state.relPosD = down;
+                state.relposheading_ts = now;
+                // checks the reported length against GPS_MBn_* and
+                // the vertical component against the vehicle attitude
+                if (calculate_moving_base_yaw(p.course, p.length, down)) {
+                    _last_yaw_ms = now;
+                }
+                break;
+            }
+#endif // GPS_MOVING_BASELINE
 #if AP_GPS_NMEA_UNICORE_ENABLED
             case _GPS_SENTENCE_AGRICA: {
                 const auto &ag = _agrica;
@@ -529,6 +568,12 @@ bool AP_GPS_NMEA::_term_complete()
             _sentence_type = _GPS_SENTENCE_KSXT;
             return false;
         }
+#if GPS_MOVING_BASELINE
+        if (strcmp(_term, "PSTI") == 0) {
+            _sentence_type = _GPS_SENTENCE_PSTI;
+            return false;
+        }
+#endif
 #if AP_GPS_NMEA_UNICORE_ENABLED
         if (strcmp(_term, "AGRICA") == 0 && _expect_agrica) {
             _sentence_type = _GPS_SENTENCE_AGRICA;
@@ -657,6 +702,11 @@ bool AP_GPS_NMEA::_term_complete()
         case _GPS_SENTENCE_KSXT + 1 ... _GPS_SENTENCE_KSXT + 22: // KSXT message, fields
             _ksxt.fields[_term_number-1] = atof(_term);
             break;
+#if GPS_MOVING_BASELINE
+        case _GPS_SENTENCE_PSTI + 1 ... _GPS_SENTENCE_PSTI + 15: // SkyTraq PSTI message, fields
+            parse_psti_field(_term_number, _term);
+            break;
+#endif
 #if AP_GPS_NMEA_UNICORE_ENABLED
         case _GPS_SENTENCE_AGRICA + 1 ... _GPS_SENTENCE_AGRICA + 65: // AGRICA message
             parse_agrica_field(_term_number, _term);
@@ -793,6 +843,55 @@ void AP_GPS_NMEA::parse_versiona_field(uint16_t term_number, const char *term)
 #pragma GCC diagnostic pop
 }
 #endif // AP_GPS_NMEA_UNICORE_ENABLED
+
+#if GPS_MOVING_BASELINE
+/*
+  parse a SkyTraq PSTI message term. Only $PSTI,032 (RTK baseline) is used
+
+  Example:
+    $PSTI,032,033010.000,111219,A,R,-4.968,-10.817,-1.849,12.046,204.67,,,,,*39
+ */
+void AP_GPS_NMEA::parse_psti_field(uint16_t term_number, const char *term)
+{
+    auto &p = _psti;
+    if (term_number == 1) {
+        // message ID, always present. Empty terms are not passed in,
+        // so reset everything here
+        p.msg_id = atol(term);
+        p.status = 0;
+        p.mode = 0;
+        p.east = p.north = p.up = p.length = p.course = QNAN;
+        return;
+    }
+    if (p.msg_id != 32) {
+        return;
+    }
+    // term 1 is the message ID, so the datasheet field N is term N+1
+    switch (term_number) {
+    case 4:
+        p.status = term[0];
+        break;
+    case 5:
+        p.mode = term[0];
+        break;
+    case 6:
+        p.east = atof(term);
+        break;
+    case 7:
+        p.north = atof(term);
+        break;
+    case 8:
+        p.up = atof(term);
+        break;
+    case 9:
+        p.length = atof(term);
+        break;
+    case 10:
+        p.course = atof(term);
+        break;
+    }
+}
+#endif // GPS_MOVING_BASELINE
 
 /*
   detect a NMEA GPS. Adds one byte, and returns true if the stream

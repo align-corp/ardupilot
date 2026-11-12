@@ -87,6 +87,7 @@ private:
         _GPS_SENTENCE_AGRICA = 193, // extension for Unicore, 65 fields
         _GPS_SENTENCE_VERSIONA = 270, // extension for Unicore, version, 10 fields
         _GPS_SENTENCE_UNIHEADINGA = 290, // extension for Unicore, uniheadinga, 20 fields
+        _GPS_SENTENCE_PSTI = 320, // extension for SkyTraq, sub-ID in field 1, up to 15 fields
         _GPS_SENTENCE_OTHER = 0
     };
 
@@ -180,6 +181,7 @@ private:
     uint32_t _last_3D_velocity_ms;
     uint32_t _last_KSXT_pos_ms;
     uint32_t _last_AGRICA_ms;
+    uint32_t _last_PSTI032_ms;
     uint32_t _last_fix_ms;
 
     /// @name	Init strings
@@ -256,6 +258,26 @@ private:
 #endif
 #endif // AP_GPS_NMEA_UNICORE_ENABLED
     bool _expect_agrica;
+
+#if GPS_MOVING_BASELINE
+    /*
+      SkyTraq $PSTI,032 RTK baseline message. Gives the baseline
+      vector from the primary to the secondary antenna in ENU, plus its
+      length and course. Only message ID 032 is used.
+      example: $PSTI,032,033010.000,111219,A,R,-4.968,-10.817,-1.849,12.046,204.67,,,,,*39
+     */
+    void parse_psti_field(uint16_t term_number, const char *term);
+    struct {
+        uint16_t msg_id;
+        char status;        // 'A' active, 'V' void
+        char mode;          // 'R' RTK fixed, 'F' RTK float
+        float east;         // m
+        float north;        // m
+        float up;           // m
+        float length;       // m
+        float course;       // deg
+    } _psti;
+#endif
 
     // last time we sent type specific config strings
     uint32_t last_config_ms;

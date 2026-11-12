@@ -2295,6 +2295,20 @@ bool AP_GPS::backends_healthy(char failure_msg[], uint16_t failure_msg_len) {
                 return false;
             }
         }
+#if AP_GPS_NMEA_ENABLED && GPS_MOVING_BASELINE
+        if (_type[i] == GPS_TYPE_NMEA && state[i].gps_yaw_configured &&
+            AP_HAL::millis() - state[i].gps_yaw_time_ms > 15000) {
+            // NMEA GPS is sending yaw (or baseline) data, but no yaw has been
+            // accepted recently, e.g. reported baseline does not match GPS_MBn_*
+            if (AP_HAL::millis() - state[i].relposheading_ts < 2000) {
+                hal.util->snprintf(failure_msg, failure_msg_len, "GPS[%u] yaw not available (baseline %.2fm)",
+                                   unsigned(i+1), double(state[i].relPosLength));
+            } else {
+                hal.util->snprintf(failure_msg, failure_msg_len, "GPS[%u] yaw not available", unsigned(i+1));
+            }
+            return false;
+        }
+#endif
     }
     return true;
 }

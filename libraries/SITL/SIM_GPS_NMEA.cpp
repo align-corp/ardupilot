@@ -121,6 +121,22 @@ void GPS_NMEA::publish(const GPS_Data *d)
                     d->speedE * 3.6,
                     d->speedN * 3.6,
                     -d->speedD * 3.6);
+    } else if (_sitl->gps_hdg_enabled[instance] == SITL::SIM::GPS_HEADING_PSTI) {
+        // SkyTraq RTK baseline from the other GPS antenna (primary)
+        // to this one (secondary), in ENU
+        // $PSTI,032,033010.000,111219,A,R,-4.968,-10.817,-1.849,12.046,204.67,,,,,*39
+        const Vector3f ant1_pos = _sitl->gps_pos_offset[instance^1].get();
+        const Vector3f ant2_pos = _sitl->gps_pos_offset[instance].get();
+        Matrix3f rot;
+        rot.from_euler(radians(_sitl->state.rollDeg), radians(_sitl->state.pitchDeg), radians(d->yaw_deg));
+        const Vector3f rel_ned = rot * (ant2_pos - ant1_pos);
+        nmea_printf("$PSTI,032,%s,%s,%c,%c,%.3f,%.3f,%.3f,%.3f,%.2f,,,,,",
+                    tstring, dstring,
+                    d->have_lock ? 'A' : 'V',
+                    d->have_lock ? 'R' : 'F',
+                    rel_ned.y, rel_ned.x, -rel_ned.z,
+                    rel_ned.length(),
+                    wrap_360(degrees(Vector2f(rel_ned.x, rel_ned.y).angle())));
     }
 }
 

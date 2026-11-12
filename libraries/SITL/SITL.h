@@ -150,6 +150,7 @@ public:
         GPS_HEADING_HDT  = 1,
         GPS_HEADING_THS  = 2,
         GPS_HEADING_KSXT = 3,
+        GPS_HEADING_PSTI = 4, // SkyTraq $PSTI,032 baseline
     };
 
     struct sitl_fdm state;

@@ -9368,6 +9368,53 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         if ex is not None:
             raise ex
 
+    def GPSForYawNMEAPSTI(self):
+        '''NMEA GPS yaw from SkyTraq PSTI,032 with baseline check'''
+        self.set_parameters({
+            "EK3_SRC1_YAW": 2,
+            "EK3_GPS_YAW_INST": 2,
+            "GPS_TYPE2": 5,         # NMEA
+            "GPS_POS1_Y": -0.2,
+            "GPS_POS2_Y": 0.2,
+            "GPS_MB2_TYPE": 1,      # RelativeToCustomBase
+            "GPS_MB2_OFS_Y": -0.4,  # primary antenna 0.4m left of secondary
+            "SIM_GPS2_DISABLE": 0,
+            "SIM_GPS2_TYPE": 5,     # NMEA
+            "SIM_GPS_POS_Y": -0.2,
+            "SIM_GPS2_POS_Y": 0.2,
+            "SIM_GPS2_HDG": 4,      # PSTI,032
+            # EKF3 delay horizon comes from the selected GPS (GPS1), so
+            # yaw from GPS2 must have a similar lag or it is never fused
+            "GPS_DELAY_MS2": 120,
+        })
+        self.reboot_sitl()
+
+        self.start_subtest("correct baseline gives yaw")
+        self.wait_ready_to_arm()
+        m = self.assert_receive_message("GPS2_RAW")
+        self.progress(self.dump_message_verbose(m))
+        att = self.assert_receive_message("ATTITUDE")
+        want = math.degrees(att.yaw) % 360
+        got = m.yaw * 0.01
+        err = abs((got - want + 180) % 360 - 180)
+        if m.yaw == 0 or m.yaw == 65535 or err > 5:
+            raise NotAchievedException("Bad GPS yaw (want %f got %f)" % (want, got))
+
+        self.start_subtest("wrong baseline blocks arming")
+        self.set_parameter("GPS_MB2_OFS_Y", -0.8)
+        self.reboot_sitl()
+        self.delay_sim_time(20)
+        # GPS backend arming checks only run in modes requiring GPS
+        self.change_mode('LOITER')
+        self.assert_prearm_failure("GPS[2] yaw not available (baseline 0.40m)",
+                                   other_prearm_failures_fatal=False)
+        self.change_mode('STABILIZE')
+
+        self.start_subtest("fixing the baseline allows arming")
+        self.set_parameter("GPS_MB2_OFS_Y", -0.4)
+        self.reboot_sitl()
+        self.wait_ready_to_arm()
+
     def AP_Avoidance(self):
         '''ADSB-based avoidance'''
         self.set_parameters({
@@ -10884,6 +10931,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.DO_WINCH,
             self.SensorErrorFlags,
             self.GPSForYaw,
+            self.GPSForYawNMEAPSTI,
             self.DefaultIntervalsFromFiles,
             self.GPSTypes,
             self.MultipleGPS,

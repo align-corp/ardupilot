@@ -16,6 +16,117 @@ waf should always be called from the locally cloned ardupilot root directory for
 **Note**
 Do not run `waf` with `sudo`!  This leads to permission and environment problems.
 
+## macOS setup (Apple Silicon) ##
+
+A setup that doesn't use `Tools/environment_install/install-prereqs-mac.sh`:
+Python is managed by [uv](https://docs.astral.sh/uv/), the environment is
+activated per directory by [direnv](https://direnv.net/), and nothing needs
+`sudo` or edits to `PATH` in your shell config. SITL builds natively with Apple
+clang; only the ARM firmware toolchain runs under Rosetta.
+
+* **System tools**
+
+    ```sh
+    xcode-select --install
+    brew install uv direnv ccache gawk coreutils wget
+    softwareupdate --install-rosetta --agree-to-license
+    echo 'eval "$(direnv hook zsh)"' >> ~/.zshrc && exec zsh
+    ```
+
+* **ARM toolchain**
+
+    The official `gcc-arm-none-eabi-10-2020-q4-major` is x86_64 only on macOS
+    and runs under Rosetta. Keep this exact version for flight firmware.
+
+    Install Rosetta (reinstall after every major OS upgrade)
+
+    ```sh
+    sudo softwareupdate --install-rosetta --agree-to-license
+    ```
+
+    Install ARM toolchain
+
+    ```sh
+    mkdir -p ~/opt && cd ~/opt
+    curl -LO https://firmware.ardupilot.org/Tools/STM32-tools/gcc-arm-none-eabi-10-2020-q4-major-mac.tar.bz2
+    tar xjf gcc-arm-none-eabi-10-2020-q4-major-mac.tar.bz2 && rm gcc-arm-none-eabi-10-2020-q4-major-mac.tar.bz2
+    xattr -dr com.apple.quarantine ~/opt/gcc-arm-none-eabi-10-2020-q4-major
+    ~/opt/gcc-arm-none-eabi-10-2020-q4-major/bin/arm-none-eabi-gcc --version
+    ```
+
+* **ccache shims**
+
+    waf has no ccache option, so ccache is used through symlinks earlier in `PATH`:
+
+    ```sh
+    mkdir -p ~/.local/ccache-bin
+    for t in arm-none-eabi-gcc arm-none-eabi-g++ clang clang++ gcc g++; do
+      ln -sf /opt/homebrew/bin/ccache ~/.local/ccache-bin/$t
+    done
+    ```
+
+* **Python environment**
+
+    Use Python 3.11: the bundled waf still uses `imp`/`distutils`, removed in 3.12.
+
+    ```sh
+    cd ~/code/ardupilot
+    uv python install 3.11
+    uv venv --python 3.11 .venv
+    ```
+
+    Lock and install the packages listed in `requirements-dev.in`:
+
+    ```sh
+    uv pip compile requirements-dev.in -o requirements-dev.txt --python .venv
+    uv pip sync requirements-dev.txt --python .venv
+    ```
+
+* **direnv**
+
+    Create `.envrc` in the repo root and allow it:
+
+    ```sh
+    source .venv/bin/activate
+    PATH_add Tools/autotest
+    PATH_add ~/opt/gcc-arm-none-eabi-10-2020-q4-major/bin
+    PATH_add ~/.local/ccache-bin
+    ```
+
+    ```sh
+    direnv allow
+    ```
+
+    Don't set `CC`, `CXX` or `LINKFLAGS` in `.envrc`: firmware board configures
+    would pick them up instead of the `arm-none-eabi-` toolchain.
+
+* **Keep local files out of git**
+
+    `.venv` is already in `.gitignore`. For the rest:
+
+    ```sh
+    printf '.envrc\nrequirements-dev.txt\n' >> .git/info/exclude
+    ```
+
+* **Submodules and smoke test**
+
+    ```sh
+    git submodule update --init --recursive
+    ./waf configure --board sitl && ./waf copter
+    sim_vehicle.py -v ArduCopter --console --map
+    ./waf configure --board CubeBlack && ./waf copter   # checks the ARM toolchain
+    ```
+
+* **Notes**
+
+    - waf records the Python used at `configure` time. If you recreate `.venv`,
+      run `./waf configure` again.
+    - To rebuild a broken environment:
+      `rm -rf .venv && uv venv --python 3.11 .venv && uv pip sync requirements-dev.txt --python .venv`
+    - The ARM toolchain depends on Rosetta; recheck it after major macOS upgrades.
+      [xPack 10.3.1-2.3](https://github.com/xpack-dev-tools/arm-none-eabi-gcc-xpack/releases)
+      has a native `darwin-arm64` build as a fallback.
+
 ## Basic usage ##
 
 There are several commands in the build system for advanced usage, but here we

@@ -432,7 +432,12 @@ class Board:
             ]
 
         if cfg.env.DEST_OS == 'darwin':
-            if self.cc_version_gte(cfg, 15, 0):
+            if 'g++' in cfg.env.COMPILER_CXX:
+                # Apple's linker rejects the unaligned pointers in PACKED AP_FWVersion with chained fixups
+                env.LINKFLAGS += [
+                    '-Wl,-dead_strip,-no_fixup_chains',
+                ]
+            elif self.cc_version_gte(cfg, 15, 0):
                 env.LINKFLAGS += [
                     '-Wl,-dead_strip,-ld_classic',
                 ]

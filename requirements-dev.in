@@ -1,0 +1,17 @@
+future
+lxml
+pymavlink
+MAVProxy
+pexpect
+geocoder
+flake8
+junitparser
+empy==3.3.4  # empy 4.x breaks the MAVLink/DroneCAN generators
+dronecan
+intelhex
+gnureadline
+wxPython     # optional: MAVProxy map/console
+billiard     # optional
+# modules/DroneCAN/pydronecan imports pkg_resources, which uv venvs don't include;
+# without it the DroneCAN generator's spawn workers crash-loop at 100% CPU on macOS
+setuptools<81

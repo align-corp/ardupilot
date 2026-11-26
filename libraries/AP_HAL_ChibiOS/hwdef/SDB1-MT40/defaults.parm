@@ -20,9 +20,9 @@ OUT_RATE 50
 # above is built-in LED (bit 0) plus NeoPixel (bit 8).
 OUT4_FUNCTION 120
 
-# Down lidar on USART2, RNGFND_PORT 1 comes from the hwdef. Type 42 is the
-# Align RDR01 that used to hang off the FCU directly. Baud is RNGFND_BAUDRATE
-# (115200 default), not RNGFND1_*.
+# Down radar on USART2, RNGFND_PORT 1 comes from the hwdef. Type 45 is the
+# ARadTek radar (18 byte 0xFF 0xFF frames, nearest of 5 obstacles is used).
+# Baud is RNGFND_BAUDRATE (115200 default), not RNGFND1_*.
 #
 # can_rangefinder_update() always reads instance 0 as ROTATION_NONE and the
 # FCU applies the real orientation (AG1 RNGFND2_ORIENT 25), so leave the
@@ -32,7 +32,7 @@ OUT4_FUNCTION 120
 # (SERIAL6_BAUD 115 / SERIAL6_PROTOCOL 9). This is also RNGFND_BAUDRATE's
 # default, but pin it so a default change cannot move it.
 RNGFND_BAUDRATE 115200
-RNGFND1_TYPE 42
+RNGFND1_TYPE 45
 RNGFND1_MIN_CM 20
 RNGFND1_MAX_CM 4000
 

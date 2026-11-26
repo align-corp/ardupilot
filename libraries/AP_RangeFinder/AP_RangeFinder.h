@@ -178,6 +178,7 @@ public:
         Align_RDR01 = 42,
         Align_NRA12 = 43,
         Align_R50 = 44,
+        ARadTek_Serial = 45,
 #endif
 #if AP_RANGEFINDER_SIM_ENABLED
         SIM = 100,

@@ -62,6 +62,7 @@
 #include "AP_RangeFinder_Align_RDR01.h"
 #include "AP_RangeFinder_NRA12.h"
 #include "AP_RangeFinder_Align_R50.h"
+#include "AP_RangeFinder_ARadTek_Serial.h"
 
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include <AP_Logger/AP_Logger.h>
@@ -608,6 +609,9 @@ void RangeFinder::detect_instance(uint8_t instance, uint8_t& serial_instance)
         }
         break;
     }
+    case Type::ARadTek_Serial:
+        serial_create_fn = AP_RangeFinder_ARadTek_Serial::create;
+        break;
 #endif
 
     case Type::NONE:
